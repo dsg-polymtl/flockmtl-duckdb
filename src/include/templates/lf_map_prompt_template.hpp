@@ -1,3 +1,7 @@
+#ifndef LF_MAP_PROMPT_TEMPLATE_H
+#define LF_MAP_PROMPT_TEMPLATE_H
+
+constexpr auto lf_map_prompt_template = R"(
 {{prompts}}
 
 {
@@ -19,3 +23,6 @@ Respond in a json format as follow:
         // For each row in the input rows add the necessary columns that would ensure that the prompt is correctly answered.
     ]
 }
+)";
+
+#endif // LF_MAP_PROMPT_TEMPLATE_H

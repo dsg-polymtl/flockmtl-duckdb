@@ -1,3 +1,7 @@
+#ifndef LF_GENERATE_PROMPT_TEMPLATE_H
+#define LF_GENERATE_PROMPT_TEMPLATE_H
+
+constexpr auto lf_generate_prompt_template = R"(
 {{prompts}}
 
 {
@@ -19,3 +23,6 @@ Respond in a json format as follow:
         // For each row in the input rows answer the prompt in a plain text format.
     ]
 }
+)";
+
+#endif // LF_GENERATE_PROMPT_TEMPLATE_H

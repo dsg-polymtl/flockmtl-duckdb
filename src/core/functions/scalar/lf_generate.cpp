@@ -14,7 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
-#include <unistd.h>
+#include <templates/lf_generate_prompt_template.hpp>
 
 namespace large_flock {
 namespace core {
@@ -47,17 +47,6 @@ nlohmann::json GetMaxLengthValues3(const std::vector<nlohmann::json> &params) {
     }
 
     return attr_to_max_token_length;
-}
-
-std::string PromptFileToString3(const std::string &file_path) {
-    std::ifstream file(file_path);
-    if (!file.is_open()) {
-        throw std::runtime_error("Could not open the file: " + file_path);
-    }
-
-    std::ostringstream content_stream;
-    content_stream << file.rdbuf();
-    return content_stream.str();
 }
 
 std::string combine_values3(const nlohmann::json &json_obj) {
@@ -94,18 +83,10 @@ inline std::vector<std::string> ConstructPrompts3(std::vector<nlohmann::json> &u
     if (row_tokens > model_max_tokens) {
         throw std::runtime_error("The total number of tokens in the prompt exceeds the model's maximum token limit");
     } else {
-        char exe_path[4096];
-        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-        if (len == -1) {
-            throw std::runtime_error("Failed to determine the executable path.");
-        }
-        exe_path[len] = '\0'; // Null-terminate the path
-        auto template_path =
-            std::filesystem::path(exe_path).remove_filename() / "extension/large_flock/lf_generate_prompt_template.txt";
-
-        auto template_tokens = Tiktoken::GetNumTokens(PromptFileToString3(template_path.c_str()));
+        auto template_tokens = Tiktoken::GetNumTokens(lf_generate_prompt_template);
         auto max_tokens_for_rows = model_max_tokens - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
+#undef min
         auto chunk_size = std::min(max_chunk_size, static_cast<int>(unique_rows.size()));
         auto num_chunks = static_cast<int>(std::ceil(static_cast<double>(unique_rows.size()) / chunk_size));
 
@@ -117,7 +98,7 @@ inline std::vector<std::string> ConstructPrompts3(std::vector<nlohmann::json> &u
                 data["rows"].push_back(unique_rows[i + j]);
             }
 
-            auto prompt = env.render_file(template_path.c_str(), data);
+            auto prompt = env.render(lf_generate_prompt_template, data);
             prompts.push_back(prompt);
         }
     }
