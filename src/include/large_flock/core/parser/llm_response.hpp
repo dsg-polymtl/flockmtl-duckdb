@@ -6,8 +6,8 @@ namespace large_flock {
 namespace core {
 
 struct CoreLlmResponseParsers {
-    // lf_map response parser that return a vector of strings
-    static std::vector<std::string> LfMapResponseParser(std::string &response, int num_responses);
+    // llm_map response parser that return a vector of strings
+    static std::vector<std::string> LlmMapResponseParser(std::string &response, int num_responses);
 };
 
 } // namespace core

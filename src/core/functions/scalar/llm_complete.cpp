@@ -14,7 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
-#include <templates/lf_generate_prompt_template.hpp>
+#include <templates/llm_complete_prompt_template.hpp>
 
 namespace large_flock {
 namespace core {
@@ -83,7 +83,7 @@ inline std::vector<std::string> ConstructPrompts3(std::vector<nlohmann::json> &u
     if (row_tokens > model_max_tokens) {
         throw std::runtime_error("The total number of tokens in the prompt exceeds the model's maximum token limit");
     } else {
-        auto template_tokens = Tiktoken::GetNumTokens(lf_generate_prompt_template);
+        auto template_tokens = Tiktoken::GetNumTokens(llm_complete_prompt_template);
         auto max_tokens_for_rows = model_max_tokens - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
 #undef min
@@ -98,7 +98,7 @@ inline std::vector<std::string> ConstructPrompts3(std::vector<nlohmann::json> &u
                 data["rows"].push_back(unique_rows[i + j]);
             }
 
-            auto prompt = env.render(lf_generate_prompt_template, data);
+            auto prompt = env.render(llm_complete_prompt_template, data);
             prompts.push_back(prompt);
         }
     }
@@ -127,9 +127,9 @@ inline std::tuple<std::vector<int>, std::vector<nlohmann::json>> PrepareCache3(D
 
     return {result_indexes, unique_rows};
 }
-static void LfGenerateScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
-    CoreScalarParsers::LfMapScalarParser(args);
+    CoreScalarParsers::LlmMapScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
     auto query_result = con.Query(
@@ -171,9 +171,9 @@ static void LfGenerateScalarFunction(DataChunk &args, ExpressionState &state, Ve
     });
 }
 
-void CoreScalarFunctions::RegisterLfGenerateScalarFunction(DatabaseInstance &db) {
+void CoreScalarFunctions::RegisterLlmCompleteScalarFunction(DatabaseInstance &db) {
     ExtensionUtil::RegisterFunction(db,
-                                    ScalarFunction("lf_generate", {}, LogicalType::VARCHAR, LfGenerateScalarFunction,
+                                    ScalarFunction("llm_complete", {}, LogicalType::VARCHAR, LlmCompleteScalarFunction,
                                                    nullptr, nullptr, nullptr, nullptr, LogicalType::ANY));
 }
 

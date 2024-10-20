@@ -14,29 +14,29 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
-#include <templates/lf_filter_prompt_template.hpp>
+#include <templates/llm_map_prompt_template.hpp>
 
 namespace large_flock {
 namespace core {
 
 template <typename T>
-std::string ToString2(const T &value) {
+std::string ToString(const T &value) {
     std::ostringstream oss;
     oss << value;
     return oss.str();
 }
 
-nlohmann::json GetMaxLengthValues2(const std::vector<nlohmann::json> &params) {
+nlohmann::json GetMaxLengthValues(const std::vector<nlohmann::json> &params) {
     nlohmann::json attr_to_max_token_length;
 
     for (const auto &json_obj : params) {
         for (const auto &item : json_obj.items()) {
             auto key = item.key();
-            auto value_str = ToString2(item.value());
+            auto value_str = ToString(item.value());
             int length = value_str.length();
 
             if (attr_to_max_token_length.contains(key)) {
-                auto current_max_value_str = ToString2(attr_to_max_token_length[key]);
+                auto current_max_value_str = ToString(attr_to_max_token_length[key]);
                 if (current_max_value_str.length() < length) {
                     attr_to_max_token_length[key] = item.value();
                 }
@@ -49,10 +49,10 @@ nlohmann::json GetMaxLengthValues2(const std::vector<nlohmann::json> &params) {
     return attr_to_max_token_length;
 }
 
-std::string combine_values2(const nlohmann::json &json_obj) {
+std::string combine_values(const nlohmann::json &json_obj) {
     std::string combined;
     for (const auto &item : json_obj.items()) {
-        combined += ToString2(item.value()) + " ";
+        combined += ToString(item.value()) + " ";
     }
 
     if (!combined.empty()) {
@@ -61,8 +61,8 @@ std::string combine_values2(const nlohmann::json &json_obj) {
     return combined;
 }
 
-inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &unique_rows, Connection &con,
-                                                  std::string prompt_name, int model_max_tokens = 4096) {
+inline std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &unique_rows, Connection &con,
+                                                 std::string prompt_name, int model_max_tokens = 4096) {
     inja::Environment env;
 
     auto query_result = con.Query(
@@ -74,8 +74,8 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
 
     auto template_str = query_result->GetValue(0, 0).ToString();
     auto row_tokens = Tiktoken::GetNumTokens(template_str);
-    auto max_length_values = GetMaxLengthValues2(unique_rows);
-    auto combined_values = combine_values2(max_length_values);
+    auto max_length_values = GetMaxLengthValues(unique_rows);
+    auto combined_values = combine_values(max_length_values);
     row_tokens += Tiktoken::GetNumTokens(combined_values);
 
     std::vector<std::string> prompts;
@@ -83,7 +83,7 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
     if (row_tokens > model_max_tokens) {
         throw std::runtime_error("The total number of tokens in the prompt exceeds the model's maximum token limit");
     } else {
-        auto template_tokens = Tiktoken::GetNumTokens(lf_filter_prompt_template);
+        auto template_tokens = Tiktoken::GetNumTokens(llm_map_prompt_template);
         auto max_tokens_for_rows = model_max_tokens - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
 #undef min
@@ -98,7 +98,7 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
                 data["rows"].push_back(unique_rows[i + j]);
             }
 
-            auto prompt = env.render(lf_filter_prompt_template, data);
+            auto prompt = env.render(llm_map_prompt_template, data);
             prompts.push_back(prompt);
         }
     }
@@ -106,7 +106,7 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
     return prompts;
 }
 
-inline std::tuple<std::vector<int>, std::vector<nlohmann::json>> PrepareCache2(DataChunk &args) {
+inline std::tuple<std::vector<int>, std::vector<nlohmann::json>> PrepareCache(DataChunk &args) {
     auto inputs = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
     std::vector<int> result_indexes;
@@ -127,10 +127,9 @@ inline std::tuple<std::vector<int>, std::vector<nlohmann::json>> PrepareCache2(D
 
     return {result_indexes, unique_rows};
 }
-
-static void LfFilterScalarFunction2(DataChunk &args, ExpressionState &state, Vector &result) {
+static void LlmMapScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
-    CoreScalarParsers::LfMapScalarParser(args);
+    CoreScalarParsers::LlmMapScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
     auto query_result = con.Query(
@@ -143,9 +142,9 @@ static void LfFilterScalarFunction2(DataChunk &args, ExpressionState &state, Vec
     auto model_name = query_result->GetValue(0, 0).ToString();
     auto model_max_tokens = query_result->GetValue(1, 0).GetValue<int32_t>();
 
-    auto [results_indexes, unique_rows] = PrepareCache2(args);
+    auto [results_indexes, unique_rows] = PrepareCache(args);
 
-    auto prompts = ConstructPrompts2(unique_rows, con, args.data[0].GetValue(0).ToString(), model_max_tokens);
+    auto prompts = ConstructPrompts(unique_rows, con, args.data[0].GetValue(0).ToString(), model_max_tokens);
 
     nlohmann::json settings;
     if (args.ColumnCount() == 4) {
@@ -172,8 +171,8 @@ static void LfFilterScalarFunction2(DataChunk &args, ExpressionState &state, Vec
     });
 }
 
-void CoreScalarFunctions::RegisterLfFilterScalarFunction(DatabaseInstance &db) {
-    ExtensionUtil::RegisterFunction(db, ScalarFunction("lf_filter", {}, LogicalType::VARCHAR, LfFilterScalarFunction2,
+void CoreScalarFunctions::RegisterLlmMapScalarFunction(DatabaseInstance &db) {
+    ExtensionUtil::RegisterFunction(db, ScalarFunction("llm_map", {}, LogicalType::VARCHAR, LlmMapScalarFunction,
                                                        nullptr, nullptr, nullptr, nullptr, LogicalType::ANY));
 }
 

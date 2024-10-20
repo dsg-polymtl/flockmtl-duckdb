@@ -1,7 +1,7 @@
-#ifndef LF_GENERATE_PROMPT_TEMPLATE_H
-#define LF_GENERATE_PROMPT_TEMPLATE_H
+#ifndef LLM_COMPLETE_PROMPT_TEMPLATE_H
+#define LLM_COMPLETE_PROMPT_TEMPLATE_H
 
-constexpr auto lf_generate_prompt_template = R"(
+constexpr auto llm_complete_prompt_template = R"(
 {{prompts}}
 
 {
@@ -25,4 +25,4 @@ Respond in a json format as follow:
 }
 )";
 
-#endif // LF_GENERATE_PROMPT_TEMPLATE_H
+#endif // LLM_COMPLETE_PROMPT_TEMPLATE_H

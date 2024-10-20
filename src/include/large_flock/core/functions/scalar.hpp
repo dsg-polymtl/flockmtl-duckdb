@@ -7,17 +7,17 @@ namespace core {
 
 struct CoreScalarFunctions {
     static void Register(DatabaseInstance &db) {
-        RegisterLfMapScalarFunction(db);
-        RegisterLfGenerateScalarFunction(db);
-        RegisterLfEmbeddingScalarFunction(db);
-        RegisterLfFilterScalarFunction(db);
+        RegisterLlmMapScalarFunction(db);
+        RegisterLlmCompleteScalarFunction(db);
+        RegisterLlmEmbeddingScalarFunction(db);
+        RegisterLlmFilterScalarFunction(db);
     }
 
 private:
-    static void RegisterLfMapScalarFunction(DatabaseInstance &db);
-    static void RegisterLfGenerateScalarFunction(DatabaseInstance &db);
-    static void RegisterLfEmbeddingScalarFunction(DatabaseInstance &db);
-    static void RegisterLfFilterScalarFunction(DatabaseInstance &db);
+    static void RegisterLlmMapScalarFunction(DatabaseInstance &db);
+    static void RegisterLlmCompleteScalarFunction(DatabaseInstance &db);
+    static void RegisterLlmEmbeddingScalarFunction(DatabaseInstance &db);
+    static void RegisterLlmFilterScalarFunction(DatabaseInstance &db);
 };
 
 } // namespace core

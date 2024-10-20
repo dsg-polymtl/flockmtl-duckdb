@@ -8,9 +8,9 @@
 namespace large_flock {
 namespace core {
 
-static void LfEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
-    CoreScalarParsers::LfEmbeddingScalarParser(args);
+    CoreScalarParsers::LlmEmbeddingScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
     auto query_result = con.Query(
@@ -42,9 +42,9 @@ static void LfEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, V
     }
 }
 
-void CoreScalarFunctions::RegisterLfEmbeddingScalarFunction(DatabaseInstance &db) {
-    ExtensionUtil::RegisterFunction(db, ScalarFunction("lf_embedding", {}, LogicalType::LIST(LogicalType::DOUBLE),
-                                                       LfEmbeddingScalarFunction, nullptr, nullptr, nullptr, nullptr,
+void CoreScalarFunctions::RegisterLlmEmbeddingScalarFunction(DatabaseInstance &db) {
+    ExtensionUtil::RegisterFunction(db, ScalarFunction("llm_embedding", {}, LogicalType::LIST(LogicalType::DOUBLE),
+                                                       LlmEmbeddingScalarFunction, nullptr, nullptr, nullptr, nullptr,
                                                        LogicalType::ANY));
 }
 

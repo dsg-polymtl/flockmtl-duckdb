@@ -1,7 +1,7 @@
-#ifndef LF_FILTER_PROMPT_TEMPLATE_H
-#define LF_FILTER_PROMPT_TEMPLATE_H
+#ifndef LLM_FILTER_PROMPT_TEMPLATE_H
+#define LLM_FILTER_PROMPT_TEMPLATE_H
 
-constexpr auto lf_filter_prompt_template = R"(
+constexpr auto llm_filter_prompt_template = R"(
 {{prompts}}
 
 {
@@ -25,4 +25,4 @@ Respond in a json format as follow:
 }
 )";
 
-#endif // LF_FILTER_PROMPT_TEMPLATE_H
+#endif // LLM_FILTER_PROMPT_TEMPLATE_H

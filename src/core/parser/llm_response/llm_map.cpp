@@ -6,7 +6,7 @@
 namespace large_flock {
 namespace core {
 
-std::vector<std::string> CoreLlmResponseParsers::LfMapResponseParser(std::string &response, int num_responses) {
+std::vector<std::string> CoreLlmResponseParsers::LlmMapResponseParser(std::string &response, int num_responses) {
     std::vector<std::string> responses;
 
     // Define the regex pattern to match "Response Prompt {i}: content"

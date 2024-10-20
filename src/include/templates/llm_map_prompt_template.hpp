@@ -1,7 +1,7 @@
-#ifndef LF_MAP_PROMPT_TEMPLATE_H
-#define LF_MAP_PROMPT_TEMPLATE_H
+#ifndef LLM_MAP_PROMPT_TEMPLATE_H
+#define LLM_MAP_PROMPT_TEMPLATE_H
 
-constexpr auto lf_map_prompt_template = R"(
+constexpr auto llm_map_prompt_template = R"(
 {{prompts}}
 
 {
@@ -25,4 +25,4 @@ Respond in a json format as follow:
 }
 )";
 
-#endif // LF_MAP_PROMPT_TEMPLATE_H
+#endif // LLM_MAP_PROMPT_TEMPLATE_H
