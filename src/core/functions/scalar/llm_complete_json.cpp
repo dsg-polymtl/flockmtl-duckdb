@@ -14,7 +14,7 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
-#include <templates/llm_map_prompt_template.hpp>
+#include <templates/llm_complete_json_prompt_template.hpp>
 
 namespace large_flock {
 namespace core {
@@ -83,7 +83,7 @@ inline std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &un
     if (row_tokens > model_max_tokens) {
         throw std::runtime_error("The total number of tokens in the prompt exceeds the model's maximum token limit");
     } else {
-        auto template_tokens = Tiktoken::GetNumTokens(llm_map_prompt_template);
+        auto template_tokens = Tiktoken::GetNumTokens(llm_complete_json_prompt_template);
         auto max_tokens_for_rows = model_max_tokens - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
 #undef min
@@ -98,7 +98,7 @@ inline std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &un
                 data["rows"].push_back(unique_rows[i + j]);
             }
 
-            auto prompt = env.render(llm_map_prompt_template, data);
+            auto prompt = env.render(llm_complete_json_prompt_template, data);
             prompts.push_back(prompt);
         }
     }
@@ -106,9 +106,9 @@ inline std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &un
     return prompts;
 }
 
-static void LlmMapScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
+static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
-    CoreScalarParsers::LlmMapScalarParser(args);
+    CoreScalarParsers::LlmCompleteJsonScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
     auto query_result = con.Query(
@@ -144,15 +144,15 @@ static void LlmMapScalarFunction(DataChunk &args, ExpressionState &state, Vector
     }
 
     auto index = 0;
-    Vector vec(LogicalType::VARCHAR, args.size());
-    UnaryExecutor::Execute<string_t, string_t>(vec, result, args.size(), [&](string_t _) {
-        return StringVector::AddString(result, responses[index++].dump());
-    });
+    for (const auto &response : responses) {
+        result.SetValue(index++, Value(response.dump()));
+    }
 }
 
-void CoreScalarFunctions::RegisterLlmMapScalarFunction(DatabaseInstance &db) {
-    ExtensionUtil::RegisterFunction(db, ScalarFunction("llm_map", {}, LogicalType::VARCHAR, LlmMapScalarFunction,
-                                                       nullptr, nullptr, nullptr, nullptr, LogicalType::ANY));
+void CoreScalarFunctions::RegisterLlmCompleteJsonScalarFunction(DatabaseInstance &db) {
+    ExtensionUtil::RegisterFunction(db, ScalarFunction("llm_complete_json", {}, LogicalType::JSON(),
+                                                       LlmCompleteJsonScalarFunction, nullptr, nullptr, nullptr,
+                                                       nullptr, LogicalType::ANY));
 }
 
 } // namespace core

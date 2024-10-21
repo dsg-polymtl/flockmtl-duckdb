@@ -107,7 +107,7 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
 
 static void LlmFilterScalarFunction2(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
-    CoreScalarParsers::LlmMapScalarParser(args);
+    CoreScalarParsers::LlmCompleteJsonScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
     auto query_result = con.Query(

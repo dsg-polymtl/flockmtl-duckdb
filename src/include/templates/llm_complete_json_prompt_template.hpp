@@ -1,7 +1,7 @@
 #ifndef LLM_MAP_PROMPT_TEMPLATE_H
 #define LLM_MAP_PROMPT_TEMPLATE_H
 
-constexpr auto llm_map_prompt_template = R"(
+constexpr auto llm_complete_json_prompt_template = R"(
 {{prompts}}
 
 {
