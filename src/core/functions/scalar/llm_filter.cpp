@@ -1,3 +1,6 @@
+#include <functional>
+#include <inja/inja.hpp>
+#include <iostream>
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/scalar.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
@@ -5,9 +8,6 @@
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>
-#include <functional>
-#include <inja/inja.hpp>
-#include <iostream>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
