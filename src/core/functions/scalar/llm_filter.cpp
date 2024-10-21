@@ -1,5 +1,3 @@
-#include <algorithm>
-#include <cmath>
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/scalar.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
@@ -85,8 +83,8 @@ inline std::vector<std::string> ConstructPrompts2(std::vector<nlohmann::json> &u
         auto template_tokens = Tiktoken::GetNumTokens(llm_filter_prompt_template);
         auto max_tokens_for_rows = model_max_tokens - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
-#undef min
-        auto chunk_size = std::min(max_chunk_size, static_cast<int>(unique_rows.size()));
+        auto chunk_size = max_chunk_size > static_cast<int>(unique_rows.size()) ? static_cast<int>(unique_rows.size())
+                                                                                : max_chunk_size;
         auto num_chunks = static_cast<int>(std::ceil(static_cast<double>(unique_rows.size()) / chunk_size));
 
         for (int i = 0; i < num_chunks; ++i) {
