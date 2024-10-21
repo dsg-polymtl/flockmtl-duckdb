@@ -1,6 +1,7 @@
 # FlockMTL Extension
 
 FlockMTL is a DuckDB extension that integrates language model (LLM) capabilities directly into your queries and workflows. This experimental extension enables DuckDB users to add semantic analysis (classification, filtering, completion, all w/ structured output) and embeddings using GPT models—all from within SQL commands. Following the tradition of declarativity, we introduce an administrative view of `MODEL`(s) and `PROMPT`(s) akin to `TABLE`(s).
+While the extension will load successfully, it requires the environment variable `OPENAI_API_KEY` in your environment to make requests. If not found, the use of our functions will throw an error regarding obtaining an API key.
 
 ---
 
@@ -33,7 +34,7 @@ Run:
 
 ### Documentation
 
-Next, we demonstrate how to use the **DuckDB LLM Extension** and an example we would like to analyze product reviews. Specifically, we’ll focus on generating text, classifying reviews as positive or negative, and working with text embeddings using a `product_reviews` table with attributes `review_text`, `review_id`, and `customer_name`.
+Next, we demonstrate how to use the **DuckDB LLM Extension** and as an example we would like to analyze product reviews. Specifically, we’ll focus on generating text, classifying reviews as positive or negative, and working with text embeddings using a `product_reviews` table with attributes `review_text`, `review_id`, and `customer_name`.
 
 #### **1. Text Generation with `llm_complete`**
 
