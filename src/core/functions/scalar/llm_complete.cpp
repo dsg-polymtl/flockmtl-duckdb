@@ -106,27 +106,6 @@ inline std::vector<std::string> ConstructPrompts3(std::vector<nlohmann::json> &u
     return prompts;
 }
 
-inline std::tuple<std::vector<int>, std::vector<nlohmann::json>> PrepareCache3(DataChunk &args) {
-    auto inputs = CoreScalarParsers::Struct2Json(args.data[2], args.size());
-
-    std::vector<int> result_indexes;
-    std::vector<nlohmann::json> unique_rows;
-
-    // Process each JSON object
-    int unique_index = 0;
-    for (const auto &row : inputs) {
-        auto it = std::find(unique_rows.begin(), unique_rows.end(), row);
-        if (it != unique_rows.end()) {
-            auto row_index = std::distance(unique_rows.begin(), it);
-            result_indexes.push_back(row_index);
-        } else {
-            unique_rows.push_back(row);
-            result_indexes.push_back(unique_index++);
-        }
-    }
-
-    return {result_indexes, unique_rows};
-}
 static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmMapScalarParser(args);
@@ -142,24 +121,24 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
     auto model_name = query_result->GetValue(0, 0).ToString();
     auto model_max_tokens = query_result->GetValue(1, 0).GetValue<int32_t>();
 
-    auto [results_indexes, unique_rows] = PrepareCache3(args);
+    auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
-    auto prompts = ConstructPrompts3(unique_rows, con, args.data[0].GetValue(0).ToString(), model_max_tokens);
+    auto prompts = ConstructPrompts3(tuples, con, args.data[0].GetValue(0).ToString(), model_max_tokens);
 
     nlohmann::json settings;
     if (args.ColumnCount() == 4) {
         settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
     }
 
-    auto results_cache = nlohmann::json::array();
+    auto responses = nlohmann::json::array();
     for (const auto &prompt : prompts) {
         // Call ModelManager::CallComplete and get the rows
-        auto result = ModelManager::CallComplete(prompt, model_name, settings);
+        auto response = ModelManager::CallComplete(prompt, model_name, settings);
 
         // Check if the result contains the 'rows' field and push it to the main 'rows'
-        if (result.contains("rows")) {
-            for (const auto &row : result["rows"]) {
-                results_cache.push_back(row);
+        if (response.contains("rows")) {
+            for (const auto &row : response["rows"]) {
+                responses.push_back(row);
             }
         }
     }
@@ -167,7 +146,7 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
     auto index = 0;
     Vector vec(LogicalType::VARCHAR, args.size());
     UnaryExecutor::Execute<string_t, string_t>(vec, result, args.size(), [&](string_t _) {
-        return StringVector::AddString(result, results_cache[results_indexes[index++]].dump());
+        return StringVector::AddString(result, responses[index++].dump());
     });
 }
 
