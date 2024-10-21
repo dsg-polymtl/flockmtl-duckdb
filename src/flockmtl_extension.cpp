@@ -14,11 +14,8 @@ namespace duckdb {
 
 static void LoadInternal(DatabaseInstance &instance) {
     const auto *key = std::getenv("OPENAI_API_KEY");
-    if (!key)
-        throw std::runtime_error("FLOCKMTL EXTENSION ERROR: To load and use the extension, an OpenAI API key needs to "
-                                 "be defined as an env variable: OPENAI_API_KEY");
 
-    flockmtl::core::ModelManager::OPENAI_API_KEY = key;
+    flockmtl::core::ModelManager::OPENAI_API_KEY = key ? key : "";
 
     flockmtl::core::CoreModule::Register(instance);
 
