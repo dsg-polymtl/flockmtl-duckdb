@@ -1,16 +1,16 @@
-#include "large_flock/core/module.hpp"
+#include "flockmtl/core/module.hpp"
 
-#include "large_flock/common.hpp"
-#include "large_flock/core/config/lf_config.hpp"
-#include "large_flock/core/functions/scalar.hpp"
+#include "flockmtl/common.hpp"
+#include "flockmtl/core/config/config.hpp"
+#include "flockmtl/core/functions/scalar.hpp"
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 
 void CoreModule::Register(DatabaseInstance &db) {
     CoreScalarFunctions::Register(db);
-    LfConfig::Configure(db);
+    Config::Configure(db);
 }
 
 } // namespace core
-} // namespace large_flock
+} // namespace flockmtl

@@ -1,13 +1,13 @@
-#ifndef LARGE_FLOCK_CONFIG_LF_CONFIG_HPP
-#define LARGE_FLOCK_CONFIG_LF_CONFIG_HPP
+#ifndef FLOCKMTL_CONFIG_CONFIG_HPP
+#define FLOCKMTL_CONFIG_CONFIG_HPP
 
 #include "duckdb/main/connection.hpp"
 #include "duckdb/main/database.hpp"
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 
-class LfConfig {
+class Config {
 public:
     static void Configure(duckdb::DatabaseInstance &db);
 
@@ -18,6 +18,6 @@ private:
 };
 
 } // namespace core
-} // namespace large_flock
+} // namespace flockmtl
 
-#endif // LARGE_FLOCK_CONFIG_LF_CONFIG_HPP
+#endif // FLOCKMTL_CONFIG_CONFIG_HPP

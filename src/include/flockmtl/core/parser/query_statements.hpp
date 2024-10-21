@@ -1,12 +1,12 @@
 #pragma once
 
-#include "large_flock/common.hpp"
+#include "flockmtl/common.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 // Enum to represent different statement types
 enum class StatementType {
@@ -37,4 +37,4 @@ public:
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

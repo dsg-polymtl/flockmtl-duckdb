@@ -1,12 +1,15 @@
 #pragma once
-#include "large_flock/common.hpp"
+#include "flockmtl/common.hpp"
 #include "nlohmann/json.hpp"
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
 
 struct ModelManager {
+public:
+    static std::string OPENAI_API_KEY;
+
     static nlohmann::json CallComplete(const std::string &prompt, const std::string &model,
                                        const nlohmann::json &settings, const bool json_response = true);
     static nlohmann::json CallEmbedding(const std::string &input, const std::string &model);
@@ -14,4 +17,4 @@ struct ModelManager {
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

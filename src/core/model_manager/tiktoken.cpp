@@ -1,7 +1,7 @@
-#include <large_flock/core/model_manager/tiktoken.hpp>
+#include <flockmtl/core/model_manager/tiktoken.hpp>
 #include <regex>
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
 
@@ -14,4 +14,4 @@ int Tiktoken::GetNumTokens(const std::string &str) {
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

@@ -18,7 +18,7 @@ jobs:
     with:
       duckdb_version: main
       ci_tools_version: main
-      extension_name: large_flock
+      extension_name: flockmtl
 
   duckdb-stable-build:
     name: Build extension binaries
@@ -26,7 +26,7 @@ jobs:
     with:
       duckdb_version: v1.1.1
       ci_tools_version: v1.1.1
-      extension_name: large_flock
+      extension_name: flockmtl
 
   duckdb-stable-deploy:
     name: Deploy extension binaries
@@ -35,5 +35,5 @@ jobs:
     secrets: inherit
     with:
       duckdb_version: v1.1.1
-      extension_name: large_flock
+      extension_name: flockmtl
       deploy_latest: ${{ startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' }}

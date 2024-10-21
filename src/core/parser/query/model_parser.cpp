@@ -1,14 +1,14 @@
-#include "large_flock/core/parser/query/lf_model_parser.hpp"
+#include "flockmtl/core/parser/query/model_parser.hpp"
 
-#include "large_flock/common.hpp"
+#include "flockmtl/common.hpp"
 
 #include <sstream>
 #include <stdexcept>
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
-void LfModelParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
@@ -30,7 +30,7 @@ void LfModelParser::Parse(const std::string &query, std::unique_ptr<QueryStateme
     }
 }
 
-void LfModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -87,7 +87,7 @@ void LfModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void LfModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -110,7 +110,7 @@ void LfModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void LfModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -167,11 +167,11 @@ void LfModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void LfModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
-    if (token.type != TokenType::KEYWORD || value != "MODEL") {
-        throw std::runtime_error("Expected 'MODEL' after 'SHOW'.");
+    if (token.type != TokenType::KEYWORD || (value != "MODEL" && value != "MODELS")) {
+        throw std::runtime_error("Expected 'MODEL' after 'GET'.");
     }
 
     token = tokenizer.NextToken();
@@ -195,25 +195,25 @@ void LfModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QuerySta
     }
 }
 
-std::string LfModelParser::ToSQL(const QueryStatement &statement) const {
+std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     std::ostringstream sql;
 
     switch (statement.type) {
     case StatementType::CREATE_MODEL: {
         const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
-        sql << "INSERT INTO lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE(model_name, model, max_tokens) VALUES ('"
+        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE(model_name, model, max_tokens) VALUES ('"
             << create_stmt.model_name << "', '" << create_stmt.model << "', " << create_stmt.max_tokens << ");";
         break;
     }
     case StatementType::DELETE_MODEL: {
         const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
-        sql << "DELETE FROM lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE WHERE model_name = '" << delete_stmt.model_name
-            << "';";
+        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '"
+            << delete_stmt.model_name << "';";
         break;
     }
     case StatementType::UPDATE_MODEL: {
         const auto &update_stmt = static_cast<const UpdateModelStatement &>(statement);
-        sql << "UPDATE lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE SET "
+        sql << "UPDATE flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE SET "
             << "max_tokens = " << update_stmt.new_max_tokens << ", "
             << "model = '" << update_stmt.new_model << "' "
             << "WHERE model_name = '" << update_stmt.model_name << "';";
@@ -221,12 +221,12 @@ std::string LfModelParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::GET_MODEL: {
         const auto &get_stmt = static_cast<const GetModelStatement &>(statement);
-        sql << "SELECT * FROM lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name
             << "';";
         break;
     }
     case StatementType::GET_ALL_MODEL: {
-        sql << "SELECT * FROM lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE;";
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE;";
         break;
     }
     default:
@@ -238,4 +238,4 @@ std::string LfModelParser::ToSQL(const QueryStatement &statement) const {
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

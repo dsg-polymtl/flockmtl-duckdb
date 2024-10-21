@@ -1,9 +1,9 @@
-#include <large_flock/common.hpp>
-#include <large_flock/core/functions/scalar.hpp>
-#include <large_flock/core/parser/scalar.hpp>
-#include <large_flock_extension.hpp>
+#include <flockmtl/common.hpp>
+#include <flockmtl/core/functions/scalar.hpp>
+#include <flockmtl/core/parser/scalar.hpp>
+#include <flockmtl_extension.hpp>
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 
 void CoreScalarParsers::LlmEmbeddingScalarParser(DataChunk &args) {
@@ -24,4 +24,4 @@ void CoreScalarParsers::LlmEmbeddingScalarParser(DataChunk &args) {
 }
 
 } // namespace core
-} // namespace large_flock
+} // namespace flockmtl

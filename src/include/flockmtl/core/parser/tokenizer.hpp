@@ -1,5 +1,5 @@
-#ifndef LF_TOKENIZER_HPP
-#define LF_TOKENIZER_HPP
+#ifndef TOKENIZER_HPP
+#define TOKENIZER_HPP
 
 #include <string>
 
@@ -35,4 +35,4 @@ private:
 // Utility function to convert TokenType to string
 std::string TokenTypeToString(TokenType type);
 
-#endif // LF_TOKENIZER_HPP
+#endif // TOKENIZER_HPP

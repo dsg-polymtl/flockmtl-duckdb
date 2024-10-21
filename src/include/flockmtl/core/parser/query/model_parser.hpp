@@ -1,14 +1,14 @@
 #pragma once
 
-#include "large_flock/common.hpp"
-#include "large_flock/core/parser/lf_tokenizer.hpp"
-#include "large_flock/core/parser/query_statements.hpp"
+#include "flockmtl/common.hpp"
+#include "flockmtl/core/parser/query_statements.hpp"
+#include "flockmtl/core/parser/tokenizer.hpp"
 
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
 
@@ -56,7 +56,7 @@ public:
     }
 };
 
-class LfModelParser {
+class ModelParser {
 public:
     void Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement);
     std::string ToSQL(const QueryStatement &statement) const;
@@ -69,4 +69,4 @@ private:
 };
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

@@ -1,11 +1,11 @@
-#include <large_flock/common.hpp>
-#include <large_flock/core/functions/scalar.hpp>
-#include <large_flock/core/model_manager/model_manager.hpp>
-#include <large_flock/core/parser/llm_response.hpp>
-#include <large_flock/core/parser/scalar.hpp>
-#include <large_flock_extension.hpp>
+#include <flockmtl/common.hpp>
+#include <flockmtl/core/functions/scalar.hpp>
+#include <flockmtl/core/model_manager/model_manager.hpp>
+#include <flockmtl/core/parser/llm_response.hpp>
+#include <flockmtl/core/parser/scalar.hpp>
+#include <flockmtl_extension.hpp>
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 
 static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, Vector &result) {
@@ -13,8 +13,9 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
     CoreScalarParsers::LlmEmbeddingScalarParser(args);
 
     auto model = args.data[1].GetValue(0).ToString();
-    auto query_result = con.Query(
-        "SELECT model, max_tokens FROM lf_config.LARGE_FLOCK_MODEL_INTERNAL_TABLE WHERE model_name = '" + model + "'");
+    auto query_result =
+        con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
+                  model + "'");
 
     if (query_result->RowCount() == 0) {
         throw std::runtime_error("Model not found");
@@ -49,4 +50,4 @@ void CoreScalarFunctions::RegisterLlmEmbeddingScalarFunction(DatabaseInstance &d
 }
 
 } // namespace core
-} // namespace large_flock
+} // namespace flockmtl

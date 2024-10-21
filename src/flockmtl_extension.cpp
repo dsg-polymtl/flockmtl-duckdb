@@ -1,17 +1,26 @@
 #define DUCKDB_EXTENSION_MAIN
 
-#include "large_flock_extension.hpp"
+#include "flockmtl_extension.hpp"
 
 #include "duckdb/parser/parser.hpp"
 #include "duckdb/parser/statement/extension_statement.hpp"
-#include "large_flock/common.hpp"
-#include "large_flock/core/module.hpp"
-#include "large_flock/core/parser/lf_query_parser.hpp"
+#include "flockmtl/common.hpp"
+#include "flockmtl/core/module.hpp"
+#include "flockmtl/core/parser/query_parser.hpp"
+
+#include <flockmtl/core/model_manager/model_manager.hpp>
 
 namespace duckdb {
 
 static void LoadInternal(DatabaseInstance &instance) {
-    large_flock::core::CoreModule::Register(instance);
+    const auto *key = std::getenv("OPENAI_API_KEY");
+    if (!key)
+        throw std::runtime_error("FLOCKMTL EXTENSION ERROR: To load and use the extension, an OpenAI API key needs to "
+                                 "be defined as an env variable: OPENAI_API_KEY");
+
+    flockmtl::core::ModelManager::OPENAI_API_KEY = key;
+
+    flockmtl::core::CoreModule::Register(instance);
 
     // Register the custom parser
     auto &config = DBConfig::GetConfig(instance);
@@ -21,10 +30,10 @@ static void LoadInternal(DatabaseInstance &instance) {
 }
 
 ParserExtensionParseResult duck_parse(ParserExtensionInfo *, const std::string &query) {
-    large_flock::core::LfQueryParser lf_query_parser;
+    flockmtl::core::QueryParser query_parser;
 
     // Translate and print SQL queries for each input query
-    std::string sql_query = lf_query_parser.ParseQuery(query);
+    std::string sql_query = query_parser.ParseQuery(query);
 
     // Parse and return the statement using DuckDB's parser
     Parser parser;
@@ -67,16 +76,16 @@ BoundStatement duck_bind(ClientContext &context, Binder &binder, OperatorExtensi
     }
 }
 
-void LargeFlockExtension::Load(DuckDB &db) {
+void FlockmtlExtension::Load(DuckDB &db) {
     LoadInternal(*db.instance);
 }
 
-std::string LargeFlockExtension::Name() {
-    return "large_flock";
+std::string FlockmtlExtension::Name() {
+    return "flockmtl";
 }
-std::string LargeFlockExtension::Version() const {
-#ifdef EXT_VERSION_LARGE_FLOCK
-    return EXT_VERSION_LARGE_FLOCK;
+std::string FlockmtlExtension::Version() const {
+#ifdef EXT_VERSION_FLOCKMTL
+    return EXT_VERSION_FLOCKMTL;
 #else
     return "";
 #endif
@@ -86,12 +95,12 @@ std::string LargeFlockExtension::Version() const {
 
 extern "C" {
 
-DUCKDB_EXTENSION_API void large_flock_init(DatabaseInstance &db) {
+DUCKDB_EXTENSION_API void flockmtl_init(DatabaseInstance &db) {
     duckdb::DuckDB db_wrapper(db);
-    db_wrapper.LoadExtension<duckdb::LargeFlockExtension>();
+    db_wrapper.LoadExtension<duckdb::FlockmtlExtension>();
 }
 
-DUCKDB_EXTENSION_API const char *large_flock_version() {
+DUCKDB_EXTENSION_API const char *flockmtl_version() {
     return duckdb::DuckDB::LibraryVersion();
 }
 }

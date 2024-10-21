@@ -1,14 +1,14 @@
-#include "large_flock/core/parser/query/lf_prompt_parser.hpp"
+#include "flockmtl/core/parser/query/prompt_parser.hpp"
 
-#include "large_flock/common.hpp"
+#include "flockmtl/common.hpp"
 
 #include <sstream>
 #include <stdexcept>
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
-void LfPromptParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
+void PromptParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
@@ -30,7 +30,7 @@ void LfPromptParser::Parse(const std::string &query, std::unique_ptr<QueryStatem
     }
 }
 
-void LfPromptParser::ParseCreatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void PromptParser::ParseCreatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
@@ -75,7 +75,7 @@ void LfPromptParser::ParseCreatePrompt(Tokenizer &tokenizer, std::unique_ptr<Que
     }
 }
 
-void LfPromptParser::ParseDeletePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void PromptParser::ParseDeletePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
@@ -98,7 +98,7 @@ void LfPromptParser::ParseDeletePrompt(Tokenizer &tokenizer, std::unique_ptr<Que
     }
 }
 
-void LfPromptParser::ParseUpdatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void PromptParser::ParseUpdatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
@@ -143,10 +143,10 @@ void LfPromptParser::ParseUpdatePrompt(Tokenizer &tokenizer, std::unique_ptr<Que
     }
 }
 
-void LfPromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void PromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
-    if (token.type != TokenType::KEYWORD || value != "PROMPT") {
+    if (token.type != TokenType::KEYWORD || (value != "PROMPT" && value != "PROMPTS")) {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
@@ -171,36 +171,36 @@ void LfPromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QueryS
     }
 }
 
-std::string LfPromptParser::ToSQL(const QueryStatement &statement) const {
+std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     std::ostringstream sql;
 
     switch (statement.type) {
     case StatementType::CREATE_PROMPT: {
         const auto &create_stmt = static_cast<const CreatePromptStatement &>(statement);
-        sql << "INSERT INTO lf_config.LARGE_FLOCK_PROMPT_INTERNAL_TABLE(prompt_name, prompt) VALUES ('"
+        sql << "INSERT INTO flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE(prompt_name, prompt) VALUES ('"
             << create_stmt.prompt_name << "', '" << create_stmt.prompt << "');";
         break;
     }
     case StatementType::DELETE_PROMPT: {
         const auto &delete_stmt = static_cast<const DeletePromptStatement &>(statement);
-        sql << "DELETE FROM lf_config.LARGE_FLOCK_PROMPT_INTERNAL_TABLE WHERE prompt_name = '"
+        sql << "DELETE FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '"
             << delete_stmt.prompt_name << "';";
         break;
     }
     case StatementType::UPDATE_PROMPT: {
         const auto &update_stmt = static_cast<const UpdatePromptStatement &>(statement);
-        sql << "UPDATE lf_config.LARGE_FLOCK_PROMPT_INTERNAL_TABLE SET prompt = '" << update_stmt.new_prompt
+        sql << "UPDATE flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE SET prompt = '" << update_stmt.new_prompt
             << "' WHERE prompt_name = '" << update_stmt.prompt_name << "';";
         break;
     }
     case StatementType::GET_PROMPT: {
         const auto &get_stmt = static_cast<const GetPromptStatement &>(statement);
-        sql << "SELECT * FROM lf_config.LARGE_FLOCK_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" << get_stmt.prompt_name
-            << "';";
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '"
+            << get_stmt.prompt_name << "';";
         break;
     }
     case StatementType::GET_ALL_PROMPT: {
-        sql << "SELECT * FROM lf_config.LARGE_FLOCK_PROMPT_INTERNAL_TABLE;";
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE;";
         break;
     }
     default:
@@ -212,4 +212,4 @@ std::string LfPromptParser::ToSQL(const QueryStatement &statement) const {
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl

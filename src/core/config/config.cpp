@@ -1,12 +1,12 @@
-#include "large_flock/core/config/lf_config.hpp"
+#include "flockmtl/core/config/config.hpp"
 
 #include <iostream>
 
-namespace large_flock {
+namespace flockmtl {
 namespace core {
 
-void LfConfig::Configure(duckdb::DatabaseInstance &db) {
-    std::string schema = "lf_config";
+void Config::Configure(duckdb::DatabaseInstance &db) {
+    std::string schema = "flockmtl_config";
     duckdb::Connection con(db);
     con.BeginTransaction();
 
@@ -17,7 +17,7 @@ void LfConfig::Configure(duckdb::DatabaseInstance &db) {
     con.Commit();
 }
 
-void LfConfig::ConfigSchema(duckdb::Connection &con, std::string &schema_name) {
+void Config::ConfigSchema(duckdb::Connection &con, std::string &schema_name) {
 
     // Ensure schema exists
     auto result = con.Query("SELECT * FROM information_schema.schemata WHERE schema_name = '" + schema_name + "';");
@@ -26,8 +26,8 @@ void LfConfig::ConfigSchema(duckdb::Connection &con, std::string &schema_name) {
     }
 }
 
-void LfConfig::ConfigModelTable(duckdb::Connection &con, std::string &schema_name) {
-    const std::string table_name = "LARGE_FLOCK_MODEL_INTERNAL_TABLE";
+void Config::ConfigModelTable(duckdb::Connection &con, std::string &schema_name) {
+    const std::string table_name = "FLOCKMTL_MODEL_INTERNAL_TABLE";
 
     // Ensure schema exists
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
@@ -41,12 +41,15 @@ void LfConfig::ConfigModelTable(duckdb::Connection &con, std::string &schema_nam
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
-                  " (model_name, model, max_tokens) VALUES ('default', 'gpt-3.5-turbo', 4096);");
+                  " (model_name, model, max_tokens) VALUES "
+                  "('default', 'gpt-4o-mini', 128000),"
+                  "('gpt-4o-mini', 'gpt-4o-mini', 128000),"
+                  "('gpt-4o', 'gpt-4o', 128000)");
     }
 }
 
-void LfConfig::ConfigPromptTable(duckdb::Connection &con, std::string &schema_name) {
-    const std::string table_name = "LARGE_FLOCK_PROMPT_INTERNAL_TABLE";
+void Config::ConfigPromptTable(duckdb::Connection &con, std::string &schema_name) {
+    const std::string table_name = "FLOCKMTL_PROMPT_INTERNAL_TABLE";
 
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
                             "' AND table_name = '" + table_name + "';");
@@ -58,9 +61,9 @@ void LfConfig::ConfigPromptTable(duckdb::Connection &con, std::string &schema_na
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
-                  " (prompt_name ,prompt) VALUES ('summarize', 'Summarize the following text: {{text}}');");
+                  " (prompt_name ,prompt) VALUES ('hello-world', 'Tell me hello world');");
     }
 }
 
 } // namespace core
-} // namespace large_flock
+} // namespace flockmtl

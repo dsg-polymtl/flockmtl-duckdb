@@ -1,7 +1,7 @@
 #pragma once
-#include "large_flock/common.hpp"
+#include "flockmtl/common.hpp"
 
-namespace large_flock {
+namespace flockmtl {
 
 namespace core {
 
@@ -22,4 +22,4 @@ private:
 
 } // namespace core
 
-} // namespace large_flock
+} // namespace flockmtl
