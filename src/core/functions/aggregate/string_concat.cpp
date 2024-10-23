@@ -14,11 +14,11 @@ namespace core {
 struct StringConcatState {
 public:
     bool isInitialized;
-    string_t value;
+    Value value;
 
     void Initialize() {
         this->isInitialized = false;
-        this->value = string_t();
+        this->value = Value("");
     }
 
     void Combine(const StringConcatState &source) {
@@ -28,8 +28,8 @@ public:
             this->value = source.value;
             this->isInitialized = true;
         } else {
-            auto combined = this->value.GetString() + " " + source.value.GetString();
-            this->value = string_t(combined);
+            auto combined = this->value.ToString() + " " + source.value.ToString();
+            this->value = Value(combined);
         }
     }
 };
@@ -54,20 +54,14 @@ struct StringConcatOperation {
             return;
         }
 
-        auto input_str = input.GetString();
+        std::string input_str = input.GetString();
 
         if (!state.isInitialized) {
-            state.value = string_t(input_str);
+            state.value = Value(input_str);
             state.isInitialized = true;
         } else {
-            std::string combined;
-            if (state.value.Empty()) {
-                combined = input_str;
-            } else {
-                auto current_value = state.value.GetString();
-                combined = current_value + " " + input_str;
-            };
-            state.value = string_t(combined);
+            std::string combined = state.value.ToString() + " " + input_str;
+            state.value = Value(combined);
         }
     }
 
@@ -79,7 +73,8 @@ struct StringConcatOperation {
     template <class TARGET_TYPE, class STATE>
     static void Finalize(STATE &state, TARGET_TYPE &target, AggregateFinalizeData &finalize_data) {
         if (state.isInitialized) {
-            finalize_data.result.SetValue(finalize_data.result_idx, Value(state.value.GetString().substr(5)));
+            std::string final_string = state.value.ToString();
+            finalize_data.result.SetValue(finalize_data.result_idx, Value(final_string));
         } else {
             target = "";
         }
