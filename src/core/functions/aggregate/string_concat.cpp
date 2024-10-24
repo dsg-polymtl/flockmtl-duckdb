@@ -1,12 +1,6 @@
-#include "duckdb.hpp"
-#include "duckdb/common/types/string_type.hpp"
-#include "duckdb/function/function_set.hpp"
-#include "duckdb/planner/expression.hpp"
-
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/aggregate.hpp>
 #include <iostream>
-#include <memory>
 
 namespace flockmtl {
 namespace core {
@@ -18,7 +12,6 @@ public:
 
     void Initialize() {
         this->isInitialized = false;
-        this->value = Value("");
     }
 
     void Combine(const StringConcatState &source) {
@@ -28,8 +21,8 @@ public:
             this->value = source.value;
             this->isInitialized = true;
         } else {
-            auto combined = this->value.ToString() + " " + source.value.ToString();
-            this->value = Value(combined);
+            auto combined = source.value.ToString();
+            this->value = source.value;
         }
     }
 };
@@ -57,8 +50,8 @@ struct StringConcatOperation {
         std::string input_str = input.GetString();
 
         if (!state.isInitialized) {
-            state.value = Value(input_str);
             state.isInitialized = true;
+            state.value = Value(input);
         } else {
             std::string combined = state.value.ToString() + " " + input_str;
             state.value = Value(combined);
@@ -73,11 +66,14 @@ struct StringConcatOperation {
     template <class TARGET_TYPE, class STATE>
     static void Finalize(STATE &state, TARGET_TYPE &target, AggregateFinalizeData &finalize_data) {
         if (state.isInitialized) {
-            std::string final_string = state.value.ToString();
-            finalize_data.result.SetValue(finalize_data.result_idx, Value(final_string));
-        } else {
-            target = "";
+            finalize_data.result.SetValue(finalize_data.result_idx, state.value.ToString());
+            state.Initialize();
         }
+    }
+
+    template <class STATE>
+    static void SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, data_ptr_t state,
+                             idx_t count) {
     }
 
     static bool IgnoreNull() {
@@ -87,13 +83,12 @@ struct StringConcatOperation {
 
 void CoreAggregateFunctions::RegisterStringConcatFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "string_concat", {LogicalType::VARCHAR}, LogicalType::VARCHAR, AggregateFunction::StateSize<StringConcatState>,
+        "string_concat", {LogicalType::VARCHAR}, LogicalType::JSON(), AggregateFunction::StateSize<StringConcatState>,
         AggregateFunction::StateInitialize<StringConcatState, StringConcatOperation>,
         AggregateFunction::UnaryScatterUpdate<StringConcatState, string_t, StringConcatOperation>,
         AggregateFunction::StateCombine<StringConcatState, StringConcatOperation>,
         AggregateFunction::StateFinalize<StringConcatState, string_t, StringConcatOperation>,
-        FunctionNullHandling::DEFAULT_NULL_HANDLING,
-        AggregateFunction::UnaryUpdate<StringConcatState, string_t, StringConcatOperation>);
+        FunctionNullHandling::DEFAULT_NULL_HANDLING, StringConcatOperation::SimpleUpdate<StringConcatState>);
 
     ExtensionUtil::RegisterFunction(db, string_concat);
 }
