@@ -7,18 +7,13 @@ namespace flockmtl {
 namespace core {
 
 std::string ModelManager::OPENAI_API_KEY = "";
+static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-4o-mini"};
+static const std::unordered_set<std::string> supported_vendors = {"openai", "azure"};
+static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small", "text-embedding-3-large"};
 
-nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::string &model,
-                                          const nlohmann::json &settings, const bool json_response) {
-    // List of supported models
-    static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-4o-mini"};
 
-    // Check if the provided model is in the list of supported models
-    if (supported_models.find(model) == supported_models.end()) {
-        throw std::invalid_argument("Model '" + model +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "gpt-4o, gpt-4o-mini.");
-    }
+nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const std::string &model,
+                                                const nlohmann::json &settings, const bool json_response) {
 
     openai::start(ModelManager::OPENAI_API_KEY);
 
@@ -86,18 +81,54 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
     return content_str;
 }
 
-nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::string &model) {
-    // List of supported models
-    static const std::unordered_set<std::string> supported_models = {"text-embedding-3-small",
-                                                                     "text-embedding-3-large"};
+nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const std::string &model,
+                                                const nlohmann::json &settings, const bool json_response) {
+    nlohmann::json json_obj;
+    return json_obj;
+}
+
+
+nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::string &model,
+                                          const nlohmann::json &settings, const bool json_response) {
 
     // Check if the provided model is in the list of supported models
     if (supported_models.find(model) == supported_models.end()) {
         throw std::invalid_argument("Model '" + model +
                                     "' is not supported. Please choose one from the supported list: "
-                                    "text-embedding-3-small, text-embedding-3-large.");
+                                    "gpt-4o, gpt-4o-mini.");
     }
 
+    return OpenAICallComplete(prompt, model, settings, json_response);
+
+}
+
+nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::string &model,
+                                          const std::string &provider, const std::string &settings,
+                                          const bool json_response = true){
+
+    // Check if the provided model is in the list of supported models
+    if (supported_models.find(model) == supported_models.end()) {
+        throw std::invalid_argument("Model '" + model +
+                                "' is not supported. Please choose one from the supported list: "
+                                "gpt-4o, gpt-4o-mini.");
+    }
+
+    // Check if the provider is in the list of supported provider
+    if (supported_vendors.find(model) == supported_vendors.end()) {
+        throw std::invalid_argument("Provider '" + provider +
+                                "' is not supported. Please choose one from the supported list: "
+                                "openai/default, azure");
+    }
+
+    if (provider == "openai" or provider == "default") {
+        return OpenAICallComplete(prompt, model, settings, json_response);s
+    }
+    else{
+        return AzureCallComplete ();
+    }
+}
+
+nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const std::string &model) {
     // Get API key from the environment variable
     const char *key = std::getenv("OPENAI_API_KEY");
     if (!key) {
@@ -127,6 +158,51 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::
     auto embedding = completion["data"][0]["embedding"];
 
     return embedding;
+}
+
+
+nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const std::string &model) {
+    nlohmann::json json_obj;
+    return json_obj;
+}
+
+
+nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::string &model) {
+
+    // Check if the provided model is in the list of supported models
+    if (supported_embedding_models.find(model) == supported_embedding_models.end()) {
+        throw std::invalid_argument("Model '" + model +
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "text-embedding-3-small, text-embedding-3-large.");
+    }
+
+    return OpenAICallEmbedding(input, model);
+}
+
+nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::string &model, const std::string &provider) {
+
+    // Check if the provided model is in the list of supported models
+    if (supported_embedding_models.find(model) == supported_embedding_models.end()) {
+        throw std::invalid_argument("Model '" + model +
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "text-embedding-3-small, text-embedding-3-large.");
+    }
+
+    // Check if the provider is in the list of supported provider
+    if (supported_vendors.find(model) == supported_vendors.end()) {
+        throw std::invalid_argument("Provider '" + provider +
+                                "' is not supported. Please choose one from the supported list: "
+                                "openai/default, azure");
+    }
+
+    if (provider == "openai" or provider == "default") {
+        return OpenAICallEmbedding(input, model);
+    }
+    else{
+        return AzureCallEmbedding (input, model);
+    }
+
+
 }
 
 } // namespace core

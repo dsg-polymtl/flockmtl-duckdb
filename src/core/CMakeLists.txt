@@ -4,5 +4,7 @@ add_subdirectory(parser)
 add_subdirectory(config)
 
 set(EXTENSION_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp ${EXTENSION_SOURCES}
-    PARENT_SCOPE)
+        ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/utils.cpp
+        ${EXTENSION_SOURCES}
+        PARENT_SCOPE)
