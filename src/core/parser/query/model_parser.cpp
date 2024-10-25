@@ -135,12 +135,13 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 
     token = tokenizer.NextToken();
-    if (token.type == TokenType::SYMBOL || token.value == ";") {
+    if (token.type == TokenType::END_OF_FILE) {
         auto delete_statement = std::make_unique<DeleteModelStatement>();
         delete_statement->model_name = model_name;
         delete_statement->vendor = vendor;
         statement = std::move(delete_statement);
     } else {
+                std::cout << "DELETE LAST TOKEN << " << token.value << "\n";
         throw std::runtime_error("Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
     }
 }
@@ -233,7 +234,7 @@ void ModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryState
         std::string model_name = token.value;
 
         token = tokenizer.NextToken();
-        if (token.type == TokenType::SYMBOL || token.value == ";") {
+        if (token.type == TokenType::END_OF_FILE) {
             auto get_statement = std::make_unique<GetModelStatement>();
             get_statement->model_name = model_name;
             statement = std::move(get_statement);
@@ -250,7 +251,7 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::CREATE_MODEL: {
         const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
         sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, vendor_name, max_tokens) VALUES ('"
-            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create.stmt.vendor <<  "', '" << create_stmt.max_tokens << "');";
+            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.vendor <<  "', '" << create_stmt.max_tokens << "');";
         break;
     }
     case StatementType::DELETE_MODEL: {
@@ -271,16 +272,18 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::GET_MODEL: {
         const auto &get_stmt = static_cast<const GetModelStatement &>(statement);
         sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name << "'"
-            << "UNION ALL ";
+            << " UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name << "'"
             << ";";
+        std::cout << sql.str() << std::endl;
         break;
     }
 
     case StatementType::GET_ALL_MODEL: {
         sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE"
-            << "UNION ALL "
+            << " UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;";
+                std::cout << sql.str() << std::endl;
         break;
     }
     default:

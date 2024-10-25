@@ -50,7 +50,7 @@ void Config::setup_default_models_config (duckdb::Connection &con, std::string &
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
-                  " (model_name, model, max_tokens) VALUES "
+                  " (model_name, model, vendor_name, max_tokens) VALUES "
                   "('default', 'gpt-4o-mini', 'openai', 128000),"
                   "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000),"
                   "('gpt-4o', 'gpt-4o', 'openai', 128000)");
