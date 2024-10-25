@@ -45,14 +45,15 @@ void Config::setup_default_models_config (duckdb::Connection &con, std::string &
                   " ("
                   "model_name VARCHAR NOT NULL PRIMARY KEY,"
                   "model VARCHAR,"
+                  "vendor_name VARCHAR NOT NULL,"
                   "max_tokens INTEGER NOT NULL"
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
                   " (model_name, model, max_tokens) VALUES "
-                  "('default', 'gpt-4o-mini', 128000),"
-                  "('gpt-4o-mini', 'gpt-4o-mini', 128000),"
-                  "('gpt-4o', 'gpt-4o', 128000)");
+                  "('default', 'gpt-4o-mini', 'openai', 128000),"
+                  "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000),"
+                  "('gpt-4o', 'gpt-4o', 'openai', 128000)");
     }
 }
 
@@ -66,9 +67,9 @@ void Config::setup_user_defined_models_config (duckdb::Connection &con, std::str
                   " ("
                   "model_name VARCHAR NOT NULL,"
                   "model VARCHAR,"
-                  "provider_name VARCHAR NOT NULL,"
+                  "vendor_name VARCHAR NOT NULL,"
                   "max_tokens INTEGER NOT NULL,"
-                  "PRIMARY KEY (model_name, provider_name)"
+                  "PRIMARY KEY (model_name, vendor_name)"
                    ");");
     }
 }

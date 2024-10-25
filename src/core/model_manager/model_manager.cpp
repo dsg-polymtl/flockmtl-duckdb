@@ -104,7 +104,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
 
 nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::string &model,
                                           const std::string &provider, const std::string &settings,
-                                          const bool json_response = true){
+                                          const bool json_response) {
 
     // Check if the provided model is in the list of supported models
     if (supported_models.find(model) == supported_models.end()) {
@@ -121,10 +121,10 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
     }
 
     if (provider == "openai" or provider == "default") {
-        return OpenAICallComplete(prompt, model, settings, json_response);s
+        return OpenAICallComplete(prompt, model, settings, json_response);
     }
     else{
-        return AzureCallComplete ();
+        return AzureCallComplete (prompt, model, settings, json_response);
     }
 }
 
