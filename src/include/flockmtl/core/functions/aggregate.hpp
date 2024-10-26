@@ -7,11 +7,11 @@ namespace core {
 
 struct CoreAggregateFunctions {
     static void Register(DatabaseInstance &db) {
-        RegisterStringConcatFunction(db);
+        RegisterLlmMaxFunction(db);
     }
 
 private:
-    static void RegisterStringConcatFunction(DatabaseInstance &db);
+    static void RegisterLlmMaxFunction(DatabaseInstance &db);
 };
 
 } // namespace core
