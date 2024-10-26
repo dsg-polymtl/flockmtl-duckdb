@@ -49,8 +49,12 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
     }
 
     // Make a request to the OpenAI API
-    auto completion = openai::chat().create(request_payload);
-
+    nlohmann::json completion;
+    try {
+        completion = openai::chat().create(request_payload);
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Error in making request to OpenAI API: " + std::string(e.what()));
+    }
     // Check if the conversation was too long for the context window
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long

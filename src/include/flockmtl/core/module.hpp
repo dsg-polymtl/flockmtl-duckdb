@@ -7,6 +7,7 @@ namespace core {
 
 struct CoreModule {
 public:
+    static Connection &GetConnection(DatabaseInstance *db = nullptr);
     static void Register(DatabaseInstance &db);
     static void EnsureTableExists(duckdb::Connection &con);
 };
