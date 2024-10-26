@@ -4,20 +4,6 @@
 namespace flockmtl {
 namespace core {
 
-std::vector<nlohmann::json> StructToJson(Vector &struct_vector, int size) {
-    vector<nlohmann::json> vector_json;
-    for (auto i = 0; i < size; i++) {
-        nlohmann::json json;
-        for (auto j = 0; j < StructType::GetChildCount(struct_vector.GetType()); j++) {
-            auto key = StructType::GetChildName(struct_vector.GetType(), j);
-            auto value = StructValue::GetChildren(struct_vector.GetValue(i))[j].ToString();
-            json[key] = value;
-        }
-        vector_json.push_back(json);
-    }
-    return vector_json;
-}
-
 nlohmann::json GetMaxLengthValues(const std::vector<nlohmann::json> &params) {
     nlohmann::json attr_to_max_token_length;
 
