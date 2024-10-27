@@ -4,8 +4,17 @@ namespace flockmtl {
 namespace core {
 
 const std::string provider_key = "provider";
-bool is_provider_settings_available (const nlohmann::json& json){
-    return json.size() == 1 and json.begin().key() == provider_key and !json[provider_key].empty();
+
+static bool helper (const nlohmann::json& json, std::string& provider_name){
+    if (json.contains(provider_key)) {
+        provider_name = json.at(provider_key).get<std::string>();
+        return true;
+    }
+    return false;
+}
+
+bool get_provider_name_from_settings(const nlohmann::json& json, std::string& provider_name) {
+    return helper (json, provider_name);
 }
 
 } // namespace core

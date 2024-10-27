@@ -13,6 +13,8 @@
 #include <sstream>
 #include <string>
 #include <templates/llm_complete_json_prompt_template.hpp>
+#include <flockmtl/core/utils.hpp>
+
 
 namespace flockmtl {
 namespace core {
@@ -21,13 +23,27 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmCompleteJsonScalarParser(args);
 
+    nlohmann::json settings;
+    if (args.ColumnCount() == 4) {
+        settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
+    }
+
+    std::string provider_name = "";
+    bool provider_available = get_provider_name_from_settings (settings, provider_name);
+
     auto model = args.data[1].GetValue(0).ToString();
-    auto query_result =
-        con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
-                  model + "'");
+    auto query_result = provider_available ? con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
+                                                         model + "'" + " AND provider_name = '" + provider_name + "'") :
+                                           con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
+                                                         model + "'");
 
     if (query_result->RowCount() == 0) {
-        throw std::runtime_error("Model not found");
+        query_result = con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
+                  model + "'");
+
+        if (query_result->RowCount() == 0) {
+            throw std::runtime_error("Model not found");
+        }
     }
 
     auto model_name = query_result->GetValue(0, 0).ToString();
@@ -43,7 +59,6 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
         }
 
         auto template_str = query_result->GetValue(0, 0).ToString() + "\nThe Ouput should be in JSON format.";
-        nlohmann::json settings;
         auto response = ModelManager::CallComplete(template_str, model_name, settings);
 
         result.SetValue(0, response.dump());
@@ -53,15 +68,11 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
         auto prompts = ConstructPrompts(tuples, con, args.data[0].GetValue(0).ToString(),
                                         llm_complete_json_prompt_template, model_max_tokens);
 
-        nlohmann::json settings;
-        if (args.ColumnCount() == 4) {
-            settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
-        }
-
         auto responses = nlohmann::json::array();
         for (const auto &prompt : prompts) {
             // Call ModelManager::CallComplete and get the rows
-            auto response = ModelManager::CallComplete(prompt, model_name, settings);
+            auto response = provider_available ? ModelManager::CallComplete(prompt, model_name, provider_name, settings) :
+                                               ModelManager::CallComplete(prompt, model_name, settings);
 
             // Check if the result contains the 'rows' field and push it to the main 'rows'
             if (response.contains("rows")) {

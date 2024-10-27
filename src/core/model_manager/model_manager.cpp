@@ -8,7 +8,7 @@ namespace core {
 
 std::string ModelManager::OPENAI_API_KEY = "";
 static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-4o-mini"};
-static const std::unordered_set<std::string> supported_vendors = {"openai", "azure"};
+static const std::unordered_set<std::string> supported_providers = {"openai", "azure"};
 static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small", "text-embedding-3-large"};
 
 
@@ -26,6 +26,8 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
                 max_tokens = std::stoi(static_cast<std::string>(value));
             } else if (key == "temperature") {
                 temperature = std::stof(static_cast<std::string>(value));
+            } else if (key == "provider") {
+                ;
             } else {
                 throw std::invalid_argument("Invalid setting key: " + key);
             }
@@ -114,7 +116,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
     }
 
     // Check if the provider is in the list of supported provider
-    if (supported_vendors.find(model) == supported_vendors.end()) {
+    if (supported_providers.find(model) == supported_providers.end()) {
         throw std::invalid_argument("Provider '" + provider +
                                 "' is not supported. Please choose one from the supported list: "
                                 "openai/default, azure");
@@ -189,7 +191,7 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::
     }
 
     // Check if the provider is in the list of supported provider
-    if (supported_vendors.find(model) == supported_vendors.end()) {
+    if (supported_providers.find(model) == supported_providers.end()) {
         throw std::invalid_argument("Provider '" + provider +
                                 "' is not supported. Please choose one from the supported list: "
                                 "openai/default, azure");

@@ -24,7 +24,7 @@ std::string QueryParser::ParseQuery(const std::string &query) {
         ModelParser model_parser;
         model_parser.Parse(query, statement);
         return model_parser.ToSQL(*statement);
-    } else if (token.type == TokenType::KEYWORD && (value == "PROMPT" || value == "PROMPTS")) {
+    } else if (token.type == TokenType::KEYWORD && ((value == "PROMPT" || value == "PROMPTS"))) {
         PromptParser prompt_parser;
         prompt_parser.Parse(query, statement);
         return prompt_parser.ToSQL(*statement);

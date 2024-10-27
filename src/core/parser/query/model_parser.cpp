@@ -66,13 +66,13 @@ void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
-        throw std::runtime_error("Expected non-empty string literal for vendor_name.");
+        throw std::runtime_error("Expected non-empty string literal for provider_name.");
     }
-    std::string vendor = token.value;
+    std::string provider_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
-        throw std::runtime_error("Expected comma ',' after vendor_name.");
+        throw std::runtime_error("Expected comma ',' after provider_name.");
     }
 
     token = tokenizer.NextToken();
@@ -91,7 +91,7 @@ void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         auto create_statement = std::make_unique<CreateModelStatement>();
         create_statement->model_name = model_name;
         create_statement->model = model;
-        create_statement->vendor = vendor;
+        create_statement->provider_name = provider_name;
         create_statement->max_tokens = max_tokens;
         statement = std::move(create_statement);
     } else {
@@ -124,21 +124,21 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
-        throw std::runtime_error("Expected non-empty string literal for vendor_name.");
+        throw std::runtime_error("Expected non-empty string literal for provider_name.");
     }
-    std::string vendor = token.value;
+    std::string provider_name = token.value;
 
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::PARENTHESIS || token.value != ")") {
-        throw std::runtime_error("Expected closing parenthesis ')' after vendor_name.");
+        throw std::runtime_error("Expected closing parenthesis ')' after provider_name.");
     }
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
         auto delete_statement = std::make_unique<DeleteModelStatement>();
         delete_statement->model_name = model_name;
-        delete_statement->vendor = vendor;
+        delete_statement->provider_name = provider_name;
         statement = std::move(delete_statement);
     } else {
                 std::cout << "DELETE LAST TOKEN << " << token.value << "\n";
@@ -182,13 +182,13 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
-        throw std::runtime_error("Expected non-empty string literal for vendor_name.");
+        throw std::runtime_error("Expected non-empty string literal for provider_name.");
     }
-    std::string vendor = token.value;
+    std::string provider_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
-        throw std::runtime_error("Expected comma ',' after vendor_name.");
+        throw std::runtime_error("Expected comma ',' after provider_name.");
     }
 
 
@@ -208,7 +208,7 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         auto update_statement = std::make_unique<UpdateModelStatement>();
         update_statement->new_model = new_model;
         update_statement->model_name = model_name;
-        update_statement->vendor = vendor;
+        update_statement->provider_name = provider_name;
         update_statement->new_max_tokens = new_max_tokens;
         statement = std::move(update_statement);
     } else {
@@ -250,14 +250,14 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     switch (statement.type) {
     case StatementType::CREATE_MODEL: {
         const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
-        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, vendor_name, max_tokens) VALUES ('"
-            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.vendor <<  "', '" << create_stmt.max_tokens << "');";
+        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, provider_name, max_tokens) VALUES ('"
+            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.provider_name <<  "', '" << create_stmt.max_tokens << "');";
         break;
     }
     case StatementType::DELETE_MODEL: {
         const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
         sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << delete_stmt.model_name << "'" << "AND vendor_name = '" << delete_stmt.vendor << "';";
+            << delete_stmt.model_name << "'" << "AND provider_name = '" << delete_stmt.provider_name << "';";
         break;
     }
     case StatementType::UPDATE_MODEL: {
@@ -266,7 +266,7 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
             << "max_tokens = " << update_stmt.new_max_tokens << ", "
             << "model = '" << update_stmt.new_model << "' "
             << "WHERE model_name = '" << update_stmt.model_name << "'"
-            << "AND vendor_name = '" << update_stmt.vendor << "';";
+            << "AND provider_name = '" << update_stmt.provider_name << "';";
         break;
     }
     case StatementType::GET_MODEL: {

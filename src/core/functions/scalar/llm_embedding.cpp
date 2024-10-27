@@ -4,6 +4,8 @@
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>
+#include <flockmtl/core/utils.hpp>
+
 
 namespace flockmtl {
 namespace core {
@@ -12,13 +14,29 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmEmbeddingScalarParser(args);
 
+    nlohmann::json settings;
+    if (args.ColumnCount() == 3) {
+        settings = CoreScalarParsers::Struct2Json(args.data[2], 1)[0];
+    }
+
+    std::string provider_name = "";
+    bool provider_available = get_provider_name_from_settings (settings, provider_name);
+
+
     auto model = args.data[1].GetValue(0).ToString();
-    auto query_result =
-        con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
-                  model + "'");
+
+    auto query_result = provider_available ? con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
+                                                         model + "'" + " AND provider_name = '" + provider_name + "'") :
+                                           con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
+                                                         model + "'");
 
     if (query_result->RowCount() == 0) {
-        throw std::runtime_error("Model not found");
+        query_result = con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
+                  model + "'");
+
+        if (query_result->RowCount() == 0) {
+            throw std::runtime_error("Model not found");
+        }
     }
 
     auto model_name = query_result->GetValue(0, 0).ToString();
@@ -30,7 +48,8 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
         for (auto &item : row.items()) {
             concat_input += item.value().get<std::string>() + " ";
         }
-        auto element_embedding = ModelManager::CallEmbedding(concat_input, model_name);
+        auto element_embedding = provider_available ? ModelManager::CallEmbedding(concat_input, model_name, provider_name) :
+                                             ModelManager::CallEmbedding(concat_input, model_name);
         embeddings.push_back(element_embedding);
     }
 

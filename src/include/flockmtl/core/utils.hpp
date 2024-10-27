@@ -3,6 +3,6 @@
 
 namespace flockmtl {
 namespace core {
-    bool is_provider_settings_available(const nlohmann::json& json);
+    bool get_provider_name_from_settings(const nlohmann::json& json, std::string& vendor_name);
 }
 }
