@@ -78,6 +78,26 @@ struct LlmMaxOperation {
         }
     }
 
+    static vector<nlohmann::json> LlmAggregate(vector<nlohmann::json> &tuples, std::string model) {
+
+        if (tuples.size() == 1) {
+            return tuples;
+        }
+
+        auto prompts =
+                ConstructPrompts(tuples, CoreModule::GetConnection(), prompt_name, llm_max_prompt_template, 2048);
+
+        vector<nlohmann::json> responses;
+        nlohmann::json settings;
+        for (const auto &prompt : prompts) {
+            auto response = ModelManager::CallComplete(prompt, model, settings);
+            if (response.contains("row")) {
+                responses.push_back(response["row"]);
+            }
+        }
+        return LlmAggregate(responses, model);
+    }
+
     static void Finalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset) {
         auto states_vector = FlatVector::GetData<LlmMaxState *>(states);
@@ -86,9 +106,6 @@ struct LlmMaxOperation {
             auto idx = i + offset;
             auto state_ptr = states_vector[idx];
             auto state = state_map[state_ptr];
-
-            auto prompts =
-                ConstructPrompts(state->value, CoreModule::GetConnection(), prompt_name, llm_max_prompt_template, 2048);
 
             auto query_result = CoreModule::GetConnection().Query(
                 "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
@@ -99,15 +116,9 @@ struct LlmMaxOperation {
             }
 
             auto model = query_result->GetValue(0, 0).ToString();
-            vector<nlohmann::json> responses;
-            nlohmann::json settings;
-            for (const auto &prompt : prompts) {
-                auto response = ModelManager::CallComplete(prompt, model, settings);
-                if (response.contains("row")) {
-                    responses.push_back(response["row"]);
-                }
-            }
-            result.SetValue(idx, responses[0].dump());
+
+            auto response = LlmAggregate(state->value, model)[0];
+            result.SetValue(idx, response.dump());
         }
     }
 
