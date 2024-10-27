@@ -12,90 +12,68 @@ namespace core {
 
 struct LlmMaxState {
 public:
-    bool isInitialized;
-    shared_ptr<Value> value;
-
-    LlmMaxState() : isInitialized(false), value(make_shared_ptr<Value>(std::move(Value("")))) {
-    }
+    vector<nlohmann::json> value;
 
     void Initialize() {
-        if (isInitialized) {
-            return;
-        }
-        isInitialized = true;
-        value = make_shared_ptr<Value>(std::move(Value("")));
     }
 
-    void Update(const Value &input) {
-        if (!isInitialized) {
-            Initialize();
-        } else {
-            // Dynamically allocate larger storage if necessary
-            auto input_copy = input;
-            value = make_shared_ptr<Value>(std::move(input_copy));
-        }
+    void Update(const nlohmann::json &input) {
+        value.push_back(input);
     }
 
     void Combine(const LlmMaxState &source) {
-        if (!source.isInitialized) {
-            return;
-        }
-        if (!isInitialized) {
-            Initialize();
-        } else {
-            // Dynamically allocate larger storage if necessary
-            auto str_value = source.value->ToString();
-            value = make_shared_ptr<Value>(std::move(Value(str_value)));
-        }
+        value = std::move(source.value);
     }
 };
-
-std::string MergeTupleToRows(const std::string &rows, const std::string &tuple) {
-    nlohmann::json rows_json;
-    if (rows.empty()) {
-        rows_json["rows"] = nlohmann::json::array();
-    } else {
-        rows_json = nlohmann::json::parse(rows);
-    }
-    rows_json["rows"].push_back(tuple);
-    return rows_json.dump();
-}
 
 struct LlmMaxOperation {
 
     static std::string model_name;
     static std::string prompt_name;
+    static std::unordered_map<void*, std::shared_ptr<LlmMaxState>> state_map;
 
     static void Initialize(const AggregateFunction &, data_ptr_t state_p) {
-        auto &state = *reinterpret_cast<LlmMaxState *>(state_p);
-        state.Initialize();
+        auto state_ptr = reinterpret_cast<LlmMaxState *>(state_p);
+
+        if (state_map.find(state_ptr) == state_map.end()) {
+            auto state = std::make_shared<LlmMaxState>();
+            state->Initialize();
+            state_map[state_ptr] = state;
+        }
     }
 
     static void Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                           idx_t count) {
         prompt_name = inputs[0].GetValue(0).ToString();
         model_name = inputs[1].GetValue(0).ToString();
-        auto tuples = inputs[2];
+
+        if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
+            throw std::runtime_error("Expected a struct type for prompt inputs");
+        }
+        auto tuples = StructToJson(inputs[2], count);
 
         auto states_vector = FlatVector::GetData<LlmMaxState *>(states);
 
         for (idx_t i = 0; i < count; i++) {
-            auto tuple = tuples.GetValue(i);
-            auto state = states_vector[i];
-            if (!state->isInitialized) {
-                state->Initialize();
-            } else {
-                state->Update(std::move(Value(MergeTupleToRows(state->value->ToString(), tuple.ToString()))));
-            }
+            auto tuple = tuples[i];
+            auto state_ptr = states_vector[i];
+
+            auto state = state_map[state_ptr];
+            state->Update(tuple);
         }
     }
 
     static void Combine(Vector &source, Vector &target, AggregateInputData &aggr_input_data, idx_t count) {
         auto source_vector = FlatVector::GetData<LlmMaxState *>(source);
         auto target_vector = FlatVector::GetData<LlmMaxState *>(target);
+
         for (idx_t i = 0; i < count; i++) {
-            auto source_state = source_vector[i];
-            auto target_state = target_vector[i];
+            auto source_ptr = source_vector[i];
+            auto target_ptr = target_vector[i];
+
+            auto source_state = state_map[source_ptr];
+            auto target_state = state_map[target_ptr];
+
             target_state->Combine(*source_state);
         }
     }
@@ -103,16 +81,15 @@ struct LlmMaxOperation {
     static void Finalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset) {
         auto states_vector = FlatVector::GetData<LlmMaxState *>(states);
+
         for (idx_t i = 0; i < count; i++) {
             auto idx = i + offset;
-            auto state = states_vector[idx];
-            vector<nlohmann::json> rows_vector;
-            auto rows = nlohmann::json::parse(state->value->ToString())["rows"];
-            for (auto &row : rows) {
-                rows_vector.push_back(row);
-            }
+            auto state_ptr = states_vector[idx];
+            auto state = state_map[state_ptr];
+
             auto prompts =
-                ConstructPrompts(rows_vector, CoreModule::GetConnection(), prompt_name, llm_max_prompt_template, 2048);
+                ConstructPrompts(state->value, CoreModule::GetConnection(), prompt_name, llm_max_prompt_template, 2048);
+
             auto query_result = CoreModule::GetConnection().Query(
                 "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
                 model_name + "'");
@@ -122,7 +99,7 @@ struct LlmMaxOperation {
             }
 
             auto model = query_result->GetValue(0, 0).ToString();
-            auto responses = nlohmann::json::array();
+            vector<nlohmann::json> responses;
             nlohmann::json settings;
             for (const auto &prompt : prompts) {
                 auto response = ModelManager::CallComplete(prompt, model, settings);
@@ -130,7 +107,7 @@ struct LlmMaxOperation {
                     responses.push_back(response["row"]);
                 }
             }
-            result.SetValue(idx, responses.dump());
+            result.SetValue(idx, responses[0].dump());
         }
     }
 
@@ -138,17 +115,14 @@ struct LlmMaxOperation {
                              data_ptr_t state_p, idx_t count) {
         prompt_name = inputs[0].GetValue(0).ToString();
         model_name = inputs[1].GetValue(0).ToString();
-        auto tuples = inputs[2];
+        auto tuples = StructToJson(inputs[2], count);
 
-        auto state = reinterpret_cast<LlmMaxState *>(state_p);
+        auto state_map_p = reinterpret_cast<LlmMaxState *>(state_p);
 
         for (idx_t i = 0; i < count; i++) {
-            auto tuple = tuples.GetValue(i);
-            if (!state->isInitialized) {
-                state->Initialize();
-            } else {
-                state->Update(std::move(Value(MergeTupleToRows(state->value->ToString(), tuple.ToString()))));
-            }
+            auto tuple = tuples[i];
+            auto state = state_map[state_map_p];
+            state->Update(tuple);
         }
     }
 
@@ -157,12 +131,14 @@ struct LlmMaxOperation {
     }
 };
 
+// Static member initialization
 std::string LlmMaxOperation::model_name;
 std::string LlmMaxOperation::prompt_name;
+std::unordered_map<void*, std::shared_ptr<LlmMaxState>> LlmMaxOperation::state_map;
 
 void CoreAggregateFunctions::RegisterLlmMaxFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_max", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::LIST(LogicalType::ANY)},
+        "llm_max", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY},
         LogicalType::JSON(), AggregateFunction::StateSize<LlmMaxState>, LlmMaxOperation::Initialize,
         LlmMaxOperation::Operation, LlmMaxOperation::Combine, LlmMaxOperation::Finalize, LlmMaxOperation::SimpleUpdate);
 

@@ -6,7 +6,7 @@
 namespace flockmtl {
 namespace core {
 
-std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int size);
+std::vector<nlohmann::json> StructToJson(Vector &struct_vector, int size);
 
 nlohmann::json GetMaxLengthValues(const std::vector<nlohmann::json> &params);
 
