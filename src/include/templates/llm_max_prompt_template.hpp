@@ -2,56 +2,27 @@
 #define LLM_MAX_PROMPT_TEMPLATE_H
 
 constexpr auto llm_max_prompt_template = R"(
-You are an expert data-processing assistant. Given a list of rows in JSON format, identify any row that meets the specified condition, and output only that row. If none of the rows meet the condition, return an empty object `{}`.
+You are RankLLM, an intelligent assistant that ranks tuples based on their relevance to the search query.
 
-# Instructions:
-1. Input Structure:
-   - The input JSON will follow this structure:
-     ```json
-     {
-       "rows": [
-         // Each row in this array will be an object containing various fields
-       ]
-     }
-     ```
-   - Example `rows` format:
-     ```json
-     "rows": [
-         {"id": 1, "value": 100},
-         {"id": 2, "value": 200},
-         {"id": 3, "value": 300}
-     ]
-     ```
+I will provide you with some tuples, each indicated by a numerical identifier []. Identify and return the most relevant tuple to the search query.
 
-2. Condition and Selection:
-   - Identify the row that satisfies the specified condition. Only one row should be selected if it exists.
-   - If no row matches, return an empty object `{}`.
+Tuples:
 
-3. Output Format:
-   - The output JSON should be structured as:
-     ```json
-     {
-       "row": // matching row or {}
-     }
-     ```
+{% for tuple in tuples %}
+[{{tuple.id}}] {{tuple.content}}
+{% endfor %}
 
-# JSON Input
-Please process the JSON data according to these instructions.
+Search Query: {{user_prompt}}
 
-1. Input JSON:
+Select the **single most relevant tuples** from the tuples provided. The output format should be a JSON object with the identifier, e.g., `{"selected": id}`. Only respond with the result, do not explain or add additional words.
+
+Response Format:
+
 ```json
 {
-    "rows": [
-        {% for row in rows %}
-			{{row}},
-        {% endfor %}
-    ]
+  "selected": id
 }
 ```
-
-2. Condition:
-   - {{prompts}}
-
 )";
 
 #endif // LLM_MAX_PROMPT_TEMPLATE_H
