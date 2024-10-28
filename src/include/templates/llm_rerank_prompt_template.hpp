@@ -14,7 +14,7 @@ Tuples:
 
 Search Query: {{user_prompt}}
 
-Rank the 20 passages above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be in JSON list [id_1, ..., id_n], e.g., [22, 33, ..., 3], Only respond with the ranking results, do not say any word or explain.
+Rank the tuples above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be in JSON list [id_1, ..., id_n], e.g., [22, 33, ..., 3], Only respond with the ranking results, do not say any word or explain.
 
 Response Format:
 
