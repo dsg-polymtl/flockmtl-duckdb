@@ -1,5 +1,5 @@
 set(EXTENSION_SOURCES
     ${EXTENSION_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/llm_max.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/llm_min.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/llm_selector.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/llm_min_or_max.cpp
     PARENT_SCOPE)
