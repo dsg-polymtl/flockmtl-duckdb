@@ -1,5 +1,6 @@
 #include <flockmtl/core/functions/aggregate/llm_min_or_max.hpp>
 #include <flockmtl/core/functions/prompt_builder.hpp>
+#include <templates/llm_min_or_max_prompt_template.hpp>
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/model_manager/model_manager.hpp"
 #include "flockmtl/core/model_manager/tiktoken.hpp"
@@ -23,23 +24,23 @@ LlmMinOrMax::LlmMinOrMax(std::string &model, int model_context_size, std::string
     : model(model), model_context_size(model_context_size), user_prompt(user_prompt),
       llm_min_or_max_template(llm_min_or_max_template) {
 
-    auto num_tokens_meta_and_user_prompts = calculateFixedTokens();
+    int fixed_tokens = calculateFixedTokens();
 
-    if (num_tokens_meta_and_user_prompts > model_context_size) {
+    if (fixed_tokens > model_context_size) {
         throw std::runtime_error("Fixed tokens exceed model context size");
     }
 
-    available_tokens = model_context_size - num_tokens_meta_and_user_prompts;
+    available_tokens = model_context_size - fixed_tokens;
 }
 
 int LlmMinOrMax::calculateFixedTokens() const {
-    int num_tokens_meta_and_user_prompts = 0;
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(user_prompt);
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(llm_min_or_max_template);
-    return num_tokens_meta_and_user_prompts;
+    int fixed_tokens = 0;
+    fixed_tokens += Tiktoken::GetNumTokens(user_prompt);
+    fixed_tokens += Tiktoken::GetNumTokens(llm_min_or_max_template);
+    return fixed_tokens;
 }
 
-nlohmann::json LlmMinOrMax::GetMaxOrMinTupleId(const nlohmann::json &tuples) {
+nlohmann::json LlmMinOrMax::GetElement(const nlohmann::json &tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
@@ -51,47 +52,40 @@ nlohmann::json LlmMinOrMax::GetMaxOrMinTupleId(const nlohmann::json &tuples) {
     return response["selected"];
 }
 
-nlohmann::json LlmMinOrMax::Evaluate(nlohmann::json &tuples) {
+nlohmann::json LlmMinOrMax::LlmMinOrMaxCall(nlohmann::json &tuples) {
 
-    while (tuples.size() > 1) {
-        auto num_tuples = tuples.size();
-        uint32_t num_tuples_per_batch[num_tuples];
-        auto num_used_tokens = 0u;
-        auto batch_size = 0;
-        auto batch_index = 0;
-        for (int i = 0; i < num_tuples; i++) {
-            num_used_tokens += Tiktoken::GetNumTokens(tuples[i].dump());
-            batch_size++;
+    if (tuples.size() == 1) {
+        return tuples[0]["content"];
+    }
 
-            if (num_used_tokens >= available_tokens) {
-                num_tuples_per_batch[batch_index++] = batch_size;
-                num_used_tokens = 0;
-                batch_size = 0;
-            } else if (i == num_tuples - 1) {
-                num_tuples_per_batch[batch_index++] = batch_size;
-            }
+    auto num_tuples = tuples.size();
+    std::vector<int> batch_size_list;
+    auto used_tokens = 0;
+    auto batch_size = 0;
+    for (int i = 0; i < num_tuples; i++) {
+        used_tokens += Tiktoken::GetNumTokens(tuples[i].dump());
+        batch_size++;
+        if (used_tokens >= available_tokens) {
+            batch_size_list.push_back(batch_size);
+            used_tokens = 0;
+            batch_size = 0;
+        } else if (i == num_tuples - 1) {
+            batch_size_list.push_back(batch_size);
         }
+    }
 
-        auto responses = nlohmann::json::array();
-        auto num_batches = batch_index;
-
-        for (auto i = 0; i < num_batches; i++) {
-            auto start_index = i * num_tuples_per_batch[i];
-            auto end_index = start_index + num_tuples_per_batch[i];
-            auto batch = nlohmann::json::array();
-
-            for (auto j = start_index; j < end_index; j++) {
-                batch.push_back(tuples[j]);
-            }
-
-            auto ranked_indices = GetMaxOrMinTupleId(batch);
-            responses.push_back(batch[ranked_indices.get<int>()]);
+    auto responses = nlohmann::json::array();
+    for (int i = 0; i < batch_size_list.size(); i++) {
+        auto start_index = i * batch_size;
+        auto end_index = start_index + batch_size;
+        auto batch = nlohmann::json::array();
+        for (int j = start_index; j < end_index; j++) {
+            batch.push_back(tuples[j]);
         }
-
-        tuples = responses;
-    };
-
-    return tuples[0]["content"];
+        auto ranked_indices = GetElement(batch);
+        responses.push_back(batch[ranked_indices.get<int>()]);
+    }
+    return LlmMinOrMaxCall(responses);
 }
 
 // Static member initialization
@@ -118,7 +112,7 @@ void LlmMinOrMaxOperation::Operation(Vector inputs[], AggregateInputData &aggr_i
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
     }
-    auto tuples = CastVectorOfStructsToJson(inputs[2], count);
+    auto tuples = StructToJson(inputs[2], count);
 
     auto states_vector = FlatVector::GetData<LlmMinOrMaxState *>(states);
 
@@ -135,7 +129,7 @@ void LlmMinOrMaxOperation::Combine(Vector &source, Vector &target, AggregateInpu
     auto source_vector = FlatVector::GetData<LlmMinOrMaxState *>(source);
     auto target_vector = FlatVector::GetData<LlmMinOrMaxState *>(target);
 
-    for (auto i = 0; i < count; i++) {
+    for (idx_t i = 0; i < count; i++) {
         auto source_ptr = source_vector[i];
         auto target_ptr = target_vector[i];
 
@@ -166,6 +160,8 @@ void LlmMinOrMaxOperation::FinalizeResults(Vector &states, AggregateInputData &a
         auto model = query_result->GetValue(0, 0).ToString();
         auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
 
+        LlmMinOrMax llm_min_or_max(model, model_context_size, prompt_name, llm_prompt_template);
+
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
             auto tuple_with_id = nlohmann::json::object();
@@ -174,29 +170,28 @@ void LlmMinOrMaxOperation::FinalizeResults(Vector &states, AggregateInputData &a
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmMinOrMax llm_min_or_max(model, model_context_size, prompt_name, llm_prompt_template);
-        auto response = llm_min_or_max.Evaluate(tuples_with_ids);
+        auto response = llm_min_or_max.LlmMinOrMaxCall(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
 }
 
 template <>
-void LlmMinOrMaxOperation::Finalize<MinOrMax::MIN>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmMinOrMaxOperation::Finalize<0>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MIN>());
+    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<0>());
 };
 
 template <>
-void LlmMinOrMaxOperation::Finalize<MinOrMax::MAX>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmMinOrMaxOperation::Finalize<1>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MAX>());
+    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<1>());
 };
 
 void LlmMinOrMaxOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                          data_ptr_t state_p, idx_t count) {
     prompt_name = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
-    auto tuples = CastVectorOfStructsToJson(inputs[2], count);
+    auto tuples = StructToJson(inputs[2], count);
 
     auto state_map_p = reinterpret_cast<LlmMinOrMaxState *>(state_p);
 

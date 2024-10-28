@@ -4,7 +4,6 @@
 #include <vector>
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
-#include "templates/llm_min_or_max_prompt_template.hpp"
 
 namespace flockmtl {
 namespace core {
@@ -29,8 +28,8 @@ public:
     LlmMinOrMax(std::string &model, int model_context_size, std::string &user_prompt,
                 std::string &llm_min_or_max_template);
 
-    nlohmann::json GetMaxOrMinTupleId(const nlohmann::json &tuples);
-    nlohmann::json Evaluate(nlohmann::json &tuples);
+    nlohmann::json GetElement(const nlohmann::json &tuples);
+    nlohmann::json LlmMinOrMaxCall(nlohmann::json &tuples);
 
 private:
     int calculateFixedTokens() const;
@@ -51,7 +50,7 @@ struct LlmMinOrMaxOperation {
     static void FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                                 idx_t offset, string llm_prompt_template);
 
-    template <MinOrMax option>
+    template <int option>
     static void Finalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset);
 
