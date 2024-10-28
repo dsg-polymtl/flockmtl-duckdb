@@ -8,113 +8,22 @@
 #include <flockmtl/core/functions/prompt_builder.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl_extension.hpp>
+#include <flockmtl/core/functions/aggregate/llm_selector.hpp>
 
 namespace flockmtl {
 namespace core {
-
-struct LlmMaxState {
-public:
-    vector<nlohmann::json> value;
-
-    void Initialize() {
-    }
-
-    void Update(const nlohmann::json &input) {
-        value.push_back(input);
-    }
-
-    void Combine(const LlmMaxState &source) {
-        value = std::move(source.value);
-    }
-};
-
-class LlmSelector {
-public:
-    std::string model;
-    int model_context_size;
-    std::string user_prompt;
-    std::string llm_selector_template;
-    int available_tokens;
-
-    // Constructor
-    LlmSelector(std::string &model, int model_context_size, std::string &user_prompt,
-                std::string &llm_selector_template)
-        : model(model), model_context_size(model_context_size), user_prompt(user_prompt),
-          llm_selector_template(llm_selector_template) {
-
-        // Calculate fixed token size
-        int fixed_tokens = 0;
-        fixed_tokens += Tiktoken::GetNumTokens(user_prompt);
-        fixed_tokens += Tiktoken::GetNumTokens(llm_selector_template);
-
-        if (fixed_tokens > model_context_size) {
-            throw std::runtime_error("Fixed tokens exceed model context size");
-        }
-
-        available_tokens = model_context_size - fixed_tokens;
-    };
-
-    // Mock function to simulate LLM ranking by returning indices sorted in some order
-    nlohmann::json GetElement(const nlohmann::json &tuples) {
-        inja::Environment env;
-        nlohmann::json data;
-        data["tuples"] = tuples;
-        data["user_prompt"] = user_prompt;
-        auto prompt = env.render(llm_selector_template, data);
-
-        nlohmann::json settings;
-        auto response = ModelManager::CallComplete(prompt, model, settings);
-        return response["selected"];
-    };
-
-    nlohmann::json LlmSelectorCall(nlohmann::json &tuples) {
-
-        if (tuples.size() == 1) {
-            return tuples[0]["content"];
-        }
-
-        auto num_tuples = tuples.size();
-        vector<int> batch_size_list;
-        auto used_tokens = 0;
-        auto batch_size = 0;
-        for (int i = 0; i < num_tuples; i++) {
-            used_tokens += Tiktoken::GetNumTokens(tuples[i].dump());
-            batch_size++;
-            if (used_tokens >= available_tokens) {
-                batch_size_list.push_back(batch_size);
-                used_tokens = 0;
-                batch_size = 0;
-            } else if (i == num_tuples - 1) {
-                batch_size_list.push_back(batch_size);
-            }
-        }
-
-        auto responses = nlohmann::json::array();
-        for (int i = 0; i < batch_size_list.size(); i++) {
-            auto start_index = i * batch_size;
-            auto end_index = start_index + batch_size;
-            auto batch = nlohmann::json::array();
-            for (int j = start_index; j < end_index; j++) {
-                batch.push_back(tuples[j]);
-            }
-            auto ranked_indices = GetElement(batch);
-            responses.push_back(batch[ranked_indices.get<int>()]);
-        }
-        return LlmSelectorCall(responses);
-    };
-};
 
 struct LlmMaxOperation {
 
     static std::string model_name;
     static std::string prompt_name;
-    static std::unordered_map<void *, std::shared_ptr<LlmMaxState>> state_map;
+    static std::unordered_map<void *, std::shared_ptr<LlmSelectorState>> state_map;
 
     static void Initialize(const AggregateFunction &, data_ptr_t state_p) {
-        auto state_ptr = reinterpret_cast<LlmMaxState *>(state_p);
+        auto state_ptr = reinterpret_cast<LlmSelectorState *>(state_p);
 
         if (state_map.find(state_ptr) == state_map.end()) {
-            auto state = std::make_shared<LlmMaxState>();
+            auto state = std::make_shared<LlmSelectorState>();
             state->Initialize();
             state_map[state_ptr] = state;
         }
@@ -130,7 +39,7 @@ struct LlmMaxOperation {
         }
         auto tuples = StructToJson(inputs[2], count);
 
-        auto states_vector = FlatVector::GetData<LlmMaxState *>(states);
+        auto states_vector = FlatVector::GetData<LlmSelectorState *>(states);
 
         for (idx_t i = 0; i < count; i++) {
             auto tuple = tuples[i];
@@ -142,8 +51,8 @@ struct LlmMaxOperation {
     }
 
     static void Combine(Vector &source, Vector &target, AggregateInputData &aggr_input_data, idx_t count) {
-        auto source_vector = FlatVector::GetData<LlmMaxState *>(source);
-        auto target_vector = FlatVector::GetData<LlmMaxState *>(target);
+        auto source_vector = FlatVector::GetData<LlmSelectorState *>(source);
+        auto target_vector = FlatVector::GetData<LlmSelectorState *>(target);
 
         for (idx_t i = 0; i < count; i++) {
             auto source_ptr = source_vector[i];
@@ -158,7 +67,7 @@ struct LlmMaxOperation {
 
     static void Finalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset) {
-        auto states_vector = FlatVector::GetData<LlmMaxState *>(states);
+        auto states_vector = FlatVector::GetData<LlmSelectorState *>(states);
 
         for (idx_t i = 0; i < count; i++) {
             auto idx = i + offset;
@@ -197,7 +106,7 @@ struct LlmMaxOperation {
         model_name = inputs[1].GetValue(0).ToString();
         auto tuples = StructToJson(inputs[2], count);
 
-        auto state_map_p = reinterpret_cast<LlmMaxState *>(state_p);
+        auto state_map_p = reinterpret_cast<LlmSelectorState *>(state_p);
 
         for (idx_t i = 0; i < count; i++) {
             auto tuple = tuples[i];
@@ -214,12 +123,12 @@ struct LlmMaxOperation {
 // Static member initialization
 std::string LlmMaxOperation::model_name;
 std::string LlmMaxOperation::prompt_name;
-std::unordered_map<void *, std::shared_ptr<LlmMaxState>> LlmMaxOperation::state_map;
+std::unordered_map<void *, std::shared_ptr<LlmSelectorState>> LlmMaxOperation::state_map;
 
 void CoreAggregateFunctions::RegisterLlmMaxFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
         "llm_max", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
-        AggregateFunction::StateSize<LlmMaxState>, LlmMaxOperation::Initialize, LlmMaxOperation::Operation,
+        AggregateFunction::StateSize<LlmSelectorState>, LlmMaxOperation::Initialize, LlmMaxOperation::Operation,
         LlmMaxOperation::Combine, LlmMaxOperation::Finalize, LlmMaxOperation::SimpleUpdate);
 
     ExtensionUtil::RegisterFunction(db, string_concat);
