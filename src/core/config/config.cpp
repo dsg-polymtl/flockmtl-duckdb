@@ -53,7 +53,9 @@ void Config::setup_default_models_config (duckdb::Connection &con, std::string &
                   " (model_name, model, provider_name, max_tokens) VALUES "
                   "('default', 'gpt-4o-mini', 'openai', 128000),"
                   "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000),"
-                  "('gpt-4o', 'gpt-4o', 'openai', 128000)");
+                  "('gpt-4o', 'gpt-4o', 'openai', 128000),"
+                  "('text-embedding-3-large', 'text-embedding-3-large', 'openai', 128000),"
+                  "('text-embedding-3-small', 'text-embedding-3-small', 'openai', 128000)");
     }
 }
 

@@ -116,6 +116,7 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         throw std::runtime_error("Expected non-empty string literal for model name.");
     }
     std::string model_name = token.value;
+    model_name.erase(std::remove(model_name.begin(), model_name.end(), '\n'), model_name.cend());
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -127,7 +128,6 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         throw std::runtime_error("Expected non-empty string literal for provider_name.");
     }
     std::string provider_name = token.value;
-
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::PARENTHESIS || token.value != ")") {
@@ -141,7 +141,6 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         delete_statement->provider_name = provider_name;
         statement = std::move(delete_statement);
     } else {
-                std::cout << "DELETE LAST TOKEN << " << token.value << "\n";
         throw std::runtime_error("Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
     }
 }
@@ -256,8 +255,8 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::DELETE_MODEL: {
         const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
-        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << delete_stmt.model_name << "'" << "AND provider_name = '" << delete_stmt.provider_name << "';";
+        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" << delete_stmt.model_name << "'"
+            << " AND provider_name = '" << delete_stmt.provider_name << "';";
         break;
     }
     case StatementType::UPDATE_MODEL: {
@@ -265,7 +264,7 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
         sql << "UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET "
             << "max_tokens = " << update_stmt.new_max_tokens << ", "
             << "model = '" << update_stmt.new_model << "' "
-            << "WHERE model_name = '" << update_stmt.model_name << "'"
+            << "WHERE model_name = '" << update_stmt.model_name << "' "
             << "AND provider_name = '" << update_stmt.provider_name << "';";
         break;
     }
@@ -275,15 +274,13 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
             << " UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name << "'"
             << ";";
-        std::cout << sql.str() << std::endl;
         break;
     }
 
     case StatementType::GET_ALL_MODEL: {
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE"
-            << " UNION ALL "
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+            << "UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;";
-                std::cout << sql.str() << std::endl;
         break;
     }
     default:

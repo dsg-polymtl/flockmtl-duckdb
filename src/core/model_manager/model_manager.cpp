@@ -308,7 +308,7 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::
     }
 
     // Check if the provider is in the list of supported provider
-    if (supported_providers.find(model) == supported_providers.end()) {
+    if (supported_providers.find(provider) == supported_providers.end()) {
         throw std::invalid_argument("Provider '" + provider +
                                 "' is not supported. Please choose one from the supported list: "
                                 "openai/default, azure");
