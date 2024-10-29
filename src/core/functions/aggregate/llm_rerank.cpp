@@ -10,98 +10,89 @@
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include "templates/llm_rerank_prompt_template.hpp"
+#include <flockmtl/core/functions/aggregate/llm_rerank.hpp>
 
 namespace flockmtl {
 namespace core {
 
-class LlmReranker {
-public:
-    std::string model;
-    int model_context_size;
-    std::string user_prompt;
-    std::string llm_reranking_template;
-    int available_tokens;
+LlmReranker::LlmReranker(std::string& model, int model_context_size, std::string& user_prompt, std::string& llm_reranking_template)
+: model(model), model_context_size(model_context_size), user_prompt(user_prompt), llm_reranking_template(llm_reranking_template) {
 
-    int CalculateFixedTokens() const {
-        int num_tokens_meta_and_user_prompts = 0;
-        num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(user_prompt);
-        num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(llm_reranking_template);
-        return num_tokens_meta_and_user_prompts;
+    auto num_tokens_meta_and_user_prompts = CalculateFixedTokens();
+
+    if (num_tokens_meta_and_user_prompts > model_context_size) {
+        throw std::runtime_error("Fixed tokens exceed model context size");
     }
 
-    LlmReranker(std::string& model, int model_context_size, std::string& user_prompt, std::string& llm_reranking_template)
-    : model(model), model_context_size(model_context_size), user_prompt(user_prompt), llm_reranking_template(llm_reranking_template) {
+    available_tokens = model_context_size - num_tokens_meta_and_user_prompts;
+};
 
-        auto num_tokens_meta_and_user_prompts = CalculateFixedTokens();
+nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json& tuples) {
+    int num_tuples = tuples.size();
 
-        if (num_tokens_meta_and_user_prompts > model_context_size) {
-            throw std::runtime_error("Fixed tokens exceed model context size");
+    auto accumulated_rows_tokens = 0u;
+    auto batch_size = 0u;
+    auto window_tuples = nlohmann::json::array();
+    auto start_index = num_tuples - 1;
+    auto reranked_tuples = nlohmann::json::array();
+
+    do {
+        while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
+            auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+            if (accumulated_rows_tokens + num_tokens > available_tokens) {
+                break;
+            }
+            window_tuples.push_back(tuples[start_index]);
+            accumulated_rows_tokens += num_tokens;
+            batch_size++;
+            start_index--;
         }
 
-        available_tokens = model_context_size - num_tokens_meta_and_user_prompts;
-    };
+        auto ranked_indices = LlmRerankWithSlidingWindow(window_tuples);
 
-    nlohmann::json LlmRerank(const nlohmann::json& tuples) {
-        inja::Environment env;
-        nlohmann::json data;
-        data["tuples"] = tuples;
-        data["user_prompt"] = user_prompt;
-        auto prompt = env.render(llm_reranking_template, data);
-
-        nlohmann::json settings;
-        auto response = ModelManager::CallComplete(prompt, model, settings);
-        return response["ranking"];
-    };
-
-    // Sliding window re-ranking
-    nlohmann::json SlidingWindowRerank(nlohmann::json& tuples) {
-        int num_tuples = tuples.size();
-
-        auto accumulated_rows_tokens = 0u;
-        auto batch_size = 0u;
-        auto window_tuples = nlohmann::json::array();
-        auto start_index = num_tuples - 1;
-        auto reranked_tuples = nlohmann::json::array();
-
-        do {
-            while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
-                auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
-                if (accumulated_rows_tokens + num_tokens > available_tokens) {
-                    break;
-                }
-                window_tuples.push_back(tuples[start_index]);
-                accumulated_rows_tokens += num_tokens;
-                batch_size++;
-                start_index--;
+        auto half_batch = batch_size / 2;
+        auto next_tuples = nlohmann::json::array();
+        for (auto i = 0; i < batch_size; i++) {
+            if (i < half_batch) {
+                next_tuples.push_back(window_tuples[i]);
+            } else {
+                reranked_tuples.push_back(window_tuples[i]);
             }
-
-            auto ranked_indices = LlmRerank(window_tuples);
-
-            auto half_batch = batch_size / 2;
-            auto next_tuples = nlohmann::json::array();
-            for (auto i = 0; i < batch_size; i++) {
-                if (i < half_batch) {
-                    next_tuples.push_back(window_tuples[i]);
-                } else {
-                    reranked_tuples.push_back(window_tuples[i]);
-                }
-            }
-
-            window_tuples.clear();
-            window_tuples = std::move(next_tuples);
-            batch_size = half_batch;
-            accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
-        } while (start_index >= 0);
-
-        reranked_tuples.insert(reranked_tuples.end(), window_tuples.begin(), window_tuples.end());
-
-        nlohmann::json results;
-        for (auto i = num_tuples - 1; i >= num_tuples/2; i--) {
-            results.push_back(reranked_tuples[i]["content"]);
         }
 
-        return results;
+        window_tuples.clear();
+        window_tuples = std::move(next_tuples);
+        batch_size = half_batch;
+        accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
+    } while (start_index >= 0);
+
+    reranked_tuples.insert(reranked_tuples.end(), window_tuples.begin(), window_tuples.end());
+
+    nlohmann::json results;
+    for (auto i = num_tuples - 1; i >= num_tuples/2; i--) {
+        results.push_back(reranked_tuples[i]["content"]);
     }
+
+    return results;
+}
+
+int LlmReranker::CalculateFixedTokens() const {
+    int num_tokens_meta_and_user_prompts = 0;
+    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(user_prompt);
+    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(llm_reranking_template);
+    return num_tokens_meta_and_user_prompts;
+}
+
+nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json& tuples) {
+    inja::Environment env;
+    nlohmann::json data;
+    data["tuples"] = tuples;
+    data["user_prompt"] = user_prompt;
+    auto prompt = env.render(llm_reranking_template, data);
+
+    nlohmann::json settings;
+    auto response = ModelManager::CallComplete(prompt, model, settings);
+    return response["ranking"];
 };
 
 void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,

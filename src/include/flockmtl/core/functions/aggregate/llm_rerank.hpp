@@ -7,18 +7,20 @@ namespace core {
 
 class LlmReranker {
 public:
-    string model;
+    LlmReranker(std::string& model, int model_context_size, std::string& user_prompt, std::string& llm_reranking_template);
+
+    nlohmann::json SlidingWindowRerank(nlohmann::json& tuples);
+
+private:
+    std::string model;
     int model_context_size;
-    string user_prompt;
-    string llm_reranking_template;
-    int batch_size;
+    std::string user_prompt;
+    std::string llm_reranking_template;
+    int available_tokens;
 
-    LlmReranker(vector<nlohmann::json>& tuples, string& model, int model_context_size, string& user_prompt, string& llm_reranking_template);
+    int CalculateFixedTokens() const;
 
-    vector<int> LlmRerank(vector<pair<int, nlohmann::json>> tuples);
-
-    vector<nlohmann::json> SlidingWindowRerank(vector<nlohmann::json>& tuples);
-
+    nlohmann::json LlmRerankWithSlidingWindow(const nlohmann::json& tuples);
 };
 
 } // namespace core
