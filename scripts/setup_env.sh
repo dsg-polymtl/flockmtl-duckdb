@@ -1,4 +1,9 @@
 #!/bin/bash
 
 # Set the OpenAI API key
-export OPENAI_API_KEY="your_openai_api_key_here"
+export OPENAI_API_KEY="YOUR OPENAI KEY"
+
+#Set up Azure credentials
+export AZURE_API_KEY="YOUR AZURE API KEY"
+export AZURE_RESOURCE_NAME="YOUR AZURE RESOURCE VERSION"
+export AZURE_API_VERSION="YOUR AZURE API VERSION"
