@@ -13,10 +13,6 @@
 namespace duckdb {
 
 static void LoadInternal(DatabaseInstance &instance) {
-    const auto *key = std::getenv("OPENAI_API_KEY");
-
-    flockmtl::core::ModelManager::OPENAI_API_KEY = key ? key : "";
-
     flockmtl::core::CoreModule::Register(instance);
 
     // Register the custom parser
