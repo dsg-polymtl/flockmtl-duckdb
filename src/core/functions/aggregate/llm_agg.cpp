@@ -1,4 +1,4 @@
-#include <flockmtl/core/functions/aggregate/llm_min_or_max.hpp>
+#include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include <flockmtl/core/functions/prompt_builder.hpp>
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/model_manager/model_manager.hpp"
@@ -7,14 +7,14 @@
 namespace flockmtl {
 namespace core {
 
-void LlmMinOrMaxState::Initialize() {
+void LlmAggState::Initialize() {
 }
 
-void LlmMinOrMaxState::Update(const nlohmann::json &input) {
+void LlmAggState::Update(const nlohmann::json &input) {
     value.push_back(input);
 }
 
-void LlmMinOrMaxState::Combine(const LlmMinOrMaxState &source) {
+void LlmAggState::Combine(const LlmAggState &source) {
     value = std::move(source.value);
 }
 
@@ -95,22 +95,22 @@ nlohmann::json LlmMinOrMax::Evaluate(nlohmann::json &tuples) {
 }
 
 // Static member initialization
-std::string LlmMinOrMaxOperation::model_name;
-std::string LlmMinOrMaxOperation::prompt_name;
-std::unordered_map<void *, std::shared_ptr<LlmMinOrMaxState>> LlmMinOrMaxOperation::state_map;
+std::string LlmAggOperation::model_name;
+std::string LlmAggOperation::prompt_name;
+std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
 
 
-void LlmMinOrMaxOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) {
-    auto state_ptr = reinterpret_cast<LlmMinOrMaxState *>(state_p);
+void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) {
+    auto state_ptr = reinterpret_cast<LlmAggState *>(state_p);
 
     if (state_map.find(state_ptr) == state_map.end()) {
-        auto state = std::make_shared<LlmMinOrMaxState>();
+        auto state = std::make_shared<LlmAggState>();
         state->Initialize();
         state_map[state_ptr] = state;
     }
 }
 
-void LlmMinOrMaxOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
+void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                       idx_t count) {
     prompt_name = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
@@ -120,7 +120,7 @@ void LlmMinOrMaxOperation::Operation(Vector inputs[], AggregateInputData &aggr_i
     }
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
-    auto states_vector = FlatVector::GetData<LlmMinOrMaxState *>(states);
+    auto states_vector = FlatVector::GetData<LlmAggState *>(states);
 
     for (idx_t i = 0; i < count; i++) {
         auto tuple = tuples[i];
@@ -131,9 +131,9 @@ void LlmMinOrMaxOperation::Operation(Vector inputs[], AggregateInputData &aggr_i
     }
 }
 
-void LlmMinOrMaxOperation::Combine(Vector &source, Vector &target, AggregateInputData &aggr_input_data, idx_t count) {
-    auto source_vector = FlatVector::GetData<LlmMinOrMaxState *>(source);
-    auto target_vector = FlatVector::GetData<LlmMinOrMaxState *>(target);
+void LlmAggOperation::Combine(Vector &source, Vector &target, AggregateInputData &aggr_input_data, idx_t count) {
+    auto source_vector = FlatVector::GetData<LlmAggState *>(source);
+    auto target_vector = FlatVector::GetData<LlmAggState *>(target);
 
     for (auto i = 0; i < count; i++) {
         auto source_ptr = source_vector[i];
@@ -146,9 +146,9 @@ void LlmMinOrMaxOperation::Combine(Vector &source, Vector &target, AggregateInpu
     }
 }
 
-void LlmMinOrMaxOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset, string llm_prompt_template) {
-    auto states_vector = FlatVector::GetData<LlmMinOrMaxState *>(states);
+    auto states_vector = FlatVector::GetData<LlmAggState *>(states);
 
     for (idx_t i = 0; i < count; i++) {
         auto idx = i + offset;
@@ -181,24 +181,24 @@ void LlmMinOrMaxOperation::FinalizeResults(Vector &states, AggregateInputData &a
 }
 
 template <>
-void LlmMinOrMaxOperation::Finalize<MinOrMax::MIN>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmAggOperation::MinOrMaxFinalize<MinOrMax::MIN>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MIN>());
 };
 
 template <>
-void LlmMinOrMaxOperation::Finalize<MinOrMax::MAX>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmAggOperation::MinOrMaxFinalize<MinOrMax::MAX>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MAX>());
 };
 
-void LlmMinOrMaxOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
+void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                          data_ptr_t state_p, idx_t count) {
     prompt_name = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
-    auto state_map_p = reinterpret_cast<LlmMinOrMaxState *>(state_p);
+    auto state_map_p = reinterpret_cast<LlmAggState *>(state_p);
 
     for (idx_t i = 0; i < count; i++) {
         auto tuple = tuples[i];
@@ -207,7 +207,7 @@ void LlmMinOrMaxOperation::SimpleUpdate(Vector inputs[], AggregateInputData &agg
     }
 }
 
-bool LlmMinOrMaxOperation::IgnoreNull() {
+bool LlmAggOperation::IgnoreNull() {
     return true;
 }
 

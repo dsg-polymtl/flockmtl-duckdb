@@ -9,13 +9,13 @@
 namespace flockmtl {
 namespace core {
 
-struct LlmMinOrMaxState {
+struct LlmAggState {
 public:
     std::vector<nlohmann::json> value;
 
     void Initialize();
     void Update(const nlohmann::json &input);
-    void Combine(const LlmMinOrMaxState &source);
+    void Combine(const LlmAggState &source);
 };
 
 class LlmMinOrMax {
@@ -36,10 +36,10 @@ private:
     int calculateFixedTokens() const;
 };
 
-struct LlmMinOrMaxOperation {
+struct LlmAggOperation {
     static std::string model_name;
     static std::string prompt_name;
-    static std::unordered_map<void *, std::shared_ptr<LlmMinOrMaxState>> state_map;
+    static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;
 
     static void Initialize(const AggregateFunction &, data_ptr_t state_p);
 
@@ -52,7 +52,10 @@ struct LlmMinOrMaxOperation {
                                 idx_t offset, string llm_prompt_template);
 
     template <MinOrMax option>
-    static void Finalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+    static void MinOrMaxFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+                         idx_t offset);
+
+    static void RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset);
 
     static void SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
