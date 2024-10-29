@@ -49,7 +49,7 @@ nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuple
     auto prompt = env.render(llm_first_or_last_template, data);
 
     nlohmann::json settings;
-    auto response = ModelManager::CallComplete(prompt, model, settings);
+    auto response = ModelManager::CallComplete(prompt, model, "", settings);
     return response["selected"];
 }
 
@@ -164,6 +164,7 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
         auto state_ptr = states_vector[idx];
         auto state = state_map[state_ptr];
 
+        /*
         auto query_result = CoreModule::GetConnection().Query(
             "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
             model_name + "'");
@@ -174,6 +175,12 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
 
         auto model = query_result->GetValue(0, 0).ToString();
         auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
+        */
+
+
+        auto model_query_result = ModelManager::GetQueriedModel (CoreModule::GetConnection(), model_name, "");
+        auto model = model_query_result.first;
+        auto model_context_size = model_query_result.second;
 
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
