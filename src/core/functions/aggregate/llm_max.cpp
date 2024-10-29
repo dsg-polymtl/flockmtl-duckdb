@@ -11,7 +11,7 @@ void CoreAggregateFunctions::RegisterLlmMaxFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
         "llm_max", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
         AggregateFunction::StateSize<LlmMinOrMaxState>, LlmMinOrMaxOperation::Initialize, LlmMinOrMaxOperation::Operation,
-        LlmMinOrMaxOperation::Combine, LlmMinOrMaxOperation::Finalize<1>, LlmMinOrMaxOperation::SimpleUpdate);
+        LlmMinOrMaxOperation::Combine, LlmMinOrMaxOperation::Finalize<MinOrMax::MAX>, LlmMinOrMaxOperation::SimpleUpdate);
 
     ExtensionUtil::RegisterFunction(db, string_concat);
 }
