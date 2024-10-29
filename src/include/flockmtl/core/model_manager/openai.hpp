@@ -291,6 +291,10 @@ public:
             check_done = 1;
         }
 
+        if (key == nullptr) {
+            throw std::runtime_error("OPENAI_API_KEY environment variable is not set.");
+        }
+
         return key;
     }
 

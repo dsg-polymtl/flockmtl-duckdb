@@ -12,7 +12,6 @@
 #include <sstream>
 #include <string>
 #include <templates/llm_filter_prompt_template.hpp>
-#include <flockmtl/core/utils.hpp>
 
 
 namespace flockmtl {
@@ -27,11 +26,10 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
         settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
     }
 
-    std::string provider_name = "";
-    bool provider_available = get_provider_name_from_settings (settings, provider_name);
+    std::string provider_name = settings.contains("provider") ? settings.at("provider").get<std::string>() : "";
+    auto model_name = args.data[1].GetValue(0).ToString();
 
-
-    auto model = args.data[1].GetValue(0).ToString();
+    /*
     auto query_result = provider_available ? con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
                                                          model + "'" + " AND provider_name = '" + provider_name + "'") :
                                            con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
@@ -45,9 +43,13 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
             throw std::runtime_error("Model not found");
         }
     }
+    */
 
-    auto model_name = query_result->GetValue(0, 0).ToString();
-    auto model_max_tokens = query_result->GetValue(1, 0).GetValue<int32_t>();
+    //auto model_name = query_result->GetValue(0, 0).ToString();
+    //auto model_max_tokens = query_result->GetValue(1, 0).GetValue<int32_t>();
+    auto model_query_result = ModelManager::GetQueriedModel (con, model_name, provider_name);
+    auto model = model_query_result.first;
+    auto model_max_tokens = model_query_result.second;
 
     auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
@@ -57,8 +59,10 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     auto responses = nlohmann::json::array();
     for (const auto &prompt : prompts) {
         // Call ModelManager::CallComplete and get the rows
-        auto response = provider_available ? ModelManager::CallComplete(prompt, model_name, provider_name, settings) :
-                                         ModelManager::CallComplete(prompt, model_name, settings);
+        //auto response = provider_available ? ModelManager::CallComplete(prompt, model_name, provider_name, settings) :
+        //                                 ModelManager::CallComplete(prompt, model_name, settings);
+
+        auto response = ModelManager::CallComplete(prompt, model, provider_name, settings);
 
         // Check if the result contains the 'rows' field and push it to the main 'rows'
         if (response.contains("rows")) {

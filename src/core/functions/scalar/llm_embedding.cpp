@@ -4,7 +4,8 @@
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>
-#include <flockmtl/core/utils.hpp>
+#include <string>
+#include <nlohmann/json.hpp>
 
 
 namespace flockmtl {
@@ -19,12 +20,11 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
         settings = CoreScalarParsers::Struct2Json(args.data[2], 1)[0];
     }
 
-    std::string provider_name = "";
-    bool provider_available = get_provider_name_from_settings (settings, provider_name);
+    std::string provider_name = settings.contains("provider") ? settings.at("provider").get<std::string>() : "";
 
+    auto model_name = args.data[1].GetValue(0).ToString();
 
-    auto model = args.data[1].GetValue(0).ToString();
-
+   /*
     auto query_result = provider_available ? con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
                                                          model + "'" + " AND provider_name = '" + provider_name + "'") :
                                            con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
@@ -38,8 +38,10 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
             throw std::runtime_error("Model not found");
         }
     }
+    */
 
-    auto model_name = query_result->GetValue(0, 0).ToString();
+    auto model = ModelManager::GetQueriedModel (con, model_name, provider_name).first;
+    //auto model_name = query_result->GetValue(0, 0).ToString();
     auto inputs = CoreScalarParsers::Struct2Json(args.data[0], args.size());
 
     auto embeddings = nlohmann::json::array();
@@ -48,8 +50,11 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
         for (auto &item : row.items()) {
             concat_input += item.value().get<std::string>() + " ";
         }
-        auto element_embedding = provider_available ? ModelManager::CallEmbedding(concat_input, model_name, provider_name) :
-                                             ModelManager::CallEmbedding(concat_input, model_name);
+
+        //auto element_embedding = provider_available ? ModelManager::CallEmbedding(concat_input, model, provider_name) :
+        //                                     ModelManager::CallEmbedding(concat_input, model);
+
+        auto element_embedding = ModelManager::CallEmbedding(concat_input, model, provider_name);
         embeddings.push_back(element_embedding);
     }
 

@@ -52,6 +52,10 @@ public:
             check_done = 1;
         }
 
+        if (!api_key) {
+            throw std::runtime_error("AZURE_API_KEY environment variable is not set.");
+        }
+
         return api_key;
     }
 
@@ -64,6 +68,10 @@ public:
             check_done = 1;
         }
 
+        if (!rname) {
+            throw std::runtime_error("AZURE_RESOURCE_NAME environment variable is not set.");
+        }
+
         return rname;
     }
 
@@ -74,6 +82,10 @@ public:
         if (check_done == -1) {
             api_version = std::getenv("AZURE_API_VERSION");
             check_done = 1;
+        }
+
+        if (!api_version) {
+            throw std::runtime_error("AZURE_VERSION environment variable is not set.");
         }
 
         return api_version;
