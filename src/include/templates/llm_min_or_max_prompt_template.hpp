@@ -16,7 +16,7 @@ Tuples:
 
 Search Query: {{user_prompt}}
 
-Select the **single {relevance} relevant tuples** from the tuples provided. The output format should be a JSON object with the identifier, e.g., `{"selected": id}`. Only respond with the result, do not explain or add additional words.
+Select the **single {relevance} relevant tuple** from the tuples provided.The output format should be a JSON object. Only respond with the result, do not explain or add additional words.
 
 Response Format:
 
@@ -27,12 +27,17 @@ Response Format:
 ```
 )";
 
-template <int N>
-std::string GetMinOrMaxPromptTemplate() {
-    std::string relevance = (N == 1) ? "most" : "least";
+enum class MinOrMax {
+    MIN,
+    MAX,
+};
 
-    std::string prompt = llm_min_or_max_prompt_template;
-    size_t pos = prompt.find("{relevance}");
+template <MinOrMax option>
+std::string GetMinOrMaxPromptTemplate() {
+    auto relevance = (option == MinOrMax::MAX) ? std::string("most") : std::string("least");
+
+    auto prompt = std::string(llm_min_or_max_prompt_template);
+    auto pos = prompt.find("{relevance}");
     while (pos != std::string::npos) {
         prompt.replace(pos, 10, relevance);
         pos = prompt.find("{relevance}", pos + relevance.size());

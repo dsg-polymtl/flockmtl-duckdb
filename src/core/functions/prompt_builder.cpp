@@ -4,7 +4,7 @@
 namespace flockmtl {
 namespace core {
 
-std::vector<nlohmann::json> StructToJson(Vector &struct_vector, int size) {
+std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int size) {
     vector<nlohmann::json> vector_json;
     for (auto i = 0; i < size; i++) {
         nlohmann::json json;
