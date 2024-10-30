@@ -7,14 +7,14 @@ namespace core {
 
 struct CoreAggregateFunctions {
     static void Register(DatabaseInstance &db) {
-        RegisterLlmMaxFunction(db);
-        RegisterLlmMinFunction(db);
+        RegisterLlmFirstFunction(db);
+        RegisterLlmLastFunction(db);
         RegisterLlmRerankFunction(db);
     }
 
 private:
-    static void RegisterLlmMaxFunction(DatabaseInstance &db);
-    static void RegisterLlmMinFunction(DatabaseInstance &db);
+    static void RegisterLlmFirstFunction(DatabaseInstance &db);
+    static void RegisterLlmLastFunction(DatabaseInstance &db);
     static void RegisterLlmRerankFunction(DatabaseInstance &db);
 };
 

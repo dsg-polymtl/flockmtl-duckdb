@@ -4,7 +4,7 @@
 #include <vector>
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
-#include "templates/llm_min_or_max_prompt_template.hpp"
+#include "templates/llm_first_or_last_prompt_template.hpp"
 
 namespace flockmtl {
 namespace core {
@@ -18,18 +18,18 @@ public:
     void Combine(const LlmAggState &source);
 };
 
-class LlmMinOrMax {
+class LlmFirstOrLast {
 public:
     std::string model;
     int model_context_size;
     std::string search_query;
-    std::string llm_min_or_max_template;
+    std::string llm_first_or_last_template;
     int available_tokens;
 
-    LlmMinOrMax(std::string &model, int model_context_size, std::string &search_query,
-                std::string &llm_min_or_max_template);
+    LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
+                std::string &llm_first_or_last_template);
 
-    nlohmann::json GetMaxOrMinTupleId(const nlohmann::json &tuples);
+    nlohmann::json GetFirstOrLastTupleId(const nlohmann::json &tuples);
     nlohmann::json Evaluate(nlohmann::json &tuples);
 
 private:
@@ -51,8 +51,8 @@ struct LlmAggOperation {
     static void FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                                 idx_t offset, string llm_prompt_template);
 
-    template <MinOrMax option>
-    static void MinOrMaxFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+    template <FirstOrLast option>
+    static void FirstOrLastFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                          idx_t offset);
 
     static void RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,

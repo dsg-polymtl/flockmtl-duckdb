@@ -7,11 +7,11 @@
 namespace flockmtl {
 namespace core {
 
-void CoreAggregateFunctions::RegisterLlmMinFunction(DatabaseInstance &db) {
+void CoreAggregateFunctions::RegisterLlmFirstFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_min", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
+        "llm_first", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
         AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
-        LlmAggOperation::Combine, LlmAggOperation::MinOrMaxFinalize<MinOrMax::MIN>, LlmAggOperation::SimpleUpdate);
+        LlmAggOperation::Combine, LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>, LlmAggOperation::SimpleUpdate);
 
     ExtensionUtil::RegisterFunction(db, string_concat);
 }

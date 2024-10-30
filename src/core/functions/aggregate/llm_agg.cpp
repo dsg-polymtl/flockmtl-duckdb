@@ -18,10 +18,10 @@ void LlmAggState::Combine(const LlmAggState &source) {
     value = std::move(source.value);
 }
 
-LlmMinOrMax::LlmMinOrMax(std::string &model, int model_context_size, std::string &search_query,
-                         std::string &llm_min_or_max_template)
+LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
+                         std::string &llm_first_or_last_template)
     : model(model), model_context_size(model_context_size), search_query(search_query),
-      llm_min_or_max_template(llm_min_or_max_template) {
+      llm_first_or_last_template(llm_first_or_last_template) {
 
     auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
@@ -32,26 +32,26 @@ LlmMinOrMax::LlmMinOrMax(std::string &model, int model_context_size, std::string
     available_tokens = model_context_size - num_tokens_meta_and_search_query;
 }
 
-int LlmMinOrMax::calculateFixedTokens() const {
+int LlmFirstOrLast::calculateFixedTokens() const {
     int num_tokens_meta_and_search_query = 0;
     num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(search_query);
-    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(llm_min_or_max_template);
+    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(llm_first_or_last_template);
     return num_tokens_meta_and_search_query;
 }
 
-nlohmann::json LlmMinOrMax::GetMaxOrMinTupleId(const nlohmann::json &tuples) {
+nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
     data["search_query"] = search_query;
-    auto prompt = env.render(llm_min_or_max_template, data);
+    auto prompt = env.render(llm_first_or_last_template, data);
 
     nlohmann::json settings;
     auto response = ModelManager::CallComplete(prompt, model, settings);
     return response["selected"];
 }
 
-nlohmann::json LlmMinOrMax::Evaluate(nlohmann::json &tuples) {
+nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 
     while (tuples.size() > 1) {
         auto num_tuples = tuples.size();
@@ -84,7 +84,7 @@ nlohmann::json LlmMinOrMax::Evaluate(nlohmann::json &tuples) {
                 batch.push_back(tuples[j]);
             }
 
-            auto ranked_indices = GetMaxOrMinTupleId(batch);
+            auto ranked_indices = GetFirstOrLastTupleId(batch);
             responses.push_back(batch[ranked_indices.get<int>()]);
         }
 
@@ -174,22 +174,22 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmMinOrMax llm_min_or_max(model, model_context_size, search_query, llm_prompt_template);
-        auto response = llm_min_or_max.Evaluate(tuples_with_ids);
+        LlmFirstOrLast llm_first_or_last(model, model_context_size, search_query, llm_prompt_template);
+        auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
 }
 
 template <>
-void LlmAggOperation::MinOrMaxFinalize<MinOrMax::MIN>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MIN>());
+    FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::LAST>());
 };
 
 template <>
-void LlmAggOperation::MinOrMaxFinalize<MinOrMax::MAX>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
+void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
                      idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetMinOrMaxPromptTemplate<MinOrMax::MAX>());
+    FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::FIRST>());
 };
 
 void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,

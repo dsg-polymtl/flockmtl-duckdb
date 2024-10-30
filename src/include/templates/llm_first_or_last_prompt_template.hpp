@@ -1,9 +1,9 @@
-#ifndef LLM_MIN_OR_MAX_PROMPT_TEMPLATE_H
-#define LLM_MIN_OR_MAX_PROMPT_TEMPLATE_H
+#ifndef LLM_FIRST_OR_LAST_PROMPT_TEMPLATE_H
+#define LLM_FIRST_OR_LAST_PROMPT_TEMPLATE_H
 
 #include <string>
 
-constexpr auto llm_min_or_max_prompt_template = R"(
+constexpr auto llm_first_or_last_prompt_template = R"(
 You are RankLLM, an intelligent assistant that ranks tuples based on their relevance to the search query.
 
 I will provide you with some tuples, each indicated by a numerical identifier []. Identify and return the {relevance} relevant tuple to the search query.
@@ -27,16 +27,16 @@ Response Format:
 ```
 )";
 
-enum class MinOrMax {
-    MIN,
-    MAX,
+enum class FirstOrLast {
+    LAST,
+    FIRST,
 };
 
-template <MinOrMax option>
-std::string GetMinOrMaxPromptTemplate() {
-    auto relevance = (option == MinOrMax::MAX) ? std::string("most") : std::string("least");
+template <FirstOrLast option>
+std::string GetFirstOrLastPromptTemplate() {
+    auto relevance = (option == FirstOrLast::FIRST) ? std::string("most") : std::string("least");
 
-    auto prompt = std::string(llm_min_or_max_prompt_template);
+    auto prompt = std::string(llm_first_or_last_prompt_template);
     auto pos = prompt.find("{relevance}");
     while (pos != std::string::npos) {
         prompt.replace(pos, 10, relevance);
@@ -46,4 +46,4 @@ std::string GetMinOrMaxPromptTemplate() {
     return prompt;
 }
 
-#endif // LLM_MIN_OR_MAX_PROMPT_TEMPLATE_H
+#endif // LLM_FIRST_OR_LAST_PROMPT_TEMPLATE_H
