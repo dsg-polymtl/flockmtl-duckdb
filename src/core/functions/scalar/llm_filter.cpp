@@ -22,20 +22,6 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmFilterScalarParser(args);
 
-    /*
-    nlohmann::json settings;
-    if (args.ColumnCount() == 4) {
-        settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
-    }
-
-    auto model_details = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
-    auto provider_name = model_details.contains("provider") ? model_details.at("provider").get<std::string>() : "";
-    auto model_name = model_details.contains("model_name") ? model_details.at("model_name").get<std::string>() : "";
-    auto model_query_result = ModelManager::GetQueriedModel (con, model_name, provider_name);
-    auto model = model_query_result.first;
-    auto model_max_tokens = model_query_result.second;
-    */
-
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
     auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
 
@@ -48,7 +34,6 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     auto responses = nlohmann::json::array();
     for (const auto &prompt : prompts) {
 
-        //auto response = ModelManager::CallComplete(prompt, model, provider_name, settings);
         auto response = ModelManager::CallComplete(prompt, model_details);
 
         // Check if the result contains the 'rows' field and push it to the main 'rows'

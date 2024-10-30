@@ -91,8 +91,6 @@ nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json& tup
     data["search_query"] = search_query;
     auto prompt = env.render(llm_reranking_template, data);
 
-    //nlohmann::json settings;
-    //auto response = ModelManager::CallComplete(prompt, model, settings);
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
 
     return response["ranking"];
@@ -107,19 +105,6 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
         auto state_ptr = states_vector[idx];
         auto state = state_map[state_ptr];
 
-        /*
-        auto query_result = CoreModule::GetConnection().Query(
-            "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
-            model_name + "'");
-
-        if (query_result->RowCount() == 0) {
-            throw std::runtime_error("Model not found");
-        }
-
-        auto model = query_result->GetValue(0, 0).ToString();
-        auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
-        */
-
         auto llm_rerank_prompt_template_str = std::string(llm_rerank_prompt_template);
 
         auto tuples_with_ids = nlohmann::json::array();
@@ -130,7 +115,6 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        //LlmReranker llm_reranker(model, model_context_size, user_prompt, llm_rerank_prompt_template_str);
         LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_max_tokens, LlmAggOperation::search_query, llm_rerank_prompt_template_str);
 
         auto reranked_tuples = llm_reranker.SlidingWindowRerank(tuples_with_ids);

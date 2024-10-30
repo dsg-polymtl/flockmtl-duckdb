@@ -38,10 +38,6 @@ private:
 };
 
 struct LlmAggOperation {
-    /*
-    static std::string model_name;
-    static std::string provider_name;
-    */
     static ModelDetails model_details;
     static std::string search_query;
     static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;

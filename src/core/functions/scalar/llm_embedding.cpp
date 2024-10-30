@@ -15,18 +15,6 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmEmbeddingScalarParser(args);
 
-    /*
-    nlohmann::json settings;
-    if (args.ColumnCount() == 3) {
-        settings = CoreScalarParsers::Struct2Json(args.data[2], 1)[0];
-    }
-
-    auto model_details = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
-    auto provider_name = model_details.contains("provider") ? model_details.at("provider").get<std::string>() : "";
-    auto model_name = model_details.contains("model_name") ? model_details.at("model_name").get<std::string>() : "";
-    auto model = ModelManager::GetQueriedModel (con, model_name, provider_name).first;
-    auto inputs = CoreScalarParsers::Struct2Json(args.data[0], args.size());
-     */
     auto inputs = CoreScalarParsers::Struct2Json(args.data[0], args.size());
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
     auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
@@ -38,9 +26,7 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
             concat_input += item.value().get<std::string>() + " ";
         }
 
-        //auto element_embedding = ModelManager::CallEmbedding(concat_input, model, provider_name);
         auto element_embedding = ModelManager::CallEmbedding(concat_input, model_details);
-
         embeddings.push_back(element_embedding);
     }
 
