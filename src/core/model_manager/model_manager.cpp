@@ -39,11 +39,11 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel (Connection& con, 
     return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>()};
 }
 
-nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const std::string &model,
+nlohmann::json ModelManager::OpenAICallComplete (const std::string &prompt, const std::string &model,
                                                 const nlohmann::json &settings, const bool json_response) {
 
     // Get API key from the environment variable
-    const char *key = openai::OpenAI::get_openai_api_key();
+    auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
 
 
@@ -113,12 +113,12 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
     return content_str;
 }
 
-nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const std::string &model,
+nlohmann::json ModelManager::AzureCallComplete (const std::string &prompt, const std::string &model,
                                                 const nlohmann::json &settings, const bool json_response) {
     // Get API key from the environment variable
-    const char *api_key = AzureModelManager::get_azure_api_key ();
-    const char * resource_name = AzureModelManager::get_azure_resource_name();
-    const char * api_version = AzureModelManager::get_azure_api_version ();
+    auto api_key = AzureModelManager::get_azure_api_key ();
+    auto resource_name = AzureModelManager::get_azure_resource_name();
+    auto api_version = AzureModelManager::get_azure_api_version ();
 
     auto azure_model_manager_uptr = std::make_unique<AzureModelManager> (api_key, resource_name, model, api_version, false);
 
@@ -184,7 +184,20 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     return content_str;
 }
 
-nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::string &model,
+nlohmann::json ModelManager::CallComplete (const std::string &prompt, const std::string &model,
+                                          const nlohmann::json &settings, const bool json_response) {
+
+    // Check if the provided model is in the list of supported models
+    if (supported_models.find(model) == supported_models.end()) {
+        throw std::invalid_argument("Model '" + model +
+                                "' is not supported. Please choose one from the supported list: "
+                                "gpt-4o, gpt-4o-mini.");
+    }
+
+    return OpenAICallComplete(prompt, model, settings, json_response);
+}
+
+nlohmann::json ModelManager::CallComplete (const std::string &prompt, const std::string &model,
                                           const std::string &provider, const nlohmann::json &settings,
                                           const bool json_response) {
 
@@ -210,9 +223,9 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const std::
     }
 }
 
-nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const std::string &model) {
+nlohmann::json ModelManager::OpenAICallEmbedding (const std::string &input, const std::string &model) {
     // Get API key from the environment variable
-    const char *key = openai::OpenAI::get_openai_api_key();
+    auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
 
     // Create a JSON request payload with the provided parameters
@@ -238,22 +251,11 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const
 }
 
 
-nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const std::string &model) {
+nlohmann::json ModelManager::AzureCallEmbedding (const std::string &input, const std::string &model) {
     // Get API key from the environment variable
-    const char *api_key = AzureModelManager::get_azure_api_key ();
-    if (!api_key) {
-        throw std::runtime_error("AZURE_API_KEY environment variable is not set.");
-    }
-
-    const char * resource_name = AzureModelManager::get_azure_resource_name();
-    if (!resource_name) {
-        throw std::runtime_error("AZURE_RESOURCE_NAME environment variable is not set.");
-    }
-
-    const char * api_version = AzureModelManager::get_azure_api_version ();
-    if (!api_version) {
-        throw std::runtime_error("AZURE_VERSION environment variable is not set.");
-    }
+    auto api_key = AzureModelManager::get_azure_api_key ();
+    auto resource_name = AzureModelManager::get_azure_resource_name();
+    auto api_version = AzureModelManager::get_azure_api_version ();
 
     auto azure_model_manager_uptr = std::make_unique<AzureModelManager> (api_key, resource_name, model, api_version, false);
 
@@ -279,7 +281,19 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const 
     return embedding;
 }
 
-nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::string &model, const std::string &provider) {
+nlohmann::json ModelManager::CallEmbedding (const std::string &input, const std::string &model) {
+
+    // Check if the provided model is in the list of supported models
+    if (supported_embedding_models.find(model) == supported_embedding_models.end()) {
+        throw std::invalid_argument("Model '" + model +
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "text-embedding-3-small, text-embedding-3-large.");
+    }
+
+    return OpenAICallEmbedding(input, model);
+}
+
+nlohmann::json ModelManager::CallEmbedding (const std::string &input, const std::string &model, const std::string &provider) {
 
     // Check if the provided model is in the list of supported models
     if (supported_embedding_models.find(model) == supported_embedding_models.end()) {
@@ -301,8 +315,6 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const std::
     else{
         return AzureCallEmbedding (input, model);
     }
-
-
 }
 
 } // namespace core

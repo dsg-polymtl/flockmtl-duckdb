@@ -13,6 +13,11 @@ public:
 
     static nlohmann::json CallEmbedding(const std::string &input, const std::string &model, const std::string &provider);
 
+    static nlohmann::json CallComplete(const std::string &prompt, const std::string &model, const nlohmann::json &settings,
+                                       const bool json_response = true);
+
+    static nlohmann::json CallEmbedding(const std::string &input, const std::string &model);
+
     static std::pair<std::string, int32_t> GetQueriedModel (Connection& con, const std::string& model_name, const std::string& provider_name);
 
 private:

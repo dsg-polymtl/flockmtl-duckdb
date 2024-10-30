@@ -35,7 +35,7 @@ void Config::ConfigSchema(duckdb::Connection &con, std::string &schema_name) {
     }
 }
 
-void Config::setup_default_models_config (duckdb::Connection &con, std::string &schema_name){
+void Config::setup_default_models_config (duckdb::Connection &con, std::string &schema_name) {
     const std::string table_name = Config::get_default_models_table_name ();
     // Ensure schema exists
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
@@ -59,7 +59,7 @@ void Config::setup_default_models_config (duckdb::Connection &con, std::string &
     }
 }
 
-void Config::setup_user_defined_models_config (duckdb::Connection &con, std::string &schema_name){
+void Config::setup_user_defined_models_config (duckdb::Connection &con, std::string &schema_name) {
     const std::string table_name = Config::get_user_defined_models_table_name ();
     // Ensure schema exists
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
