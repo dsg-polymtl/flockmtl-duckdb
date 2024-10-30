@@ -14,7 +14,7 @@ public:
 private:
     std::string model;
     int model_context_size;
-    std::string user_prompt;
+    std::string search_query;
     std::string llm_reranking_template;
     int available_tokens;
 

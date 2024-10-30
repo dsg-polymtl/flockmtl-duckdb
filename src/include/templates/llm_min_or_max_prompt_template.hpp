@@ -14,7 +14,7 @@ Tuples:
 [{{tuple.id}}] {{tuple.content}}
 {% endfor %}
 
-Search Query: {{user_prompt}}
+Search Query: {{search_query}}
 
 Select the **single {relevance} relevant tuple** from the tuples provided.The output format should be a JSON object. Only respond with the result, do not explain or add additional words.
 

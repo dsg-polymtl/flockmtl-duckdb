@@ -22,11 +22,11 @@ class LlmMinOrMax {
 public:
     std::string model;
     int model_context_size;
-    std::string user_prompt;
+    std::string search_query;
     std::string llm_min_or_max_template;
     int available_tokens;
 
-    LlmMinOrMax(std::string &model, int model_context_size, std::string &user_prompt,
+    LlmMinOrMax(std::string &model, int model_context_size, std::string &search_query,
                 std::string &llm_min_or_max_template);
 
     nlohmann::json GetMaxOrMinTupleId(const nlohmann::json &tuples);
@@ -38,7 +38,7 @@ private:
 
 struct LlmAggOperation {
     static std::string model_name;
-    static std::string prompt_name;
+    static std::string search_query;
     static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;
 
     static void Initialize(const AggregateFunction &, data_ptr_t state_p);

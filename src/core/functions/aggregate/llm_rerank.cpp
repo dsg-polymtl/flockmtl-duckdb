@@ -15,16 +15,16 @@
 namespace flockmtl {
 namespace core {
 
-LlmReranker::LlmReranker(std::string& model, int model_context_size, std::string& user_prompt, std::string& llm_reranking_template)
-: model(model), model_context_size(model_context_size), user_prompt(user_prompt), llm_reranking_template(llm_reranking_template) {
+LlmReranker::LlmReranker(std::string& model, int model_context_size, std::string& search_query, std::string& llm_reranking_template)
+: model(model), model_context_size(model_context_size), search_query(search_query), llm_reranking_template(llm_reranking_template) {
 
-    auto num_tokens_meta_and_user_prompts = CalculateFixedTokens();
+    auto num_tokens_meta_and_search_query = CalculateFixedTokens();
 
-    if (num_tokens_meta_and_user_prompts > model_context_size) {
+    if (num_tokens_meta_and_search_query > model_context_size) {
         throw std::runtime_error("Fixed tokens exceed model context size");
     }
 
-    available_tokens = model_context_size - num_tokens_meta_and_user_prompts;
+    available_tokens = model_context_size - num_tokens_meta_and_search_query;
 };
 
 nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json& tuples) {
@@ -77,17 +77,17 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json& tuples) {
 }
 
 int LlmReranker::CalculateFixedTokens() const {
-    int num_tokens_meta_and_user_prompts = 0;
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(user_prompt);
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(llm_reranking_template);
-    return num_tokens_meta_and_user_prompts;
+    int num_tokens_meta_and_search_query = 0;
+    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(search_query);
+    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(llm_reranking_template);
+    return num_tokens_meta_and_search_query;
 }
 
 nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json& tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
-    data["user_prompt"] = user_prompt;
+    data["search_query"] = search_query;
     auto prompt = env.render(llm_reranking_template, data);
 
     nlohmann::json settings;
@@ -115,14 +115,6 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
         auto model = query_result->GetValue(0, 0).ToString();
         auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
 
-        query_result = CoreModule::GetConnection().Query("SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
-              prompt_name + "'");
-
-        if (query_result->RowCount() == 0) {
-            throw std::runtime_error("Prompt not found");
-        }
-
-        auto user_prompt = query_result->GetValue(0, 0).ToString();
         auto llm_rerank_prompt_template_str = std::string(llm_rerank_prompt_template);
 
         auto tuples_with_ids = nlohmann::json::array();
@@ -133,7 +125,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmReranker llm_reranker(model, model_context_size, user_prompt, llm_rerank_prompt_template_str);
+        LlmReranker llm_reranker(model, model_context_size, search_query, llm_rerank_prompt_template_str);
         auto reranked_tuples = llm_reranker.SlidingWindowRerank(tuples_with_ids);
 
         result.SetValue(idx, reranked_tuples.dump());

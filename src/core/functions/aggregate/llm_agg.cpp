@@ -18,32 +18,32 @@ void LlmAggState::Combine(const LlmAggState &source) {
     value = std::move(source.value);
 }
 
-LlmMinOrMax::LlmMinOrMax(std::string &model, int model_context_size, std::string &user_prompt,
+LlmMinOrMax::LlmMinOrMax(std::string &model, int model_context_size, std::string &search_query,
                          std::string &llm_min_or_max_template)
-    : model(model), model_context_size(model_context_size), user_prompt(user_prompt),
+    : model(model), model_context_size(model_context_size), search_query(search_query),
       llm_min_or_max_template(llm_min_or_max_template) {
 
-    auto num_tokens_meta_and_user_prompts = calculateFixedTokens();
+    auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
-    if (num_tokens_meta_and_user_prompts > model_context_size) {
+    if (num_tokens_meta_and_search_query > model_context_size) {
         throw std::runtime_error("Fixed tokens exceed model context size");
     }
 
-    available_tokens = model_context_size - num_tokens_meta_and_user_prompts;
+    available_tokens = model_context_size - num_tokens_meta_and_search_query;
 }
 
 int LlmMinOrMax::calculateFixedTokens() const {
-    int num_tokens_meta_and_user_prompts = 0;
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(user_prompt);
-    num_tokens_meta_and_user_prompts += Tiktoken::GetNumTokens(llm_min_or_max_template);
-    return num_tokens_meta_and_user_prompts;
+    int num_tokens_meta_and_search_query = 0;
+    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(search_query);
+    num_tokens_meta_and_search_query += Tiktoken::GetNumTokens(llm_min_or_max_template);
+    return num_tokens_meta_and_search_query;
 }
 
 nlohmann::json LlmMinOrMax::GetMaxOrMinTupleId(const nlohmann::json &tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
-    data["user_prompt"] = user_prompt;
+    data["search_query"] = search_query;
     auto prompt = env.render(llm_min_or_max_template, data);
 
     nlohmann::json settings;
@@ -96,7 +96,7 @@ nlohmann::json LlmMinOrMax::Evaluate(nlohmann::json &tuples) {
 
 // Static member initialization
 std::string LlmAggOperation::model_name;
-std::string LlmAggOperation::prompt_name;
+std::string LlmAggOperation::search_query;
 std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
 
 
@@ -112,7 +112,7 @@ void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) 
 
 void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                       idx_t count) {
-    prompt_name = inputs[0].GetValue(0).ToString();
+    search_query = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
 
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
@@ -174,7 +174,7 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmMinOrMax llm_min_or_max(model, model_context_size, prompt_name, llm_prompt_template);
+        LlmMinOrMax llm_min_or_max(model, model_context_size, search_query, llm_prompt_template);
         auto response = llm_min_or_max.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
@@ -194,7 +194,7 @@ void LlmAggOperation::MinOrMaxFinalize<MinOrMax::MAX>(Vector &states, AggregateI
 
 void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                          data_ptr_t state_p, idx_t count) {
-    prompt_name = inputs[0].GetValue(0).ToString();
+    search_query = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
