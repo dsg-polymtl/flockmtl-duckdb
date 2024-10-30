@@ -3,6 +3,8 @@
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/model_manager/model_manager.hpp"
 #include "flockmtl/core/model_manager/tiktoken.hpp"
+#include <flockmtl/core/config/config.hpp>
+#include <vector>
 
 namespace flockmtl {
 namespace core {
@@ -48,8 +50,8 @@ nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuple
     data["search_query"] = search_query;
     auto prompt = env.render(llm_first_or_last_template, data);
 
-    nlohmann::json settings;
-    auto response = ModelManager::CallComplete(prompt, model, "", settings);
+    //nlohmann::json settings;
+    auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
     return response["selected"];
 }
 
@@ -104,10 +106,15 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 }
 
 // Static member initialization
+/*
 std::string LlmAggOperation::model_name;
+std::string LlmAggOperation::provider_name;
+*/
+ModelDetails LlmAggOperation::model_details {};
+std::string LlmAggOperation::prompt_name;
 std::string LlmAggOperation::search_query;
-std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
 
+std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
 
 void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) {
     auto state_ptr = reinterpret_cast<LlmAggState *>(state_p);
@@ -121,8 +128,19 @@ void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) 
 
 void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                       idx_t count) {
+    //model_name = inputs[1].GetValue(0).ToString();
     search_query = inputs[0].GetValue(0).ToString();
-    model_name = inputs[1].GetValue(0).ToString();
+
+    if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+        throw std::runtime_error("Expected a struct type for model details");
+    }
+/*
+    auto model_details = CastVectorOfStructsToJson(inputs[1], count)[0];
+    provider_name = model_details.contains("provider") ? model_details.at("provider").get<std::string>() : "";
+    model_name = model_details.contains("model_name") ? model_details.at("model_name").get<std::string>() : "";
+*/
+    auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+    LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);
 
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -175,12 +193,15 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
 
         auto model = query_result->GetValue(0, 0).ToString();
         auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
-        */
-
 
         auto model_query_result = ModelManager::GetQueriedModel (CoreModule::GetConnection(), model_name, "");
         auto model = model_query_result.first;
         auto model_context_size = model_query_result.second;
+
+         */
+
+        //auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+        //LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);
 
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
@@ -190,7 +211,7 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmFirstOrLast llm_first_or_last(model, model_context_size, search_query, llm_prompt_template);
+        LlmFirstOrLast llm_first_or_last(model, Config::default_max_tokens, search_query, llm_prompt_template);
         auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
@@ -212,6 +233,15 @@ void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_inp
                          data_ptr_t state_p, idx_t count) {
     search_query = inputs[0].GetValue(0).ToString();
     model_name = inputs[1].GetValue(0).ToString();
+    //model_name = inputs[1].GetValue(0).ToString();
+    /*
+    auto model_details = CastVectorOfStructsToJson(inputs[1], count)[0];
+    provider_name = model_details.contains("provider") ? model_details.at("provider").get<std::string>() : "";
+    model_name = model_details.contains("model_name") ? model_details.at("model_name").get<std::string>() : "";
+    */
+    auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+    LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);
+
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
     auto state_map_p = reinterpret_cast<LlmAggState *>(state_p);

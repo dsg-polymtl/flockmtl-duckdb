@@ -6,6 +6,7 @@
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
+#include <flockmtl/core/config/config.hpp>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
@@ -19,17 +20,8 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmCompleteScalarParser(args);
 
-    nlohmann::json settings;
-    if (args.ColumnCount() == 4) {
-        settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
-    }
-
-    std::string provider_name = settings.contains("provider") ? settings.at("provider").get<std::string>() : "";
-
-    auto model_name = args.data[1].GetValue(0).ToString();
-    auto model_query_result = ModelManager::GetQueriedModel (con, model_name, provider_name);
-    auto model = model_query_result.first;
-    auto model_max_tokens = model_query_result.second;
+    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
 
     if (args.ColumnCount() == 2) {
         auto query_result =
@@ -41,15 +33,14 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
         }
 
         auto template_str = query_result->GetValue(0, 0).ToString();
-        //auto response = ModelManager::CallComplete(template_str, model_name, settings, false);
-        auto response = ModelManager::CallComplete(template_str, model, provider_name, settings, false);
+        auto response = ModelManager::CallComplete(template_str, model_details, false);
 
         result.SetValue(0, response.dump());
     } else {
         auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
         auto prompts = ConstructPrompts(tuples, con, args.data[0].GetValue(0).ToString(), llm_complete_prompt_template,
-                                        model_max_tokens);
+                                        Config::default_max_tokens);
         nlohmann::json settings;
         if (args.ColumnCount() == 4) {
             settings = CoreScalarParsers::Struct2Json(args.data[3], 1)[0];
@@ -57,7 +48,7 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
 
         auto responses = nlohmann::json::array();
         for (const auto &prompt : prompts) {
-            auto response = ModelManager::CallComplete(prompt, model, provider_name, settings, false);
+            auto response = ModelManager::CallComplete(prompt, model_details, false);
 
             // Check if the result contains the 'rows' field and push it to the main 'rows'
             if (response.contains("rows")) {

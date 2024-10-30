@@ -5,6 +5,7 @@
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
 #include "templates/llm_first_or_last_prompt_template.hpp"
+#include "flockmtl/core/model_manager/model_manager.hpp"
 
 namespace flockmtl {
 namespace core {
@@ -37,7 +38,11 @@ private:
 };
 
 struct LlmAggOperation {
+    /*
     static std::string model_name;
+    static std::string provider_name;
+    */
+    static ModelDetails model_details;
     static std::string search_query;
     static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;
 

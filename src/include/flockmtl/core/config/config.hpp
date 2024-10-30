@@ -14,6 +14,7 @@ public:
     static std::string get_default_models_table_name ();
     static std::string get_user_defined_models_table_name ();
     static std::string get_prompts_table_name ();
+    constexpr static int32_t default_max_tokens = 128000;
 
 private:
     static void ConfigSchema(duckdb::Connection &con, std::string &schema_name);

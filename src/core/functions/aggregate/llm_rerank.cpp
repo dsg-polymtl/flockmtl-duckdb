@@ -10,6 +10,7 @@
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include "templates/llm_rerank_prompt_template.hpp"
+#include <flockmtl/core/config/config.hpp>
 #include <flockmtl/core/functions/aggregate/llm_rerank.hpp>
 
 namespace flockmtl {
@@ -90,8 +91,10 @@ nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json& tup
     data["search_query"] = search_query;
     auto prompt = env.render(llm_reranking_template, data);
 
-    nlohmann::json settings;
-    auto response = ModelManager::CallComplete(prompt, model, settings);
+    //nlohmann::json settings;
+    //auto response = ModelManager::CallComplete(prompt, model, settings);
+    auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
+
     return response["ranking"];
 };
 
@@ -104,6 +107,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
         auto state_ptr = states_vector[idx];
         auto state = state_map[state_ptr];
 
+        /*
         auto query_result = CoreModule::GetConnection().Query(
             "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_INTERNAL_TABLE WHERE model_name = '" +
             model_name + "'");
@@ -114,6 +118,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
 
         auto model = query_result->GetValue(0, 0).ToString();
         auto model_context_size = query_result->GetValue(1, 0).GetValue<int>();
+        */
 
         auto llm_rerank_prompt_template_str = std::string(llm_rerank_prompt_template);
 
@@ -125,7 +130,9 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmReranker llm_reranker(model, model_context_size, search_query, llm_rerank_prompt_template_str);
+        //LlmReranker llm_reranker(model, model_context_size, user_prompt, llm_rerank_prompt_template_str);
+        LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_max_tokens, LlmAggOperation::search_query, llm_rerank_prompt_template_str);
+
         auto reranked_tuples = llm_reranker.SlidingWindowRerank(tuples_with_ids);
 
         result.SetValue(idx, reranked_tuples.dump());
@@ -134,7 +141,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
 
 void CoreAggregateFunctions::RegisterLlmRerankFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_rerank", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
+        "llm_rerank", {LogicalType::VARCHAR, LogicalTypeId::STRUCT, LogicalType::ANY}, LogicalType::JSON(),
         AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
         LlmAggOperation::Combine, LlmAggOperation::RerankerFinalize, LlmAggOperation::SimpleUpdate);
 

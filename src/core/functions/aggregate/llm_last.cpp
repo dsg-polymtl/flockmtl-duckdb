@@ -9,7 +9,7 @@ namespace core {
 
 void CoreAggregateFunctions::RegisterLlmLastFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_last", {LogicalType::VARCHAR, LogicalType::VARCHAR, LogicalType::ANY}, LogicalType::JSON(),
+        "llm_max", {LogicalType::VARCHAR, LogicalTypeId::STRUCT, LogicalType::ANY}, LogicalType::JSON(),
         AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
         LlmAggOperation::Combine, LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>, LlmAggOperation::SimpleUpdate);
 
