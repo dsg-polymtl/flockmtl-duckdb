@@ -75,25 +75,6 @@ nlohmann::json ModelManager::OpenAICallComplete (const std::string &prompt, cons
     auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
 
-/*
-    // check if settings is not empty and has max_tokens and temperature else make some default values
-    auto max_tokens = 4000;
-    auto temperature = 0.5;
-    if (!settings.empty()) {
-        for (auto &[key, value] : settings.items()) {
-            if (key == "max_tokens") {
-                max_tokens = std::stoi(static_cast<std::string>(value));
-            } else if (key == "temperature") {
-                temperature = std::stof(static_cast<std::string>(value));
-            } else if (key == "provider") {
-                ;
-            } else {
-                throw std::invalid_argument("Invalid setting key: " + key);
-            }
-        }
-    }
-*/
-
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
                                       {"messages", {{{"role", "user"}, {"content", prompt}}}},
@@ -150,25 +131,6 @@ nlohmann::json ModelManager::AzureCallComplete (const std::string &prompt, const
     auto api_version = AzureModelManager::get_azure_api_version ();
 
     auto azure_model_manager_uptr = std::make_unique<AzureModelManager> (api_key, resource_name, model_details.model, api_version, false);
-
-    /*
-    // check if settings is not empty and has max_tokens and temperature else make some default values
-    auto max_tokens = 4000;
-    auto temperature = 0.5;
-    if (!settings.empty()) {
-        for (auto &[key, value] : settings.items()) {
-            if (key == "max_tokens") {
-                max_tokens = std::stoi(static_cast<std::string>(value));
-            } else if (key == "temperature") {
-                temperature = std::stof(static_cast<std::string>(value));
-            } else if (key == "provider") {
-                ;
-            } else {
-                throw std::invalid_argument("Invalid setting key: " + key);
-            }
-        }
-    }
-    */
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
