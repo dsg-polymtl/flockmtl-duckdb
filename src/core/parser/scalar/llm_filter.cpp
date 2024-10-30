@@ -7,7 +7,7 @@ namespace flockmtl {
 namespace core {
 
 void CoreScalarParsers::LlmFilterScalarParser(DataChunk &args) {
-    if (args.ColumnCount() < 3 || args.ColumnCount() > 4) {
+    if (args.ColumnCount() != 3) {
         throw std::runtime_error("LlmCompleteScalarParser: Invalid number of arguments.");
     }
 
@@ -22,12 +22,6 @@ void CoreScalarParsers::LlmFilterScalarParser(DataChunk &args) {
 
     if (args.data[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("LlmCompleteScalarParser: Inputs must be a struct.");
-    }
-
-    if (args.ColumnCount() == 4) {
-        if (args.data[3].GetType().id() != LogicalTypeId::STRUCT) {
-            throw std::runtime_error("LlmCompleteJsonScalarParser: Settings value must be a struct.");
-        }
     }
 }
 

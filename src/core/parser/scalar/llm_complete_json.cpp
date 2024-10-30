@@ -21,7 +21,7 @@ std::vector<nlohmann::json> CoreScalarParsers::Struct2Json(Vector &struct_vector
 }
 
 void CoreScalarParsers::LlmCompleteJsonScalarParser(DataChunk &args) {
-    if (args.ColumnCount() < 2 || args.ColumnCount() > 4) {
+    if (args.ColumnCount() < 2 || args.ColumnCount() > 3) {
         throw std::runtime_error("LlmCompleteJsonScalarParser: Invalid number of arguments.");
     }
 
@@ -37,12 +37,6 @@ void CoreScalarParsers::LlmCompleteJsonScalarParser(DataChunk &args) {
     if (args.ColumnCount() == 3) {
         if (args.data[2].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("LlmCompleteJsonScalarParser: Inputs must be a struct.");
-        }
-    }
-
-    if (args.ColumnCount() == 4) {
-        if (args.data[3].GetType().id() != LogicalTypeId::STRUCT) {
-            throw std::runtime_error("LlmCompleteJsonScalarParser: Settings value must be a struct.");
         }
     }
 }
