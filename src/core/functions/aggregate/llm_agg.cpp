@@ -15,7 +15,9 @@ void LlmAggState::Update(const nlohmann::json &input) {
 }
 
 void LlmAggState::Combine(const LlmAggState &source) {
-    value = std::move(source.value);
+    for (auto &value: source.value){
+        Update(std::move(source.value));
+    }
 }
 
 LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
@@ -52,23 +54,30 @@ nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuple
 }
 
 nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
+    int num_tuples;
+    vector<int> num_tuples_per_batch;
+    int num_used_tokens;
+    int batch_size;
+    int batch_index;
 
     while (tuples.size() > 1) {
-        auto num_tuples = tuples.size();
-        uint32_t num_tuples_per_batch[num_tuples];
-        auto num_used_tokens = 0u;
-        auto batch_size = 0;
-        auto batch_index = 0;
+        num_tuples = tuples.size();
+        num_used_tokens = 0;
+        batch_size = 0;
+        batch_index = 0;
+
         for (int i = 0; i < num_tuples; i++) {
             num_used_tokens += Tiktoken::GetNumTokens(tuples[i].dump());
             batch_size++;
 
             if (num_used_tokens >= available_tokens) {
-                num_tuples_per_batch[batch_index++] = batch_size;
+                num_tuples_per_batch.push_back(batch_size);
+                batch_index++;
                 num_used_tokens = 0;
                 batch_size = 0;
             } else if (i == num_tuples - 1) {
-                num_tuples_per_batch[batch_index++] = batch_size;
+                num_tuples_per_batch.push_back(batch_size);
+                batch_index++;
             }
         }
 
