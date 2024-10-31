@@ -125,7 +125,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
 
 void CoreAggregateFunctions::RegisterLlmRerankFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_rerank", {LogicalType::VARCHAR, LogicalTypeId::STRUCT, LogicalType::ANY}, LogicalType::JSON(),
+        "llm_rerank", {LogicalType::VARCHAR, LogicalType::ANY, LogicalType::ANY}, LogicalType::JSON(),
         AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
         LlmAggOperation::Combine, LlmAggOperation::RerankerFinalize, LlmAggOperation::SimpleUpdate);
 

@@ -17,8 +17,8 @@ void LlmAggState::Update(const nlohmann::json &input) {
 }
 
 void LlmAggState::Combine(const LlmAggState &source) {
-    for (auto &value: source.value){
-        Update(std::move(source.value));
+    for (auto &input: source.value){
+        Update(std::move(input));
     }
 }
 
@@ -43,7 +43,7 @@ int LlmFirstOrLast::calculateFixedTokens() const {
     return num_tokens_meta_and_search_query;
 }
 
-nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
+int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
@@ -51,7 +51,7 @@ nlohmann::json LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuple
     auto prompt = env.render(llm_first_or_last_template, data);
 
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
-    return response["selected"];
+    return response["selected"].get<int>();
 }
 
 nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
@@ -94,10 +94,9 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
                 batch.push_back(tuples[j]);
             }
 
-            auto ranked_indices = GetFirstOrLastTupleId(batch);
-            responses.push_back(batch[ranked_indices.get<int>()]);
+            auto result_idx = GetFirstOrLastTupleId(batch);
+            responses.push_back(batch[result_idx]);
         }
-
         tuples = responses;
     };
 
@@ -122,7 +121,6 @@ void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) 
 
 void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                       idx_t count) {
-    //model_name = inputs[1].GetValue(0).ToString();
     search_query = inputs[0].GetValue(0).ToString();
 
     if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
@@ -200,7 +198,6 @@ void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>(Vector &states, Ag
 
 void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                          data_ptr_t state_p, idx_t count) {
-
     search_query = inputs[0].GetValue(0).ToString();
     auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
     LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);

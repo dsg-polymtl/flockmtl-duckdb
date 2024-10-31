@@ -30,7 +30,7 @@ public:
     LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
                 std::string &llm_first_or_last_template);
 
-    nlohmann::json GetFirstOrLastTupleId(const nlohmann::json &tuples);
+    int GetFirstOrLastTupleId(const nlohmann::json &tuples);
     nlohmann::json Evaluate(nlohmann::json &tuples);
 
 private:
