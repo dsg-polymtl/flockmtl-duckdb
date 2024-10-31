@@ -116,7 +116,6 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         throw std::runtime_error("Expected non-empty string literal for model name.");
     }
     std::string model_name = token.value;
-    model_name.erase(std::remove(model_name.begin(), model_name.end(), '\n'), model_name.cend());
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
