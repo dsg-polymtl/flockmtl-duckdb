@@ -37,9 +37,15 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
     auto batch_size = 0u;
     auto window_tuples = nlohmann::json::array();
     auto start_index = num_tuples - 1;
-    auto reranked_tuples = nlohmann::json::array();
+    auto half_batch = 0;
+    auto next_tuples = nlohmann::json::array();
 
     do {
+        window_tuples.clear();
+        window_tuples = std::move(next_tuples);
+        next_tuples.clear();
+        batch_size = half_batch;
+        accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
         while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
             auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
             if (accumulated_rows_tokens + num_tokens > available_tokens) {
@@ -51,32 +57,24 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
             start_index--;
         }
 
-        auto ranked_indices = LlmRerankWithSlidingWindow(window_tuples);
-
-        auto half_batch = batch_size / 2;
-        auto next_tuples = nlohmann::json::array();
-        for (auto i = 0; i < batch_size; i++) {
-            if (i < half_batch) {
-                next_tuples.push_back(window_tuples[i]);
-            } else {
-                reranked_tuples.push_back(window_tuples[i]);
-            }
+        auto indexed_tuples = nlohmann::json::array();
+        for (auto i = 0; i < window_tuples.size(); i++) {
+            auto indexed_tuple = nlohmann::json::object();
+            indexed_tuple["id"] = i;
+            indexed_tuple["content"] = window_tuples[i];
+            indexed_tuples.push_back(indexed_tuple);
         }
 
-        window_tuples.clear();
-        window_tuples = std::move(next_tuples);
-        batch_size = half_batch;
-        accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
+        auto ranked_indices = LlmRerankWithSlidingWindow(indexed_tuples);
+
+        half_batch = batch_size / 2;
+        next_tuples = nlohmann::json::array();
+        for (auto i = 0; i < half_batch; i++) {
+            next_tuples.push_back(window_tuples[ranked_indices[i]]);
+        }
     } while (start_index >= 0);
 
-    reranked_tuples.insert(reranked_tuples.end(), window_tuples.begin(), window_tuples.end());
-
-    nlohmann::json results;
-    for (auto i = num_tuples - 1; i >= num_tuples / 2; i--) {
-        results.push_back(reranked_tuples[i]["content"]);
-    }
-
-    return results;
+    return next_tuples;
 }
 
 int LlmReranker::CalculateFixedTokens() const {
@@ -86,7 +84,7 @@ int LlmReranker::CalculateFixedTokens() const {
     return num_tokens_meta_and_search_query;
 }
 
-nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tuples) {
+vector<int> LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tuples) {
     inja::Environment env;
     nlohmann::json data;
     data["tuples"] = tuples;
@@ -95,7 +93,7 @@ nlohmann::json LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tup
 
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
 
-    return response["ranking"];
+    return response["ranking"].get<vector<int>>();
 };
 
 void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
@@ -111,10 +109,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
 
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
-            auto tuple_with_id = nlohmann::json::object();
-            tuple_with_id["id"] = i;
-            tuple_with_id["content"] = state->value[i];
-            tuples_with_ids.push_back(tuple_with_id);
+            tuples_with_ids.push_back(state->value[i]);
         }
 
         LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_max_tokens,

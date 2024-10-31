@@ -22,7 +22,7 @@ private:
 
     int CalculateFixedTokens() const;
 
-    nlohmann::json LlmRerankWithSlidingWindow(const nlohmann::json &tuples);
+    vector<int> LlmRerankWithSlidingWindow(const nlohmann::json &tuples);
 };
 
 } // namespace core

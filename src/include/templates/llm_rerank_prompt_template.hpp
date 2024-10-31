@@ -2,9 +2,9 @@
 #define LLM_RERANK_PROMPT_TEMPLATE_H
 
 constexpr auto llm_rerank_prompt_template = R"(
-You are RankLLM, an intelligent assistant that can rank passages based on their relevancy to the query.
+You are RankLLM, an intelligent assistant that ranks passages based on their relevance to a given query.
 
-I will provide you with some tuples, each indicated by a numerical identifier []. Rank the passages based on their relevance to the search query:
+Below is a set of tuples, each with a unique numerical identifier. Rank all of these tuples based on their relevance to the provided search query, and return a JSON list that includes all tuple IDs in descending order of relevance.
 
 Tuples:
 
@@ -14,14 +14,16 @@ Tuples:
 
 Search Query: {{search_query}}
 
-Rank the tuples above based on their relevance to the search query. All the passages should be included and listed using identifiers, in descending order of relevance. The output format should be in JSON list [id_1, ..., id_n], e.g., [22, 33, ..., 3], Only respond with the ranking results, do not say any word or explain.
+Return your response in JSON format **only** as follows, listing all tuple IDs in descending order of relevance:
 
-Response Format:
-
+```json
 {
-  "ranking": [id_1, ..., id_n]
+  "ranking": [id1, id2, id3, ...]
 }
+```
 
+No additional text or explanation should be provided; only return the ranking results with all tuple IDs included.
+MAKE SURE YOU RETURN THE FULL LIST. EACH ITEM HAS TO BE RETURNED IN THE LIST.
 )";
 
 #endif // LLM_RERANK_PROMPT_TEMPLATE_H
