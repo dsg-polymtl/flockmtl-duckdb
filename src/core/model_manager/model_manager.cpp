@@ -33,7 +33,7 @@ ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::j
             max_tokens = std::stoi(static_cast<std::string>(value));
         } else if (key == "temperature") {
             temperature = std::stof(static_cast<std::string>(value));
-        } else if (key == "provider" or key == "model_name") {
+        } else if (key == "provider" || key == "model_name") {
             continue;
         } else {
             throw std::invalid_argument("Invalid setting key: " + key);
@@ -192,7 +192,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
     }
 
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() and model_details.provider_name != "default" and
+    if (!model_details.provider_name.empty() && model_details.provider_name != "default" &&
         supported_providers.find(model_details.provider_name) == supported_providers.end()) {
 
         throw std::invalid_argument("Provider '" + model_details.provider_name +
@@ -200,7 +200,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
                                     "openai/default, azure");
     }
 
-    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or
+    if (model_details.provider_name == "openai" || model_details.provider_name == "default" ||
         model_details.provider_name == "") {
         return OpenAICallComplete(prompt, model_details, json_response);
     } else {
@@ -276,7 +276,7 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const Model
     }
 
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() and model_details.provider_name != "default" and
+    if (!model_details.provider_name.empty() && model_details.provider_name != "default" &&
         supported_providers.find(model_details.provider_name) == supported_providers.end()) {
 
         throw std::invalid_argument("Provider '" + model_details.provider_name +
@@ -284,7 +284,7 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const Model
                                     "openai/default, azure");
     }
 
-    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or
+    if (model_details.provider_name == "openai" || model_details.provider_name == "default" ||
         model_details.provider_name.empty()) {
         return OpenAICallEmbedding(input, model_details);
     } else {
