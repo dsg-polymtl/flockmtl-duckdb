@@ -5,17 +5,24 @@
 namespace flockmtl {
 namespace core {
 
-std::string Config::get_schema_name () { return "flockmtl_config";}
+std::string Config::get_schema_name() {
+    return "flockmtl_config";
+}
 
-std::string Config::get_default_models_table_name () { return "FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE";}
+std::string Config::get_default_models_table_name() {
+    return "FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE";
+}
 
-std::string Config::get_user_defined_models_table_name () { return "FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE";}
+std::string Config::get_user_defined_models_table_name() {
+    return "FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE";
+}
 
-std::string Config::get_prompts_table_name () { return "FLOCKMTL_PROMPT_INTERNAL_TABLE";}
-
+std::string Config::get_prompts_table_name() {
+    return "FLOCKMTL_PROMPT_INTERNAL_TABLE";
+}
 
 void Config::Configure(duckdb::DatabaseInstance &db) {
-    std::string schema = Config::get_schema_name ();
+    std::string schema = Config::get_schema_name();
     duckdb::Connection con(db);
     con.BeginTransaction();
 
@@ -35,8 +42,8 @@ void Config::ConfigSchema(duckdb::Connection &con, std::string &schema_name) {
     }
 }
 
-void Config::setup_default_models_config (duckdb::Connection &con, std::string &schema_name) {
-    const std::string table_name = Config::get_default_models_table_name ();
+void Config::setup_default_models_config(duckdb::Connection &con, std::string &schema_name) {
+    const std::string table_name = Config::get_default_models_table_name();
     // Ensure schema exists
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
                             "' AND table_name = '" + table_name + "';");
@@ -54,13 +61,16 @@ void Config::setup_default_models_config (duckdb::Connection &con, std::string &
                   "('default', 'gpt-4o-mini', 'openai', 128000),"
                   "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000),"
                   "('gpt-4o', 'gpt-4o', 'openai', 128000),"
-                  "('text-embedding-3-large', 'text-embedding-3-large', 'openai', " + std::to_string (Config::default_max_tokens) + "),"
-                  "('text-embedding-3-small', 'text-embedding-3-small', 'openai', " + std::to_string (Config::default_max_tokens) + ");");
+                  "('text-embedding-3-large', 'text-embedding-3-large', 'openai', " +
+                  std::to_string(Config::default_max_tokens) +
+                  "),"
+                  "('text-embedding-3-small', 'text-embedding-3-small', 'openai', " +
+                  std::to_string(Config::default_max_tokens) + ");");
     }
 }
 
-void Config::setup_user_defined_models_config (duckdb::Connection &con, std::string &schema_name) {
-    const std::string table_name = Config::get_user_defined_models_table_name ();
+void Config::setup_user_defined_models_config(duckdb::Connection &con, std::string &schema_name) {
+    const std::string table_name = Config::get_user_defined_models_table_name();
     // Ensure schema exists
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
                             "' AND table_name = '" + table_name + "';");
@@ -72,10 +82,9 @@ void Config::setup_user_defined_models_config (duckdb::Connection &con, std::str
                   "provider_name VARCHAR NOT NULL,"
                   "max_tokens INTEGER NOT NULL,"
                   "PRIMARY KEY (model_name, provider_name)"
-                   ");");
+                  ");");
     }
 }
-
 
 void Config::ConfigModelTable(duckdb::Connection &con, std::string &schema_name) {
     setup_default_models_config(con, schema_name);

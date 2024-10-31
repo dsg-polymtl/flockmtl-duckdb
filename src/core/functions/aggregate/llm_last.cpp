@@ -8,10 +8,11 @@ namespace flockmtl {
 namespace core {
 
 void CoreAggregateFunctions::RegisterLlmLastFunction(DatabaseInstance &db) {
-    auto string_concat = AggregateFunction(
-        "llm_last", {LogicalType::VARCHAR, LogicalType::ANY, LogicalType::ANY}, LogicalType::JSON(),
-        AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
-        LlmAggOperation::Combine, LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>, LlmAggOperation::SimpleUpdate);
+    auto string_concat =
+        AggregateFunction("llm_last", {LogicalType::VARCHAR, LogicalType::ANY, LogicalType::ANY}, LogicalType::JSON(),
+                          AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize,
+                          LlmAggOperation::Operation, LlmAggOperation::Combine,
+                          LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>, LlmAggOperation::SimpleUpdate);
 
     ExtensionUtil::RegisterFunction(db, string_concat);
 }

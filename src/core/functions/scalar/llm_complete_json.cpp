@@ -15,7 +15,6 @@
 #include <string>
 #include <templates/llm_complete_json_prompt_template.hpp>
 
-
 namespace flockmtl {
 namespace core {
 
@@ -24,7 +23,7 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
     CoreScalarParsers::LlmCompleteJsonScalarParser(args);
 
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
-    auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
+    auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
 
     if (args.ColumnCount() == 2) {
         auto query_result =

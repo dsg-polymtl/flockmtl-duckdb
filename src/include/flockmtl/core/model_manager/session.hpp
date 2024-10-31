@@ -6,9 +6,8 @@
 #else
 #include "curl/curl.h"
 #endif
-#include <string>
 #include <mutex>
-
+#include <string>
 
 struct Response {
     std::string text;
@@ -19,12 +18,14 @@ struct Response {
 // Simple curl Session inspired by CPR
 class Session {
 public:
-    Session(const std::string& provider, bool throw_exception) : provider_ (provider), throw_exception_ {throw_exception} {
+    Session(const std::string &provider, bool throw_exception)
+        : provider_(provider), throw_exception_ {throw_exception} {
         initCurl();
         ignoreSSL();
     }
 
-    Session(const std::string& provider, bool throw_exception, std::string proxy_url) : provider_ (provider), throw_exception_ {throw_exception} {
+    Session(const std::string &provider, bool throw_exception, std::string proxy_url)
+        : provider_(provider), throw_exception_ {throw_exception} {
         initCurl();
         ignoreSSL();
         setProxyUrl(proxy_url);
@@ -157,11 +158,10 @@ inline Response Session::deletePrepare() {
 
 inline void Session::set_auth_header(struct curl_slist **headers_ptr) {
     auto headers = *headers_ptr;
-    if (provider_ == "OpenAI"){
+    if (provider_ == "OpenAI") {
         std::string auth_str = "Authorization: Bearer " + token_;
         headers = curl_slist_append(headers, auth_str.c_str());
-    }
-    else if (provider_ == "Azure"){
+    } else if (provider_ == "Azure") {
         std::string auth_str = "api-key: " + token_;
         headers = curl_slist_append(headers, auth_str.c_str());
     }
@@ -181,7 +181,7 @@ inline Response Session::makeRequest(const std::string &contentType) {
         }
     }
 
-    set_auth_header (&headers);
+    set_auth_header(&headers);
     /*
     std::string auth_str = "Authorization: Bearer " + token_;
     headers = curl_slist_append(headers, auth_str.c_str());
@@ -199,7 +199,6 @@ inline Response Session::makeRequest(const std::string &contentType) {
         headers = curl_slist_append(headers, beta_.c_str());
     }
 
-
     curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, headers);
     curl_easy_setopt(curl_, CURLOPT_URL, url_.c_str());
 
@@ -215,7 +214,7 @@ inline Response Session::makeRequest(const std::string &contentType) {
     std::string error_msg {};
     if (res_ != CURLE_OK) {
         is_error = true;
-        error_msg =  provider_ + " curl_easy_perform() failed: " + std::string {curl_easy_strerror(res_)};
+        error_msg = provider_ + " curl_easy_perform() failed: " + std::string {curl_easy_strerror(res_)};
         if (throw_exception_) {
             throw std::runtime_error(error_msg);
         } else {
@@ -232,6 +231,5 @@ inline std::string Session::easyEscape(const std::string &text) {
     curl_free(encoded_output);
     return str;
 }
-
 
 #endif

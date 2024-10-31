@@ -14,7 +14,6 @@
 #include <string>
 #include <templates/llm_filter_prompt_template.hpp>
 
-
 namespace flockmtl {
 namespace core {
 
@@ -23,8 +22,7 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     CoreScalarParsers::LlmFilterScalarParser(args);
 
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
-    auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
-
+    auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
 
     auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 

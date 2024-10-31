@@ -190,7 +190,6 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         throw std::runtime_error("Expected comma ',' after provider_name.");
     }
 
-
     token = tokenizer.NextToken();
     if (token.type != TokenType::NUMBER || token.value.empty()) {
         throw std::runtime_error("Expected integer value for new max_tokens.");
@@ -249,13 +248,16 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     switch (statement.type) {
     case StatementType::CREATE_MODEL: {
         const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
-        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, provider_name, max_tokens) VALUES ('"
-            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.provider_name <<  "', '" << create_stmt.max_tokens << "');";
+        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, "
+               "provider_name, max_tokens) VALUES ('"
+            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.provider_name << "', '"
+            << create_stmt.max_tokens << "');";
         break;
     }
     case StatementType::DELETE_MODEL: {
         const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
-        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" << delete_stmt.model_name << "'"
+        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
+            << delete_stmt.model_name << "'"
             << " AND provider_name = '" << delete_stmt.provider_name << "';";
         break;
     }
@@ -270,9 +272,11 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::GET_MODEL: {
         const auto &get_stmt = static_cast<const GetModelStatement &>(statement);
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name << "'"
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '"
+            << get_stmt.model_name << "'"
             << " UNION ALL "
-            << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" << get_stmt.model_name << "'"
+            << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
+            << get_stmt.model_name << "'"
             << ";";
         break;
     }

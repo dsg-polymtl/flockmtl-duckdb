@@ -28,7 +28,7 @@ public:
     int available_tokens;
 
     LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
-                std::string &llm_first_or_last_template);
+                   std::string &llm_first_or_last_template);
 
     int GetFirstOrLastTupleId(const nlohmann::json &tuples);
     nlohmann::json Evaluate(nlohmann::json &tuples);
@@ -54,10 +54,10 @@ struct LlmAggOperation {
 
     template <FirstOrLast option>
     static void FirstOrLastFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                         idx_t offset);
+                                    idx_t offset);
 
     static void RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                         idx_t offset);
+                                 idx_t offset);
 
     static void SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                              data_ptr_t state_p, idx_t count);

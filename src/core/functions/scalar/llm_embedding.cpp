@@ -17,7 +17,7 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
 
     auto inputs = CoreScalarParsers::Struct2Json(args.data[0], args.size());
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
-    auto model_details = ModelManager::CreateModelDetails (con, model_details_json);
+    auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
 
     auto embeddings = nlohmann::json::array();
     for (auto &row : inputs) {

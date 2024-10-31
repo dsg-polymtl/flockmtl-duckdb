@@ -13,14 +13,15 @@ namespace core {
 
 static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-4o-mini"};
 static const std::unordered_set<std::string> supported_providers = {"openai", "azure"};
-static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small", "text-embedding-3-large"};
+static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small",
+                                                                           "text-embedding-3-large"};
 
-ModelDetails ModelManager::CreateModelDetails (Connection& con, const nlohmann::json &model_json) {
+ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::json &model_json) {
     ModelDetails model_details;
 
     model_details.provider_name = model_json.contains("provider") ? model_json.at("provider").get<std::string>() : "";
     model_details.model_name = model_json.contains("model_name") ? model_json.at("model_name").get<std::string>() : "";
-    auto query_result = GetQueriedModel (con, model_details.model_name, model_details.provider_name);
+    auto query_result = GetQueriedModel(con, model_details.model_name, model_details.provider_name);
     model_details.model = query_result.first;
     model_details.max_tokens = query_result.second;
 
@@ -30,14 +31,11 @@ ModelDetails ModelManager::CreateModelDetails (Connection& con, const nlohmann::
     for (auto &[key, value] : model_json.items()) {
         if (key == "max_tokens") {
             max_tokens = std::stoi(static_cast<std::string>(value));
-        }
-        else if (key == "temperature") {
+        } else if (key == "temperature") {
             temperature = std::stof(static_cast<std::string>(value));
-        }
-        else if (key == "provider" or key == "model_name") {
+        } else if (key == "provider" or key == "model_name") {
             continue;
-        }
-        else {
+        } else {
             throw std::invalid_argument("Invalid setting key: " + key);
         }
     }
@@ -48,9 +46,11 @@ ModelDetails ModelManager::CreateModelDetails (Connection& con, const nlohmann::
     return model_details;
 }
 
-std::pair<std::string, int32_t> ModelManager::GetQueriedModel (Connection& con, const std::string& model_name, const std::string& provider_name) {
-    std::string query =  "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '" +
-                                                         model_name + "'";
+std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, const std::string &model_name,
+                                                              const std::string &provider_name) {
+    std::string query = "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                        "WHERE model_name = '" +
+                        model_name + "'";
     if (!provider_name.empty()) {
         query += " AND provider_name = '" + provider_name + "'";
     }
@@ -58,7 +58,8 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel (Connection& con, 
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query("SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
+        query_result = con.Query(
+            "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
             model_name + "'");
 
         if (query_result->RowCount() == 0) {
@@ -69,7 +70,8 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel (Connection& con, 
     return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>()};
 }
 
-nlohmann::json ModelManager::OpenAICallComplete (const std::string &prompt, const ModelDetails& model_details, const bool json_response) {
+nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                                const bool json_response) {
 
     // Get API key from the environment variable
     auto key = openai::OpenAI::get_openai_api_key();
@@ -124,13 +126,15 @@ nlohmann::json ModelManager::OpenAICallComplete (const std::string &prompt, cons
     return content_str;
 }
 
-nlohmann::json ModelManager::AzureCallComplete (const std::string &prompt, const ModelDetails& model_details, const bool json_response) {
+nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                               const bool json_response) {
     // Get API key from the environment variable
-    auto api_key = AzureModelManager::get_azure_api_key ();
+    auto api_key = AzureModelManager::get_azure_api_key();
     auto resource_name = AzureModelManager::get_azure_resource_name();
-    auto api_version = AzureModelManager::get_azure_api_version ();
+    auto api_version = AzureModelManager::get_azure_api_version();
 
-    auto azure_model_manager_uptr = std::make_unique<AzureModelManager> (api_key, resource_name, model_details.model, api_version, false);
+    auto azure_model_manager_uptr =
+        std::make_unique<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
@@ -177,34 +181,34 @@ nlohmann::json ModelManager::AzureCallComplete (const std::string &prompt, const
     return content_str;
 }
 
-nlohmann::json ModelManager::CallComplete (const std::string &prompt, const ModelDetails& model_details,
+nlohmann::json ModelManager::CallComplete(const std::string &prompt, const ModelDetails &model_details,
                                           const bool json_response) {
 
     // Check if the provided model is in the list of supported models
     if (supported_models.find(model_details.model) == supported_models.end()) {
         throw std::invalid_argument("Model '" + model_details.model +
-                                "' is not supported. Please choose one from the supported list: "
-                                "gpt-4o, gpt-4o-mini.");
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "gpt-4o, gpt-4o-mini.");
     }
 
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() and model_details.provider_name != "default"
-        and supported_providers.find(model_details.provider_name) == supported_providers.end()) {
+    if (!model_details.provider_name.empty() and model_details.provider_name != "default" and
+        supported_providers.find(model_details.provider_name) == supported_providers.end()) {
 
         throw std::invalid_argument("Provider '" + model_details.provider_name +
-                                "' is not supported. Please choose one from the supported list: "
-                                "openai/default, azure");
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "openai/default, azure");
     }
 
-    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or model_details.provider_name == "") {
+    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or
+        model_details.provider_name == "") {
         return OpenAICallComplete(prompt, model_details, json_response);
-    }
-    else{
-        return AzureCallComplete (prompt, model_details, json_response);
+    } else {
+        return AzureCallComplete(prompt, model_details, json_response);
     }
 }
 
-nlohmann::json ModelManager::OpenAICallEmbedding (const std::string &input, const ModelDetails& model_details) {
+nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
@@ -231,14 +235,14 @@ nlohmann::json ModelManager::OpenAICallEmbedding (const std::string &input, cons
     return embedding;
 }
 
-
-nlohmann::json ModelManager::AzureCallEmbedding (const std::string &input, const ModelDetails& model_details) {
+nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const ModelDetails &model_details) {
     // Get API key from the environment variable
-    auto api_key = AzureModelManager::get_azure_api_key ();
+    auto api_key = AzureModelManager::get_azure_api_key();
     auto resource_name = AzureModelManager::get_azure_resource_name();
-    auto api_version = AzureModelManager::get_azure_api_version ();
+    auto api_version = AzureModelManager::get_azure_api_version();
 
-    auto azure_model_manager_uptr = std::make_unique<AzureModelManager> (api_key, resource_name, model_details.model, api_version, false);
+    auto azure_model_manager_uptr =
+        std::make_unique<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
@@ -262,29 +266,29 @@ nlohmann::json ModelManager::AzureCallEmbedding (const std::string &input, const
     return embedding;
 }
 
-nlohmann::json ModelManager::CallEmbedding (const std::string &input, const ModelDetails& model_details) {
+nlohmann::json ModelManager::CallEmbedding(const std::string &input, const ModelDetails &model_details) {
 
     // Check if the provided model is in the list of supported models
-    if (supported_embedding_models.find (model_details.model) == supported_embedding_models.end()) {
+    if (supported_embedding_models.find(model_details.model) == supported_embedding_models.end()) {
         throw std::invalid_argument("Model '" + model_details.model +
                                     "' is not supported. Please choose one from the supported list: "
                                     "text-embedding-3-small, text-embedding-3-large.");
     }
 
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() and model_details.provider_name != "default"
-        and supported_providers.find(model_details.provider_name) == supported_providers.end()) {
+    if (!model_details.provider_name.empty() and model_details.provider_name != "default" and
+        supported_providers.find(model_details.provider_name) == supported_providers.end()) {
 
         throw std::invalid_argument("Provider '" + model_details.provider_name +
-                                "' is not supported. Please choose one from the supported list: "
-                                "openai/default, azure");
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "openai/default, azure");
     }
 
-    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or model_details.provider_name.empty()) {
+    if (model_details.provider_name == "openai" or model_details.provider_name == "default" or
+        model_details.provider_name.empty()) {
         return OpenAICallEmbedding(input, model_details);
-    }
-    else{
-        return AzureCallEmbedding (input, model_details);
+    } else {
+        return AzureCallEmbedding(input, model_details);
     }
 }
 

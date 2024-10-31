@@ -2,24 +2,22 @@
 #define _FLOCK_MTL_MODEL_MANAGER_AZURE_H
 
 #include "session.hpp"
-#include <nlohmann/json.hpp> // nlohmann/json
-#include <string>
-#include <iostream>
-#include <stdexcept>
 
+#include <iostream>
+#include <nlohmann/json.hpp> // nlohmann/json
+#include <stdexcept>
+#include <string>
 
 namespace flockmtl {
 namespace core {
 
-class AzureModelManager{
+class AzureModelManager {
 public:
-    AzureModelManager(std::string token, std::string resource_name, std::string deployment_model_name, std::string api_version, bool throw_exception): _token(token),
-          _resource_name(resource_name),
-          _deployment_model_name (deployment_model_name),
-          _api_version(api_version),
-          _session ("Azure", throw_exception),
-          _throw_exception (throw_exception){
-          _session.setToken(token, "");
+    AzureModelManager(std::string token, std::string resource_name, std::string deployment_model_name,
+                      std::string api_version, bool throw_exception)
+        : _token(token), _resource_name(resource_name), _deployment_model_name(deployment_model_name),
+          _api_version(api_version), _session("Azure", throw_exception), _throw_exception(throw_exception) {
+        _session.setToken(token, "");
     }
 
     AzureModelManager(const AzureModelManager &) = delete;
@@ -28,24 +26,24 @@ public:
     AzureModelManager &operator=(AzureModelManager &&) = delete;
 
     nlohmann::json CallComplete(const nlohmann::json &json, const std::string &contentType = "application/json") {
-        std::string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" + _deployment_model_name
-                  + "/chat/completions?api-version=" + _api_version;
+        std::string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" +
+                          _deployment_model_name + "/chat/completions?api-version=" + _api_version;
         _session.setUrl(url);
-        return execute_post (json.dump(), contentType);
+        return execute_post(json.dump(), contentType);
     }
 
     nlohmann::json CallEmbedding(const nlohmann::json &json, const std::string &contentType = "application/json") {
-        string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" + _deployment_model_name
-                     + "/embeddings?api-version=" + _api_version;
+        string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" + _deployment_model_name +
+                     "/embeddings?api-version=" + _api_version;
         _session.setUrl(url);
-        return execute_post (json.dump(), contentType);
+        return execute_post(json.dump(), contentType);
     }
 
     // I am adding it here since I want to keep provider specific calls
     // inside same file
-    static const char * get_azure_api_key (){
+    static const char *get_azure_api_key() {
         static int check_done = -1;
-        static const char * api_key = nullptr;
+        static const char *api_key = nullptr;
 
         if (check_done == -1) {
             api_key = std::getenv("AZURE_API_KEY");
@@ -59,9 +57,9 @@ public:
         return api_key;
     }
 
-    static const char * get_azure_resource_name (){
+    static const char *get_azure_resource_name() {
         static int check_done = -1;
-        static const char * rname = nullptr;
+        static const char *rname = nullptr;
 
         if (check_done == -1) {
             rname = std::getenv("AZURE_RESOURCE_NAME");
@@ -75,9 +73,9 @@ public:
         return rname;
     }
 
-    static const char * get_azure_api_version(){
+    static const char *get_azure_api_version() {
         static int check_done = -1;
-        static const char * api_version = nullptr;
+        static const char *api_version = nullptr;
 
         if (check_done == -1) {
             api_version = std::getenv("AZURE_API_VERSION");
@@ -90,7 +88,6 @@ public:
 
         return api_version;
     }
-
 
 private:
     std::string _token;
@@ -150,10 +147,8 @@ private:
             _session.setBody(data);
         }
     }
-
-
 };
 
-}
-}
+} // namespace core
+} // namespace flockmtl
 #endif

@@ -17,13 +17,13 @@ void LlmAggState::Update(const nlohmann::json &input) {
 }
 
 void LlmAggState::Combine(const LlmAggState &source) {
-    for (auto &input: source.value){
+    for (auto &input : source.value) {
         Update(std::move(input));
     }
 }
 
 LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
-                         std::string &llm_first_or_last_template)
+                               std::string &llm_first_or_last_template)
     : model(model), model_context_size(model_context_size), search_query(search_query),
       llm_first_or_last_template(llm_first_or_last_template) {
 
@@ -120,7 +120,7 @@ void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) 
 }
 
 void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
-                      idx_t count) {
+                                idx_t count) {
     search_query = inputs[0].GetValue(0).ToString();
 
     if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
@@ -128,7 +128,7 @@ void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_
     }
 
     auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);
+    LlmAggOperation::model_details = ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
 
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -162,7 +162,7 @@ void LlmAggOperation::Combine(Vector &source, Vector &target, AggregateInputData
 }
 
 void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                     idx_t offset, string llm_prompt_template) {
+                                      idx_t offset, string llm_prompt_template) {
     auto states_vector = FlatVector::GetData<LlmAggState *>(states);
 
     for (idx_t i = 0; i < count; i++) {
@@ -178,29 +178,30 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmFirstOrLast llm_first_or_last (LlmAggOperation::model_details.model, Config::default_max_tokens, search_query, llm_prompt_template);
+        LlmFirstOrLast llm_first_or_last(LlmAggOperation::model_details.model, Config::default_max_tokens, search_query,
+                                         llm_prompt_template);
         auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
 }
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                     idx_t offset) {
+void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>(Vector &states, AggregateInputData &aggr_input_data,
+                                                             Vector &result, idx_t count, idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::LAST>());
 };
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                     idx_t offset) {
+void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>(Vector &states, AggregateInputData &aggr_input_data,
+                                                              Vector &result, idx_t count, idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::FIRST>());
 };
 
 void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
-                         data_ptr_t state_p, idx_t count) {
+                                   data_ptr_t state_p, idx_t count) {
     search_query = inputs[0].GetValue(0).ToString();
     auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    LlmAggOperation::model_details = ModelManager::CreateModelDetails (CoreModule::GetConnection(), model_details_json);
+    LlmAggOperation::model_details = ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
 
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
