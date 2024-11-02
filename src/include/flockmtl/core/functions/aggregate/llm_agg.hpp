@@ -12,7 +12,7 @@ namespace core {
 
 struct LlmAggState {
 public:
-    std::vector<nlohmann::json> value;
+    vector<nlohmann::json> value;
 
     void Initialize();
     void Update(const nlohmann::json &input);
