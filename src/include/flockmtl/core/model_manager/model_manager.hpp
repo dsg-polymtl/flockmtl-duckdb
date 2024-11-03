@@ -22,7 +22,7 @@ public:
     static nlohmann::json CallComplete(const std::string &prompt, const ModelDetails &model_details,
                                        const bool json_response = true);
 
-    static nlohmann::json CallEmbedding(const std::string &input, const ModelDetails &model_details);
+    static nlohmann::json CallEmbedding(const vector<string> &inputs, const ModelDetails &model_details);
 
 private:
     static std::pair<std::string, int32_t> GetQueriedModel(Connection &con, const std::string &model_name,
@@ -34,9 +34,9 @@ private:
     static nlohmann::json AzureCallComplete(const std::string &prompt, const ModelDetails &model_details,
                                             const bool json_response);
 
-    static nlohmann::json OpenAICallEmbedding(const std::string &input, const ModelDetails &model_details);
+    static nlohmann::json OpenAICallEmbedding(const vector<string> &inputs, const ModelDetails &model_details);
 
-    static nlohmann::json AzureCallEmbedding(const std::string &input, const ModelDetails &model_details);
+    static nlohmann::json AzureCallEmbedding(const vector<string> &inputs, const ModelDetails &model_details);
 };
 
 } // namespace core

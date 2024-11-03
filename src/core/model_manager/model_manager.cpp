@@ -208,7 +208,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
     }
 }
 
-nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::OpenAICallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
@@ -216,7 +216,7 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
         {"model", model_details.model},
-        {"input", input},
+        {"input", inputs},
     };
 
     // Make a request to the OpenAI API
@@ -230,12 +230,15 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const
         // Add error handling code here
     }
 
-    auto embedding = completion["data"][0]["embedding"];
+    auto embeddings = nlohmann::json::array();
+    for (auto &item : completion["data"]) {
+        embeddings.push_back(item["embedding"]);
+    }
 
-    return embedding;
+    return embeddings;
 }
 
-nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto api_key = AzureModelManager::get_azure_api_key();
     auto resource_name = AzureModelManager::get_azure_resource_name();
@@ -247,7 +250,7 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
         {"model", model_details.model},
-        {"input", input},
+        {"input", inputs},
     };
 
     // Make a request to the Azure API
@@ -261,12 +264,15 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::string &input, const 
         // Add error handling code here
     }
 
-    auto embedding = completion["data"][0]["embedding"];
+    auto embeddings = nlohmann::json::array();
+    for (auto &item : completion["data"]) {
+        embeddings.push_back(item["embedding"]);
+    }
 
-    return embedding;
+    return embeddings;
 }
 
-nlohmann::json ModelManager::CallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
 
     // Check if the provided model is in the list of supported models
     if (supported_embedding_models.find(model_details.model) == supported_embedding_models.end()) {
@@ -286,9 +292,9 @@ nlohmann::json ModelManager::CallEmbedding(const std::string &input, const Model
 
     if (model_details.provider_name == "openai" || model_details.provider_name == "default" ||
         model_details.provider_name.empty()) {
-        return OpenAICallEmbedding(input, model_details);
+        return OpenAICallEmbedding(inputs, model_details);
     } else {
-        return AzureCallEmbedding(input, model_details);
+        return AzureCallEmbedding(inputs, model_details);
     }
 }
 
