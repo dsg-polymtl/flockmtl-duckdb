@@ -19,16 +19,16 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
     auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
 
-    auto embeddings = nlohmann::json::array();
+    vector<string> prepared_inputs;
     for (auto &row : inputs) {
         std::string concat_input;
         for (auto &item : row.items()) {
             concat_input += item.value().get<std::string>() + " ";
         }
-
-        auto element_embedding = ModelManager::CallEmbedding(concat_input, model_details);
-        embeddings.push_back(element_embedding);
+        prepared_inputs.push_back(concat_input);
     }
+
+    auto embeddings = ModelManager::CallEmbedding(prepared_inputs, model_details);
 
     for (size_t index = 0; index < embeddings.size(); index++) {
         vector<Value> embedding;
