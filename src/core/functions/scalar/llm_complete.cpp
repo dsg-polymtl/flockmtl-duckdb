@@ -12,7 +12,6 @@
 #include <string>
 #include <templates/llm_complete_prompt_template.hpp>
 
-
 namespace flockmtl {
 namespace core {
 

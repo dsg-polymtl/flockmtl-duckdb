@@ -7,7 +7,6 @@
 #include <string>
 #include <stdexcept>
 
-
 namespace flockmtl {
 namespace core {
 

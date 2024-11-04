@@ -24,7 +24,8 @@ SpacesInConditionalStatement: false
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
-IncludeBlocks: Regroup
+IncludeBlocks: Preserve
+SortIncludes: false
 Language: Cpp
 AccessModifierOffset: -4
 ---
