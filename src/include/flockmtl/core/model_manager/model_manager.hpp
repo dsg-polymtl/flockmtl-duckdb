@@ -34,9 +34,24 @@ private:
     static nlohmann::json AzureCallComplete(const std::string &prompt, const ModelDetails &model_details,
                                             const bool json_response);
 
+    static nlohmann::json OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                             const bool json_response);
+
+    static nlohmann::json AwsBedrockCallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                                 const bool json_response);
+
     static nlohmann::json OpenAICallEmbedding(const vector<string> &inputs, const ModelDetails &model_details);
 
     static nlohmann::json AzureCallEmbedding(const vector<string> &inputs, const ModelDetails &model_details);
+
+    static nlohmann::json OllamaCallEmbedding(const std::string &input, const ModelDetails &model_details);
+
+    static nlohmann::json AwsBedrockCallEmbedding(const std::string &input, const ModelDetails &model_details);
+
+    static nlohmann::json CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
+                                               const bool json_response);
+
+    static nlohmann::json CallEmbeddingProvider(const std::string &prompt, const ModelDetails &model_details);
 };
 
 } // namespace core

@@ -1,4 +1,5 @@
 #include <flockmtl/common.hpp>
+#include <flockmtl/core/model_manager/supported_providers.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl/core/model_manager/openai.hpp>
 #include <flockmtl/core/model_manager/azure.hpp>
@@ -14,6 +15,18 @@ static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-
 static const std::unordered_set<std::string> supported_providers = {"openai", "azure"};
 static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small",
                                                                            "text-embedding-3-large"};
+static SupportedProviders GetProviderType(const std::string &provider) {
+    if (provider == "openai" || provider == "default" || provider == "")
+        return FLOCKMTL_OPENAI;
+    if (provider == "azure")
+        return FLOCKMTL_AZURE;
+    if (provider == "ollama")
+        return FLOCKMTL_OLLAMA;
+    if (provider == "bedrock")
+        return FLOCKMTL_AWS_BEDROCK;
+
+    return FLOCKMTL_UNSUPPORTED;
+}
 
 ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::json &model_json) {
     ModelDetails model_details;
@@ -69,6 +82,16 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, c
     return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>()};
 }
 
+nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                                const bool json_response) {
+    return nlohmann::json();
+}
+
+nlohmann::json ModelManager::AwsBedrockCallComplete(const std::string &prompt, const ModelDetails &model_details,
+                                                    const bool json_response) {
+    return nlohmann::json();
+}
+
 nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const ModelDetails &model_details,
                                                 const bool json_response) {
 
@@ -99,7 +122,6 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
         // Handle the error when the context window is too long
         throw std::runtime_error(
             "The response exceeded the context window length you can increase your max_tokens parameter.");
-        // Add error handling code here
     }
 
     // Check if the OpenAI safety system refused the request
@@ -113,7 +135,6 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
     if (completion["choices"][0]["finish_reason"] == "content_filter") {
         // Handle content filtering
         throw std::runtime_error("The content filter was triggered, resulting in incomplete JSON.");
-        // Add error handling code here
     }
 
     std::string content_str = completion["choices"][0]["message"]["content"];
@@ -154,7 +175,6 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
         // Handle the error when the context window is too long
         throw std::runtime_error(
             "The response exceeded the context window length you can increase your max_tokens parameter.");
-        // Add error handling code here
     }
 
     // Check if the safety system refused the request
@@ -168,7 +188,6 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     if (completion["choices"][0]["finish_reason"] == "content_filter") {
         // Handle content filtering
         throw std::runtime_error("The content filter was triggered, resulting in incomplete JSON.");
-        // Add error handling code here
     }
 
     std::string content_str = completion["choices"][0]["message"]["content"];
@@ -207,7 +226,15 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
     }
 }
 
-nlohmann::json ModelManager::OpenAICallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
+nlohmann::json ModelManager::OllamaCallEmbedding(const std::string &input, const ModelDetails &model_details) {
+    return nlohmann::json();
+}
+
+nlohmann::json ModelManager::AwsBedrockCallEmbedding(const std::string &input, const ModelDetails &model_details) {
+    return nlohmann::json();
+}
+
+nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
@@ -226,7 +253,6 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const vector<string> &inputs, c
         // Handle the error when the context window is too long
         throw std::runtime_error(
             "The response exceeded the context window length you can increase your max_tokens parameter.");
-        // Add error handling code here
     }
 
     auto embeddings = nlohmann::json::array();
@@ -294,6 +320,40 @@ nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const M
         return OpenAICallEmbedding(inputs, model_details);
     } else {
         return AzureCallEmbedding(inputs, model_details);
+    }
+}
+
+nlohmann::json ModelManager::CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
+                                                         const bool json_response) {
+    auto provider = GetProviderType(model_details.provider_name);
+    switch (provider) {
+    case FLOCKMTL_OPENAI:
+        return OpenAICallComplete(prompt, model_details, json_response);
+    case FLOCKMTL_AZURE:
+        return AzureCallComplete(prompt, model_details, json_response);
+    case FLOCKMTL_OLLAMA:
+        return OllamaCallComplete(prompt, model_details, json_response);
+    case FLOCKMTL_AWS_BEDROCK:
+        return AwsBedrockCallComplete(prompt, model_details, json_response);
+    default:
+        throw std::runtime_error("Provider '" + model_details.provider_name + "' is not supported.");
+    }
+}
+
+nlohmann::json ModelManager::CallEmbeddingProvider(const std::string &prompt,
+                                                          const ModelDetails &model_details) {
+    auto provider = GetProviderType(model_details.provider_name);
+    switch (provider) {
+    case FLOCKMTL_OPENAI:
+        return OpenAICallEmbedding(prompt, model_details);
+    case FLOCKMTL_AZURE:
+        return AzureCallEmbedding(prompt, model_details);
+    case FLOCKMTL_OLLAMA:
+        return OllamaCallEmbedding(prompt, model_details);
+    case FLOCKMTL_AWS_BEDROCK:
+        return AwsBedrockCallEmbedding(prompt, model_details);
+    default:
+        throw std::runtime_error("Provider '" + model_details.provider_name + "' is not supported.");
     }
 }
 
