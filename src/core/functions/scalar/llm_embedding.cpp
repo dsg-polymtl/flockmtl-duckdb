@@ -7,7 +7,6 @@
 #include <string>
 #include <nlohmann/json.hpp>
 
-
 namespace flockmtl {
 namespace core {
 

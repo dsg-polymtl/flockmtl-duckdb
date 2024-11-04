@@ -256,33 +256,28 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::DELETE_MODEL: {
         const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
         sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << delete_stmt.model_name << "'"
-            << " AND provider_name = '" << delete_stmt.provider_name << "';";
+            << delete_stmt.model_name << "'" << " AND provider_name = '" << delete_stmt.provider_name << "';";
         break;
     }
     case StatementType::UPDATE_MODEL: {
         const auto &update_stmt = static_cast<const UpdateModelStatement &>(statement);
         sql << "UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET "
-            << "max_tokens = " << update_stmt.new_max_tokens << ", "
-            << "model = '" << update_stmt.new_model << "' "
-            << "WHERE model_name = '" << update_stmt.model_name << "' "
-            << "AND provider_name = '" << update_stmt.provider_name << "';";
+            << "max_tokens = " << update_stmt.new_max_tokens << ", " << "model = '" << update_stmt.new_model << "' "
+            << "WHERE model_name = '" << update_stmt.model_name << "' " << "AND provider_name = '"
+            << update_stmt.provider_name << "';";
         break;
     }
     case StatementType::GET_MODEL: {
         const auto &get_stmt = static_cast<const GetModelStatement &>(statement);
         sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '"
-            << get_stmt.model_name << "'"
-            << " UNION ALL "
+            << get_stmt.model_name << "'" << " UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << get_stmt.model_name << "'"
-            << ";";
+            << get_stmt.model_name << "'" << ";";
         break;
     }
 
     case StatementType::GET_ALL_MODEL: {
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
-            << "UNION ALL "
+        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE " << "UNION ALL "
             << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;";
         break;
     }
