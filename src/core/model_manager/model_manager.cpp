@@ -1,5 +1,7 @@
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/model_manager/supported_providers.hpp>
+#include <flockmtl/core/model_manager/supported_models.hpp>
+#include <flockmtl/core/model_manager/supported_embedding_models.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl/core/model_manager/openai.hpp>
 #include <flockmtl/core/model_manager/azure.hpp>
@@ -11,10 +13,6 @@
 namespace flockmtl {
 namespace core {
 
-static const std::unordered_set<std::string> supported_models = {"gpt-4o", "gpt-4o-mini"};
-static const std::unordered_set<std::string> supported_providers = {"openai", "azure"};
-static const std::unordered_set<std::string> supported_embedding_models = {"text-embedding-3-small",
-                                                                           "text-embedding-3-large"};
 static SupportedProviders GetProviderType(const std::string &provider) {
     if (provider == "openai" || provider == "default" || provider == "")
         return FLOCKMTL_OPENAI;
@@ -25,7 +23,25 @@ static SupportedProviders GetProviderType(const std::string &provider) {
     if (provider == "bedrock")
         return FLOCKMTL_AWS_BEDROCK;
 
-    return FLOCKMTL_UNSUPPORTED;
+    return FLOCKMTL_UNSUPPORTED_PROVIDER;
+}
+
+static SupportedModels GetModelType(const std::string &model) {
+    if (model == "gpt-4o")
+        return FLOCKMTL_GPT_4o;
+    if (model == "gpt-4o-mini")
+        return FLOCKMTL_GPT_4o_MINI;
+
+    return FLOCKMTL_UNSUPPORTED_MODEL;
+}
+
+static SupportedEmbeddingModels GetEmbeddingModelType(const std::string &model) {
+    if (model == "text-embedding-3-small")
+        return FLOCKMTL_TEXT_EMBEDDING_3_SMALL;
+    if (model == "text-embedding-3-large")
+        return FLOCKMTL_TEXT_EMBEDDING_3_LARGE;
+
+    return FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL;
 }
 
 ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::json &model_json) {
@@ -203,27 +219,25 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
                                           const bool json_response) {
 
     // Check if the provided model is in the list of supported models
-    if (supported_models.find(model_details.model) == supported_models.end()) {
+    auto model = GetModelType(model_details.model);
+    if (model == FLOCKMTL_UNSUPPORTED_MODEL) {
+
         throw std::invalid_argument("Model '" + model_details.model +
                                     "' is not supported. Please choose one from the supported list: "
                                     "gpt-4o, gpt-4o-mini.");
     }
 
+
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() && model_details.provider_name != "default" &&
-        supported_providers.find(model_details.provider_name) == supported_providers.end()) {
+    auto provider = GetProviderType(model_details.provider_name);
+    if (provider == FLOCKMTL_UNSUPPORTED_PROVIDER) {
 
-        throw std::invalid_argument("Provider '" + model_details.provider_name +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "openai/default, azure");
+        throw std::runtime_error("Provider '" + model_details.provider_name +
+                                 "' is not supported. Please choose one from the supported list: "
+                                 "openai/default, azure, ollama, aws bedrock");
     }
 
-    if (model_details.provider_name == "openai" || model_details.provider_name == "default" ||
-        model_details.provider_name == "") {
-        return OpenAICallComplete(prompt, model_details, json_response);
-    } else {
-        return AzureCallComplete(prompt, model_details, json_response);
-    }
+    return CallCompleteProvider(prompt, model_details, json_response).second;
 }
 
 nlohmann::json ModelManager::OllamaCallEmbedding(const std::string &input, const ModelDetails &model_details) {
@@ -300,60 +314,57 @@ nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, co
 nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
 
     // Check if the provided model is in the list of supported models
-    if (supported_embedding_models.find(model_details.model) == supported_embedding_models.end()) {
+    auto model = GetEmbeddingModelType(model_details.model);
+    if (model == FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL) {
+
         throw std::invalid_argument("Model '" + model_details.model +
                                     "' is not supported. Please choose one from the supported list: "
-                                    "text-embedding-3-small, text-embedding-3-large.");
+                                    "gpt-4o, gpt-4o-mini.");
     }
 
     // Check if the provider is in the list of supported provider
-    if (!model_details.provider_name.empty() && model_details.provider_name != "default" &&
-        supported_providers.find(model_details.provider_name) == supported_providers.end()) {
+    auto provider = GetProviderType(model_details.provider_name);
+    if (provider == FLOCKMTL_UNSUPPORTED_PROVIDER) {
 
-        throw std::invalid_argument("Provider '" + model_details.provider_name +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "openai/default, azure");
+        throw std::runtime_error("Provider '" + model_details.provider_name +
+                                 "' is not supported. Please choose one from the supported list: "
+                                 "openai/default, azure, ollama, aws bedrock");
     }
 
-    if (model_details.provider_name == "openai" || model_details.provider_name == "default" ||
-        model_details.provider_name.empty()) {
-        return OpenAICallEmbedding(inputs, model_details);
-    } else {
-        return AzureCallEmbedding(inputs, model_details);
-    }
+    auto result = CallEmbeddingProvider(input, model_details);
+    return result.second;
 }
 
-nlohmann::json ModelManager::CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
-                                                         const bool json_response) {
+std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
+                                                  const bool json_response) {
     auto provider = GetProviderType(model_details.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:
-        return OpenAICallComplete(prompt, model_details, json_response);
+        return {true, OpenAICallComplete(prompt, model_details, json_response)};
     case FLOCKMTL_AZURE:
-        return AzureCallComplete(prompt, model_details, json_response);
+        return {true, AzureCallComplete(prompt, model_details, json_response)};
     case FLOCKMTL_OLLAMA:
-        return OllamaCallComplete(prompt, model_details, json_response);
+        return {true, OllamaCallComplete(prompt, model_details, json_response)};
     case FLOCKMTL_AWS_BEDROCK:
-        return AwsBedrockCallComplete(prompt, model_details, json_response);
+        return {true, AwsBedrockCallComplete(prompt, model_details, json_response)};
     default:
-        throw std::runtime_error("Provider '" + model_details.provider_name + "' is not supported.");
+        return {false, {}};
     }
 }
 
-nlohmann::json ModelManager::CallEmbeddingProvider(const std::string &prompt,
-                                                          const ModelDetails &model_details) {
+std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::string &input, const ModelDetails &model_details) {
     auto provider = GetProviderType(model_details.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:
-        return OpenAICallEmbedding(prompt, model_details);
+        return {true, OpenAICallEmbedding(input, model_details)};
     case FLOCKMTL_AZURE:
-        return AzureCallEmbedding(prompt, model_details);
+        return {true, AzureCallEmbedding(input, model_details)};
     case FLOCKMTL_OLLAMA:
-        return OllamaCallEmbedding(prompt, model_details);
+        return {true, OllamaCallEmbedding(input, model_details)};
     case FLOCKMTL_AWS_BEDROCK:
-        return AwsBedrockCallEmbedding(prompt, model_details);
+        return {true, AwsBedrockCallEmbedding(input, model_details)};
     default:
-        throw std::runtime_error("Provider '" + model_details.provider_name + "' is not supported.");
+        return {false, {}};
     }
 }
 

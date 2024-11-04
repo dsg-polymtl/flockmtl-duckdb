@@ -1,0 +1,7 @@
+#pragma once
+enum SupportedModels {
+    FLOCKMTL_GPT_4o = 0,
+    FLOCKMTL_GPT_4o_MINI,
+    FLOCKMTL_UNSUPPORTED_MODEL,
+    FLOCKMTL_SUPPORTED_MODELS_COUNT
+};
