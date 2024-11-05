@@ -37,6 +37,27 @@ Token Tokenizer::ParseStringLiteral() {
     return {TokenType::STRING_LITERAL, value};
 }
 
+Token Tokenizer::ParseJson() {
+    if (query_[position_] != '{') {
+        throw std::runtime_error("JSON should start with a curly brace.");
+    }
+    int start = position_++;
+    int brace_count = 1;
+    while (position_ < query_.size() && brace_count > 0) {
+        if (query_[position_] == '{') {
+            ++brace_count;
+        } else if (query_[position_] == '}') {
+            --brace_count;
+        }
+        ++position_;
+    }
+    if (brace_count > 0) {
+        throw std::runtime_error("Unterminated JSON.");
+    }
+    std::string value = query_.substr(start, position_ - start);
+    return {TokenType::JSON, value};
+}
+
 // Parse a keyword (word made of letters)
 Token Tokenizer::ParseKeyword() {
     int start = position_;
@@ -81,6 +102,8 @@ Token Tokenizer::GetNextToken() {
     char ch = query_[position_];
     if (ch == '\'') {
         return ParseStringLiteral();
+    } else if (ch == '{') {
+        return ParseJson();
     } else if (std::isalpha(ch)) {
         return ParseKeyword();
     } else if (ch == ';' || ch == ',') {
@@ -106,6 +129,8 @@ std::string TokenTypeToString(TokenType type) {
         return "KEYWORD";
     case TokenType::STRING_LITERAL:
         return "STRING_LITERAL";
+    case TokenType::JSON:
+        return "JSON";
     case TokenType::SYMBOL:
         return "SYMBOL";
     case TokenType::NUMBER:
@@ -115,7 +140,6 @@ std::string TokenTypeToString(TokenType type) {
     case TokenType::END_OF_FILE:
         return "END_OF_FILE";
     case TokenType::UNKNOWN:
-        return "UNKNOWN";
     default:
         return "UNKNOWN";
     }

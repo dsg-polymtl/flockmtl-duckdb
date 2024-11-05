@@ -76,21 +76,18 @@ void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 
     token = tokenizer.NextToken();
-    if (token.type != TokenType::NUMBER || token.value.empty()) {
-        throw std::runtime_error("Expected integer value for context_window.");
+    if (token.type != TokenType::JSON || token.value.empty()) {
+        throw std::runtime_error("Expected json value for the model_args.");
     }
-    int context_window = std::stoi(token.value);
-
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::SYMBOL || token.value != ",") {
-        throw std::runtime_error("Expected comma ',' after context_window.");
+    auto model_args = nlohmann::json::parse(token.value);
+    const std::set<std::string> expected_keys = {"context_window", "max_output_tokens"};
+    std::set<std::string> json_keys;
+    for (auto it = model_args.begin(); it != model_args.end(); ++it) {
+        json_keys.insert(it.key());
     }
-
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::NUMBER || token.value.empty()) {
-        throw std::runtime_error("Expected integer value for max_output_tokens.");
+    if (json_keys != expected_keys) {
+        throw std::runtime_error("Expected keys: context_window, max_output_tokens in model_args.");
     }
-    int max_output_tokens = std::stoi(token.value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::PARENTHESIS || token.value != ")") {
@@ -103,8 +100,7 @@ void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         create_statement->model_name = model_name;
         create_statement->model = model;
         create_statement->provider_name = provider_name;
-        create_statement->context_window = context_window;
-        create_statement->max_output_tokens = max_output_tokens;
+        create_statement->model_args = model_args;
         statement = std::move(create_statement);
     } else {
         throw std::runtime_error("Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
@@ -180,21 +176,18 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 
     token = tokenizer.NextToken();
-    if (token.type != TokenType::NUMBER || token.value.empty()) {
-        throw std::runtime_error("Expected integer value for new context_window.");
+    if (token.type != TokenType::JSON || token.value.empty()) {
+        throw std::runtime_error("Expected json value for the model_args.");
     }
-    int new_context_window = std::stoi(token.value);
-
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::SYMBOL || token.value != ",") {
-        throw std::runtime_error("Expected comma ',' after context_window.");
+    auto new_model_args = nlohmann::json::parse(token.value);
+    const std::set<std::string> expected_keys = {"context_window", "max_output_tokens"};
+    std::set<std::string> json_keys;
+    for (auto it = new_model_args.begin(); it != new_model_args.end(); ++it) {
+        json_keys.insert(it.key());
     }
-
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::NUMBER || token.value.empty()) {
-        throw std::runtime_error("Expected integer value for new max_output_tokens.");
+    if (json_keys != expected_keys) {
+        throw std::runtime_error("Expected keys: context_window, max_output_tokens in model_args.");
     }
-    int new_max_output_tokens = std::stoi(token.value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::PARENTHESIS || token.value != ")") {
@@ -207,8 +200,7 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
         update_statement->new_model = new_model;
         update_statement->model_name = model_name;
         update_statement->provider_name = provider_name;
-        update_statement->new_context_window = new_context_window;
-        update_statement->new_max_output_tokens = new_max_output_tokens;
+        update_statement->new_model_args = new_model_args;
         statement = std::move(update_statement);
     } else {
         throw std::runtime_error("Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
@@ -250,9 +242,9 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::CREATE_MODEL: {
         const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
         sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, "
-               "provider_name, context_window, max_output_tokens) VALUES ('"
+               "provider_name, model_args) VALUES ('"
             << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.provider_name << "', '"
-            << create_stmt.context_window << "', '" << create_stmt.max_output_tokens << "');";
+            << create_stmt.model_args << "');";
         break;
     }
     case StatementType::DELETE_MODEL: {
@@ -266,8 +258,7 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
         sql << "UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET "
             << "model = '" << update_stmt.new_model << "', "
             << "provider_name = '" << update_stmt.provider_name << "', "
-            << "context_window = " << update_stmt.new_context_window << ", "
-            << "max_output_tokens = " << update_stmt.new_max_output_tokens << ", "
+            << "model_args = '" << update_stmt.new_model_args << "', "
             << "WHERE model_name = '" << update_stmt.model_name << "';";
         break;
     }

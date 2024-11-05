@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 namespace flockmtl {
 
@@ -21,8 +22,7 @@ public:
     std::string model_name;
     std::string model;
     std::string provider_name;
-    int context_window;
-    int max_output_tokens;
+    nlohmann::json model_args;
 };
 
 class DeleteModelStatement : public QueryStatement {
@@ -42,8 +42,7 @@ public:
     std::string model_name;
     std::string new_model;
     std::string provider_name;
-    int new_context_window;
-    int new_max_output_tokens;
+    nlohmann::json new_model_args;
 };
 
 class GetModelStatement : public QueryStatement {

@@ -4,7 +4,7 @@
 #include <string>
 
 // Define token types
-enum class TokenType { KEYWORD, STRING_LITERAL, SYMBOL, NUMBER, PARENTHESIS, END_OF_FILE, UNKNOWN };
+enum class TokenType { KEYWORD, STRING_LITERAL, JSON, SYMBOL, NUMBER, PARENTHESIS, END_OF_FILE, UNKNOWN };
 
 // Token structure
 struct Token {
@@ -27,8 +27,9 @@ private:
     Token ParseStringLiteral();
     Token ParseKeyword();
     Token ParseSymbol();
-    Token ParseNumber();      // Added for handling numbers
-    Token ParseParenthesis(); // Added for handling parentheses
+    Token ParseNumber();
+    Token ParseParenthesis();
+    Token ParseJson();
     Token GetNextToken();
 };
 
