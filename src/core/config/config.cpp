@@ -48,27 +48,35 @@ void Config::setup_default_models_config(duckdb::Connection &con, std::string &s
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
                             "' AND table_name = '" + table_name + "';");
     if (result->RowCount() == 0) {
-        con.Query("CREATE TABLE " + schema_name + "." + table_name +
+        con.Query("LOAD JSON;"
+                  "CREATE TABLE " +
+                  schema_name + "." + table_name +
                   " ("
-                  "model_name VARCHAR NOT NULL PRIMARY KEY,"
-                  "model VARCHAR NOT NULL,"
-                  "provider_name VARCHAR NOT NULL,"
-                  "context_window INTEGER NOT NULL,"
-                  "max_output_tokens INTEGER NOT NULL"
+                  "model_name VARCHAR NOT NULL PRIMARY KEY, "
+                  "model VARCHAR NOT NULL, "
+                  "provider_name VARCHAR NOT NULL, "
+                  "model_args JSON NOT NULL"
                   ");");
 
-        con.Query("INSERT INTO " + schema_name + "." + table_name +
-                  " (model_name, model, provider_name, context_window, max_output_tokens) VALUES "
-                  "('default', 'gpt-4o-mini', 'openai', 128000, 16384),"
-                  "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000, 16384),"
-                  "('gpt-4o', 'gpt-4o', 'openai', 128000, 16384),"
-                  "('text-embedding-3-large', 'text-embedding-3-large', 'openai', " +
-                  std::to_string(Config::default_context_window) + ", " +
-                  std::to_string(Config::default_max_output_tokens) +
-                  "),"
-                  "('text-embedding-3-small', 'text-embedding-3-small', 'openai', " +
-                  std::to_string(Config::default_context_window) + ", " +
-                  std::to_string(Config::default_max_output_tokens) + ");");
+        con.Query(
+            "INSERT INTO " + schema_name + "." + table_name +
+            " (model_name, model, provider_name, model_args) VALUES "
+            "('default', 'gpt-4o-mini', 'openai', '{\"context_window\": 128000, \"max_output_tokens\": 16384}'),"
+            "('gpt-4o-mini', 'gpt-4o-mini', 'openai', '{\"context_window\": 128000, \"max_output_tokens\": 16384}'),"
+            "('gpt-4o', 'gpt-4o', 'openai', '{\"context_window\": 128000, \"max_output_tokens\": 16384}'),"
+            "('text-embedding-3-large', 'text-embedding-3-large', 'openai', "
+            "'{\"context_window\": " +
+            std::to_string(Config::default_context_window) +
+            ", "
+            "\"max_output_tokens\": " +
+            std::to_string(Config::default_max_output_tokens) +
+            "}'),"
+            "('text-embedding-3-small', 'text-embedding-3-small', 'openai', "
+            "'{\"context_window\": " +
+            std::to_string(Config::default_context_window) +
+            ", "
+            "\"max_output_tokens\": " +
+            std::to_string(Config::default_max_output_tokens) + "}');");
     }
 }
 
@@ -78,13 +86,14 @@ void Config::setup_user_defined_models_config(duckdb::Connection &con, std::stri
     auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
                             "' AND table_name = '" + table_name + "';");
     if (result->RowCount() == 0) {
-        con.Query("CREATE TABLE " + schema_name + "." + table_name +
+        con.Query("LOAD JSON;"
+                  "CREATE TABLE " +
+                  schema_name + "." + table_name +
                   " ("
                   "model_name VARCHAR NOT NULL PRIMARY KEY,"
                   "model VARCHAR,"
                   "provider_name VARCHAR NOT NULL,"
-                  "context_window INTEGER NOT NULL,"
-                  "max_output_tokens INTEGER NOT NULL"
+                  "model_args JSON NOT NULL"
                   ");");
     }
 }

@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <nlohmann/json.hpp>
 
 namespace flockmtl {
 namespace core {
@@ -56,7 +57,7 @@ std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(Connecti
         return {model_name, Config::default_context_window, Config::default_max_output_tokens};
     }
 
-    std::string query = "SELECT model, context_window, max_output_tokens FROM "
+    std::string query = "SELECT model, model_args FROM "
                         "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
                         "WHERE model_name = '" +
                         model_name + "'";
@@ -67,7 +68,7 @@ std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(Connecti
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query("SELECT model, context_window, max_output_tokens FROM "
+        query_result = con.Query("SELECT model, model_args FROM "
                                  "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
                                  model_name + "'");
 
@@ -76,8 +77,10 @@ std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(Connecti
         }
     }
 
-    return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>(),
-            query_result->GetValue(2, 0).GetValue<int32_t>()};
+    auto model = query_result->GetValue(0, 0).ToString();
+    auto model_args = nlohmann::json::parse(query_result->GetValue(1, 0).ToString());
+
+    return {query_result->GetValue(0, 0).ToString(), model_args["context_window"], model_args["max_output_tokens"]};
 }
 
 nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
