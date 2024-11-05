@@ -55,7 +55,7 @@ std::string CombineValues(const nlohmann::json &json_obj) {
 
 std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &unique_rows, Connection &con,
                                           std::string user_prompt_name, const std::string &llm_template,
-                                          int model_max_tokens) {
+                                          int model_context_window) {
     inja::Environment env;
 
     auto query_result =
@@ -75,11 +75,11 @@ std::vector<std::string> ConstructPrompts(std::vector<nlohmann::json> &unique_ro
 
     std::vector<std::string> prompts;
 
-    if (row_tokens > model_max_tokens) {
+    if (row_tokens > model_context_window) {
         throw std::runtime_error("The total number of tokens in the prompt exceeds the model's maximum token limit");
     } else {
         auto template_tokens = Tiktoken::GetNumTokens(llm_template);
-        auto max_tokens_for_rows = model_max_tokens - template_tokens;
+        auto max_tokens_for_rows = model_context_window - template_tokens;
         auto max_chunk_size = max_tokens_for_rows / row_tokens;
         auto chunk_size = max_chunk_size > static_cast<int>(unique_rows.size()) ? static_cast<int>(unique_rows.size())
                                                                                 : max_chunk_size;

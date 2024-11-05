@@ -51,21 +51,24 @@ void Config::setup_default_models_config(duckdb::Connection &con, std::string &s
         con.Query("CREATE TABLE " + schema_name + "." + table_name +
                   " ("
                   "model_name VARCHAR NOT NULL PRIMARY KEY,"
-                  "model VARCHAR,"
+                  "model VARCHAR NOT NULL,"
                   "provider_name VARCHAR NOT NULL,"
-                  "max_tokens INTEGER NOT NULL"
+                  "context_window INTEGER NOT NULL,"
+                  "max_output_tokens INTEGER NOT NULL"
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
-                  " (model_name, model, provider_name, max_tokens) VALUES "
-                  "('default', 'gpt-4o-mini', 'openai', 128000),"
-                  "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000),"
-                  "('gpt-4o', 'gpt-4o', 'openai', 128000),"
+                  " (model_name, model, provider_name, context_window, max_output_tokens) VALUES "
+                  "('default', 'gpt-4o-mini', 'openai', 128000, 16384),"
+                  "('gpt-4o-mini', 'gpt-4o-mini', 'openai', 128000, 16384),"
+                  "('gpt-4o', 'gpt-4o', 'openai', 128000, 16384),"
                   "('text-embedding-3-large', 'text-embedding-3-large', 'openai', " +
-                  std::to_string(Config::default_max_tokens) +
+                  std::to_string(Config::default_context_window) + ", " +
+                  std::to_string(Config::default_max_output_tokens) +
                   "),"
                   "('text-embedding-3-small', 'text-embedding-3-small', 'openai', " +
-                  std::to_string(Config::default_max_tokens) + ");");
+                  std::to_string(Config::default_context_window) + ", " +
+                  std::to_string(Config::default_max_output_tokens) + ");");
     }
 }
 
@@ -77,11 +80,11 @@ void Config::setup_user_defined_models_config(duckdb::Connection &con, std::stri
     if (result->RowCount() == 0) {
         con.Query("CREATE TABLE " + schema_name + "." + table_name +
                   " ("
-                  "model_name VARCHAR NOT NULL,"
+                  "model_name VARCHAR NOT NULL PRIMARY KEY,"
                   "model VARCHAR,"
                   "provider_name VARCHAR NOT NULL,"
-                  "max_tokens INTEGER NOT NULL,"
-                  "PRIMARY KEY (model_name, provider_name)"
+                  "context_window INTEGER NOT NULL,"
+                  "max_output_tokens INTEGER NOT NULL"
                   ");");
     }
 }

@@ -178,8 +178,8 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmFirstOrLast llm_first_or_last(LlmAggOperation::model_details.model, Config::default_max_tokens, search_query,
-                                         llm_prompt_template);
+        LlmFirstOrLast llm_first_or_last(LlmAggOperation::model_details.model, Config::default_context_window,
+                                         search_query, llm_prompt_template);
         auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }

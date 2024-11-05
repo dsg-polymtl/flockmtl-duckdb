@@ -42,7 +42,7 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
         auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
         auto prompts = ConstructPrompts(tuples, con, args.data[0].GetValue(0).ToString(),
-                                        llm_complete_json_prompt_template, Config::default_max_tokens);
+                                        llm_complete_json_prompt_template, Config::default_context_window);
 
         auto responses = nlohmann::json::array();
         for (const auto &prompt : prompts) {
