@@ -157,7 +157,7 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
+            "The response exceeded the max_output_tokens length you can increase your max_output_tokens parameter.");
     }
 
     // Check if the OpenAI safety system refused the request
@@ -210,7 +210,7 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
+            "The response exceeded the max_output_tokens length you can increase your max_output_tokens parameter.");
     }
 
     // Check if the safety system refused the request
@@ -306,7 +306,7 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::vector<string> &inpu
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
+            "The response exceeded the max_output_tokens length you can increase your max_output_tokens parameter.");
     }
 
     auto embeddings = nlohmann::json::array();
@@ -339,7 +339,8 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &input
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
+            "The response exceeded the max_output_tokens length you can increase your max_output_tokens parameter.");
+        // Add error handling code here
     }
 
     auto embeddings = nlohmann::json::array();
