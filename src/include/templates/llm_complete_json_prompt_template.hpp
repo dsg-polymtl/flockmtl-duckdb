@@ -2,13 +2,13 @@
 #define LLM_MAP_PROMPT_TEMPLATE_H
 
 constexpr auto llm_complete_json_prompt_template = R"(
-{{prompts}}
+{{user_prompt}}
 
 {
-    "rows": [
-        {% for row in rows %}
+    "tuples": [
+        {% for tuple in tuples %}
         {
-            {% for key, value in row %}
+            {% for key, value in tuple %}
             "{{key}}": "{{value}}"
             {% endfor %}
         }
@@ -19,8 +19,8 @@ constexpr auto llm_complete_json_prompt_template = R"(
 Respond in a json format as follow:
 
 {
-    "rows":[
-        // For each row in the input rows add the necessary columns that would ensure that the prompt is correctly answered.
+    "tuples":[
+        // For each tuple in the input tuples add the necessary columns that would ensure that the prompt is correctly answered.
     ]
 }
 )";
