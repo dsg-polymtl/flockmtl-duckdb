@@ -253,7 +253,8 @@ class OpenAI {
 public:
     OpenAI(const std::string &token = "", const std::string &organization = "", bool throw_exception = true,
            const std::string &api_base_url = "", const std::string &beta = "")
-        : session_ {"OpenAI", throw_exception}, token_ {token}, organization_ {organization}, throw_exception_ {throw_exception} {
+        : session_ {"OpenAI", throw_exception}, token_ {token}, organization_ {organization},
+          throw_exception_ {throw_exception} {
         if (token.empty()) {
             if (const char *env_p = std::getenv("OPENAI_API_KEY")) {
                 token_ = std::string {env_p};
@@ -282,9 +283,9 @@ public:
         session_.setToken(token, organization);
     }
 
-    static const char * get_openai_api_key (){
+    static const char *get_openai_api_key() {
         static int check_done = -1;
-        static const char * key = nullptr;
+        static const char *key = nullptr;
 
         if (check_done == -1) {
             key = std::getenv("OPENAI_API_KEY");
@@ -297,7 +298,6 @@ public:
 
         return key;
     }
-
 
     void setProxy(const std::string &url) {
         session_.setProxyUrl(url);
