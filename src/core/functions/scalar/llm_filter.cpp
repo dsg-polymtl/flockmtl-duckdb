@@ -27,7 +27,7 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
     auto prompts = ConstructPrompts(tuples, con, args.data[0].GetValue(0).ToString(), llm_filter_prompt_template,
-                                    Config::default_max_tokens);
+                                    Config::default_context_window);
 
     auto responses = nlohmann::json::array();
     for (const auto &prompt : prompts) {

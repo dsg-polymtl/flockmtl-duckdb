@@ -132,7 +132,7 @@ struct LlmReduceOperation {
             auto target_state = state_map[target_ptr];
 
             auto template_str = string(llm_reduce_prompt_template);
-            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_max_tokens, reduce_query,
+            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
                                  template_str, LlmReduceOperation::model_details);
             auto result = llm_reduce.ReduceLoop(source_state->value);
             target_state->Update(result);
@@ -149,7 +149,7 @@ struct LlmReduceOperation {
             auto state = state_map[state_ptr];
 
             auto template_str = string(llm_reduce_prompt_template);
-            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_max_tokens, reduce_query,
+            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
                                  template_str, LlmReduceOperation::model_details);
             auto response = llm_reduce.ReduceLoop(state->value);
             result.SetValue(idx, response.dump());

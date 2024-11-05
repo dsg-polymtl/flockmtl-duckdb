@@ -112,7 +112,7 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
             tuples_with_ids.push_back(state->value[i]);
         }
 
-        LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_max_tokens,
+        LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_context_window,
                                  LlmAggOperation::search_query, llm_rerank_prompt_template_str);
 
         auto reranked_tuples = llm_reranker.SlidingWindowRerank(tuples_with_ids);

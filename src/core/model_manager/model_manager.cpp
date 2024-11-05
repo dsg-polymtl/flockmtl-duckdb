@@ -21,17 +21,16 @@ ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::j
     model_details.provider_name = model_json.contains("provider") ? model_json.at("provider").get<std::string>() : "";
     model_details.model_name = model_json.contains("model_name") ? model_json.at("model_name").get<std::string>() : "";
     auto query_result = GetQueriedModel(con, model_details.model_name, model_details.provider_name);
-    model_details.model = query_result.first;
-    model_details.max_tokens = query_result.second;
-
-    auto max_tokens = 4000;
-    auto temperature = 0.5;
+    model_details.model = std::get<0>(query_result);
+    model_details.context_window = std::get<1>(query_result);
+    model_details.max_output_tokens = std::get<2>(query_result);
+    model_details.temperature = 0.5;
 
     for (auto &[key, value] : model_json.items()) {
-        if (key == "max_tokens") {
-            max_tokens = std::stoi(static_cast<std::string>(value));
+        if (key == "max_output_tokens") {
+            model_details.max_output_tokens = std::stoi(static_cast<std::string>(value));
         } else if (key == "temperature") {
-            temperature = std::stof(static_cast<std::string>(value));
+            model_details.temperature = std::stof(static_cast<std::string>(value));
         } else if (key == "provider" || key == "model_name") {
             continue;
         } else {
@@ -39,14 +38,11 @@ ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::j
         }
     }
 
-    model_details.max_tokens = max_tokens;
-    model_details.temperature = temperature;
-
     return model_details;
 }
 
-std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, const std::string &model_name,
-                                                              const std::string &provider_name) {
+std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(Connection &con, const std::string &model_name,
+                                                                        const std::string &provider_name) {
 
     auto provider_name_lower = provider_name;
     std::transform(provider_name_lower.begin(), provider_name_lower.end(), provider_name_lower.begin(),
@@ -57,10 +53,11 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, c
         if (!olam.validModel(model_name)) {
             throw std::runtime_error("Specified ollama model not deployed, please deploy before using it");
         }
-        return {model_name, Config::default_max_tokens};
+        return {model_name, Config::default_context_window, Config::default_max_output_tokens};
     }
 
-    std::string query = "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+    std::string query = "SELECT model, context_window, max_output_tokens FROM "
+                        "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
                         "WHERE model_name = '" +
                         model_name + "'";
     if (!provider_name.empty()) {
@@ -70,16 +67,17 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, c
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query(
-            "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
-            model_name + "'");
+        query_result = con.Query("SELECT model, context_window, max_output_tokens FROM "
+                                 "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
+                                 model_name + "'");
 
         if (query_result->RowCount() == 0) {
             throw std::runtime_error("Model not found");
         }
     }
 
-    return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>()};
+    return {query_result->GetValue(0, 0).ToString(), query_result->GetValue(1, 0).GetValue<int32_t>(),
+            query_result->GetValue(2, 0).GetValue<int32_t>()};
 }
 
 nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
@@ -93,7 +91,7 @@ nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const
                                       {"options",
                                        {
                                            {"temperature", model_details.temperature},
-                                           {"num_ctx", model_details.max_tokens},
+                                           {"num_ctx", model_details.max_output_tokens},
                                        }},
                                       {"keep_alive", -1}};
 
@@ -140,7 +138,7 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
                                       {"messages", {{{"role", "user"}, {"content", prompt}}}},
-                                      {"max_tokens", model_details.max_tokens},
+                                      {"max_tokens", model_details.max_output_tokens},
                                       {"temperature", model_details.temperature}};
 
     // Conditionally add "response_format" if json_response is true
@@ -159,7 +157,7 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_tokens parameter.");
+            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
     }
 
     // Check if the OpenAI safety system refused the request
@@ -197,7 +195,7 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
                                       {"messages", {{{"role", "user"}, {"content", prompt}}}},
-                                      {"max_tokens", model_details.max_tokens},
+                                      {"max_tokens", model_details.max_output_tokens},
                                       {"temperature", model_details.temperature}};
 
     // Conditionally add "response_format" if json_response is true
@@ -212,7 +210,7 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_tokens parameter.");
+            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
     }
 
     // Check if the safety system refused the request
@@ -308,7 +306,7 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::vector<string> &inpu
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_tokens parameter.");
+            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
     }
 
     auto embeddings = nlohmann::json::array();
@@ -341,7 +339,7 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &input
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
         throw std::runtime_error(
-            "The response exceeded the context window length you can increase your max_tokens parameter.");
+            "The response exceeded the context window length you can increase your max_output_tokens parameter.");
     }
 
     auto embeddings = nlohmann::json::array();

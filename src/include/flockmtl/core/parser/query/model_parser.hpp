@@ -21,7 +21,8 @@ public:
     std::string model_name;
     std::string model;
     std::string provider_name;
-    int max_tokens;
+    int context_window;
+    int max_output_tokens;
 };
 
 class DeleteModelStatement : public QueryStatement {
@@ -41,7 +42,8 @@ public:
     std::string model_name;
     std::string new_model;
     std::string provider_name;
-    int new_max_tokens;
+    int new_context_window;
+    int new_max_output_tokens;
 };
 
 class GetModelStatement : public QueryStatement {

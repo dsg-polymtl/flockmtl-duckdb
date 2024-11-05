@@ -3,6 +3,7 @@
 #include "nlohmann/json.hpp"
 
 #include <utility>
+#include <tuple>
 #include <vector>
 #include <string>
 
@@ -13,7 +14,8 @@ struct ModelDetails {
     std::string model;
     std::string model_name;
     std::string provider_name;
-    int max_tokens;
+    int context_window;
+    int max_output_tokens;
     float temperature;
 };
 
@@ -27,8 +29,8 @@ public:
     static nlohmann::json CallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details);
 
 private:
-    static std::pair<std::string, int32_t> GetQueriedModel(Connection &con, const std::string &model_name,
-                                                           const std::string &provider_name);
+    static std::tuple<std::string, int32_t, int32_t> GetQueriedModel(Connection &con, const std::string &model_name,
+                                                                     const std::string &provider_name);
 
     static nlohmann::json OpenAICallComplete(const std::string &prompt, const ModelDetails &model_details,
                                              const bool json_response);
