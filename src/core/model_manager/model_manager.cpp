@@ -5,6 +5,8 @@
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl/core/model_manager/openai.hpp>
 #include <flockmtl/core/model_manager/azure.hpp>
+#include <flockmtl/core/model_manager/ollama.hpp>
+#include <flockmtl/core/config/config.hpp>
 #include <flockmtl_extension.hpp>
 #include <memory>
 #include <string>
@@ -12,37 +14,6 @@
 
 namespace flockmtl {
 namespace core {
-
-static SupportedProviders GetProviderType(const std::string &provider) {
-    if (provider == "openai" || provider == "default" || provider == "")
-        return FLOCKMTL_OPENAI;
-    if (provider == "azure")
-        return FLOCKMTL_AZURE;
-    if (provider == "ollama")
-        return FLOCKMTL_OLLAMA;
-    if (provider == "bedrock")
-        return FLOCKMTL_AWS_BEDROCK;
-
-    return FLOCKMTL_UNSUPPORTED_PROVIDER;
-}
-
-static SupportedModels GetModelType(const std::string &model) {
-    if (model == "gpt-4o")
-        return FLOCKMTL_GPT_4o;
-    if (model == "gpt-4o-mini")
-        return FLOCKMTL_GPT_4o_MINI;
-
-    return FLOCKMTL_UNSUPPORTED_MODEL;
-}
-
-static SupportedEmbeddingModels GetEmbeddingModelType(const std::string &model) {
-    if (model == "text-embedding-3-small")
-        return FLOCKMTL_TEXT_EMBEDDING_3_SMALL;
-    if (model == "text-embedding-3-large")
-        return FLOCKMTL_TEXT_EMBEDDING_3_LARGE;
-
-    return FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL;
-}
 
 ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::json &model_json) {
     ModelDetails model_details;
@@ -76,6 +47,19 @@ ModelDetails ModelManager::CreateModelDetails(Connection &con, const nlohmann::j
 
 std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, const std::string &model_name,
                                                               const std::string &provider_name) {
+
+    auto provider_name_lower = provider_name;
+    std::transform(provider_name_lower.begin(), provider_name_lower.end(), provider_name_lower.begin(),
+                   [](unsigned char c) { return std::tolower(c); });
+
+    if (provider_name_lower == "ollama") {
+        OllamaModelManager olam(false);
+        if (!olam.validModel(model_name)) {
+            throw std::runtime_error("Specified ollama model not deployed, please deploy before using");
+        }
+        return {model_name, Config::default_max_tokens};
+    }
+
     std::string query = "SELECT model, max_tokens FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
                         "WHERE model_name = '" +
                         model_name + "'";
@@ -100,7 +84,45 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, c
 
 nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
                                                 const bool json_response) {
-    return nlohmann::json();
+    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
+
+    // Create a JSON request payload with the provided parameters
+    nlohmann::json request_payload = {{"model", model_details.model},
+                                      {"messages", {{{"role", "user"}, {"content", prompt}}}},
+                                      {"stream", false},
+                                      {"options",
+                                       {
+                                           {"temperature", model_details.temperature},
+                                           {"num_ctx", model_details.max_tokens},
+                                       }},
+                                      {"keep_alive", -1}};
+
+    // Conditionally add "response_format" if json_response is true
+    if (json_response) {
+        request_payload["format"] = "json";
+    }
+
+    nlohmann::json completion;
+    try {
+        completion = ollama_model_manager_uptr->CallComplete(request_payload);
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Error in making request to Ollama API: " + std::string(e.what()));
+    }
+
+    // Check if the call was not succesfull
+    if ((completion.contains("done_reason") && completion["done_reason"] != "stop") ||
+        (completion.contains("done") && !completion["done"].is_null() && completion["done"].get<bool>() != true)) {
+        // Handle refusal error
+        throw std::runtime_error("The request was refused due to some internal error with Ollama API");
+    }
+
+    std::string content_str = completion["message"]["content"];
+
+    if (json_response) {
+        return nlohmann::json::parse(content_str);
+    }
+
+    return content_str;
 }
 
 nlohmann::json ModelManager::AwsBedrockCallComplete(const std::string &prompt, const ModelDetails &model_details,
@@ -218,16 +240,6 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
 nlohmann::json ModelManager::CallComplete(const std::string &prompt, const ModelDetails &model_details,
                                           const bool json_response) {
 
-    // Check if the provided model is in the list of supported models
-    auto model = GetModelType(model_details.model);
-    if (model == FLOCKMTL_UNSUPPORTED_MODEL) {
-
-        throw std::invalid_argument("Model '" + model_details.model +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "gpt-4o, gpt-4o-mini.");
-    }
-
-
     // Check if the provider is in the list of supported provider
     auto provider = GetProviderType(model_details.provider_name);
     if (provider == FLOCKMTL_UNSUPPORTED_PROVIDER) {
@@ -237,11 +249,36 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
                                  "openai/default, azure, ollama, aws bedrock");
     }
 
+    // Check if the provided model is in the list of supported models
+    auto model = GetModelType(model_details.model, model_details.provider_name);
+    if (model == FLOCKMTL_UNSUPPORTED_MODEL) {
+
+        throw std::invalid_argument("Model '" + model_details.model +
+                                    "' is not supported. Please choose one from the supported list: "
+                                    "gpt-4o, gpt-4o-mini, ollama-models (only with ollama as provider).");
+    }
+
     return CallCompleteProvider(prompt, model_details, json_response).second;
 }
 
 nlohmann::json ModelManager::OllamaCallEmbedding(const std::string &input, const ModelDetails &model_details) {
-    return nlohmann::json();
+    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
+
+    // Create a JSON request payload with the provided parameters
+    nlohmann::json request_payload = {
+        {"model", model_details.model},
+        {"input", input},
+    };
+
+    nlohmann::json completion;
+    try {
+        completion = ollama_model_manager_uptr->CallEmbedding(request_payload);
+    } catch (const std::exception &e) {
+        throw std::runtime_error("Error in making request to Ollama API: " + std::string(e.what()));
+    }
+
+    auto embedding = completion["embeddings"][0];
+    return embedding;
 }
 
 nlohmann::json ModelManager::AwsBedrockCallEmbedding(const std::string &input, const ModelDetails &model_details) {
@@ -313,15 +350,6 @@ nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, co
 
 nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
 
-    // Check if the provided model is in the list of supported models
-    auto model = GetEmbeddingModelType(model_details.model);
-    if (model == FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL) {
-
-        throw std::invalid_argument("Model '" + model_details.model +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "gpt-4o, gpt-4o-mini.");
-    }
-
     // Check if the provider is in the list of supported provider
     auto provider = GetProviderType(model_details.provider_name);
     if (provider == FLOCKMTL_UNSUPPORTED_PROVIDER) {
@@ -331,12 +359,23 @@ nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const M
                                  "openai/default, azure, ollama, aws bedrock");
     }
 
+    // Check if the provided model is in the list of supported models
+    auto model = GetEmbeddingModelType(model_details.model, model_details.provider_name);
+    if (model == FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL) {
+
+        throw std::invalid_argument(
+            "Model '" + model_details.model +
+            "' is not supported. Please choose one from the supported list: "
+            "text-embedding-3-small, text-embedding-3-large, ollama-models (only with ollama as provider).");
+    }
+
     auto result = CallEmbeddingProvider(input, model_details);
     return result.second;
 }
 
-std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
-                                                  const bool json_response) {
+std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::string &prompt,
+                                                                   const ModelDetails &model_details,
+                                                                   const bool json_response) {
     auto provider = GetProviderType(model_details.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:
@@ -352,7 +391,8 @@ std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::st
     }
 }
 
-std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::string &input, const ModelDetails &model_details) {
+std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::string &input,
+                                                                    const ModelDetails &model_details) {
     auto provider = GetProviderType(model_details.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:

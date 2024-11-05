@@ -75,10 +75,12 @@ public:
 
     Response getPrepare();
     Response postPrepare(const std::string &contentType = "");
+    Response postPrepareOllama(const std::string &contentType = "");
     Response deletePrepare();
     Response makeRequest(const std::string &contentType = "");
     void set_auth_header(struct curl_slist **headers_ptr);
     std::string easyEscape(const std::string &text);
+    Response validOllamaModelsJson();
 
 private:
     static size_t writeFunction(void *ptr, size_t size, size_t nmemb, std::string *data) {
@@ -100,6 +102,35 @@ private:
     bool throw_exception_;
     std::mutex mutex_request_;
 };
+
+inline Response Session::validOllamaModelsJson() {
+    const std::string url = "http://localhost:11434/api/ps";
+    std::lock_guard<std::mutex> lock(mutex_request_);
+
+    struct curl_slist *headers = NULL;
+    curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl_, CURLOPT_URL, url.c_str());
+
+    std::string response_string;
+    std::string header_string;
+    curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, writeFunction);
+    curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &response_string);
+    curl_easy_setopt(curl_, CURLOPT_HEADERDATA, &header_string);
+
+    res_ = curl_easy_perform(curl_);
+    bool is_error = false;
+    std::string error_msg {};
+    if (res_ != CURLE_OK) {
+        is_error = true;
+        error_msg = " curl_easy_perform() failed: " + std::string {curl_easy_strerror(res_)};
+        if (throw_exception_) {
+            throw std::runtime_error(error_msg);
+        } else {
+            std::cerr << error_msg << '\n';
+        }
+    }
+    return {response_string, is_error, error_msg};
+}
 
 inline void Session::setBody(const std::string &data) {
     if (curl_) {
@@ -147,6 +178,35 @@ inline Response Session::postPrepare(const std::string &contentType) {
     return makeRequest(contentType);
 }
 
+inline Response Session::postPrepareOllama(const std::string &contentType) {
+    std::lock_guard<std::mutex> lock(mutex_request_);
+
+    struct curl_slist *headers = NULL;
+    curl_easy_setopt(curl_, CURLOPT_HTTPHEADER, headers);
+    curl_easy_setopt(curl_, CURLOPT_URL, url_.c_str());
+
+    std::string response_string;
+    std::string header_string;
+    curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, writeFunction);
+    curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &response_string);
+    curl_easy_setopt(curl_, CURLOPT_HEADERDATA, &header_string);
+
+    res_ = curl_easy_perform(curl_);
+
+    bool is_error = false;
+    std::string error_msg {};
+    if (res_ != CURLE_OK) {
+        is_error = true;
+        error_msg = provider_ + " curl_easy_perform() failed: " + std::string {curl_easy_strerror(res_)};
+        if (throw_exception_) {
+            throw std::runtime_error(error_msg);
+        } else {
+            std::cerr << error_msg << '\n';
+        }
+    }
+    return {response_string, is_error, error_msg};
+}
+
 inline Response Session::deletePrepare() {
     if (curl_) {
         curl_easy_setopt(curl_, CURLOPT_HTTPGET, 0L);
@@ -182,10 +242,6 @@ inline Response Session::makeRequest(const std::string &contentType) {
     }
 
     set_auth_header(&headers);
-    /*
-    std::string auth_str = "Authorization: Bearer " + token_;
-    headers = curl_slist_append(headers, auth_str.c_str());
-    */
 
     std::string organization_str = provider_ + "-Organization: ";
     if (!organization_.empty()) {
