@@ -10,6 +10,13 @@
 namespace flockmtl {
 namespace core {
 
+class LengthExceededError : public std::exception {
+public:
+    const char *what() const noexcept override {
+        return "The response exceeded the max_output_tokens length; increase your max_output_tokens parameter.";
+    }
+};
+
 struct ModelDetails {
     std::string model;
     std::string model_name;

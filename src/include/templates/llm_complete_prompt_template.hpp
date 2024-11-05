@@ -2,13 +2,13 @@
 #define LLM_COMPLETE_PROMPT_TEMPLATE_H
 
 constexpr auto llm_complete_prompt_template = R"(
-{{prompts}}
+{{user_prompt}}
 
 {
-    "rows": [
-        {% for row in rows %}
+    "tuples": [
+        {% for tuple in tuples %}
         {
-            {% for key, value in row %}
+            {% for key, value in tuple %}
             "{{key}}": "{{value}}"
             {% endfor %}
         }
@@ -19,8 +19,8 @@ constexpr auto llm_complete_prompt_template = R"(
 Respond in a json format as follow:
 
 {
-    "rows":[
-        // For each row in the input rows answer the prompt in a plain text format.
+    "tuples":[
+        // For each tuple in the input tuples answer the prompt in a plain text format.
     ]
 }
 )";

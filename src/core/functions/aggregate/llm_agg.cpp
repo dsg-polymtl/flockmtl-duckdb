@@ -1,5 +1,5 @@
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
-#include <flockmtl/core/functions/prompt_builder.hpp>
+#include <flockmtl/core/functions/batch_response_builder.hpp>
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/model_manager/model_manager.hpp"
 #include "flockmtl/core/model_manager/tiktoken.hpp"
@@ -49,58 +49,33 @@ int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
     data["tuples"] = tuples;
     data["search_query"] = search_query;
     auto prompt = env.render(llm_first_or_last_template, data);
-
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
     return response["selected"].get<int>();
 }
 
 nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
-    int num_tuples;
-    vector<int> num_tuples_per_batch;
-    int num_used_tokens;
-    int batch_size;
-    int batch_index;
 
-    while (tuples.size() > 1) {
-        num_tuples = tuples.size();
-        num_used_tokens = 0;
-        batch_size = 0;
-        batch_index = 0;
+    auto accumulated_tuples_tokens = 0u;
+    auto batch_tuples = nlohmann::json::array();
+    int start_index = 0;
 
-        for (int i = 0; i < num_tuples; i++) {
-            num_used_tokens += Tiktoken::GetNumTokens(tuples[i].dump());
-            batch_size++;
-
-            if (num_used_tokens >= available_tokens) {
-                num_tuples_per_batch.push_back(batch_size);
-                batch_index++;
-                num_used_tokens = 0;
-                batch_size = 0;
-            } else if (i == num_tuples - 1) {
-                num_tuples_per_batch.push_back(batch_size);
-                batch_index++;
+    do {
+        accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
+        while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
+            auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+            if (accumulated_tuples_tokens + num_tokens > available_tokens) {
+                break;
             }
+            batch_tuples.push_back(tuples[start_index]);
+            accumulated_tuples_tokens += num_tokens;
+            start_index++;
         }
+        auto result_idx = GetFirstOrLastTupleId(batch_tuples);
+        batch_tuples.clear();
+        batch_tuples.push_back(tuples[result_idx]);
+    } while (start_index < tuples.size());
 
-        auto responses = nlohmann::json::array();
-        auto num_batches = batch_index;
-
-        for (auto i = 0; i < num_batches; i++) {
-            auto start_index = i * num_tuples_per_batch[i];
-            auto end_index = start_index + num_tuples_per_batch[i];
-            auto batch = nlohmann::json::array();
-
-            for (auto j = start_index; j < end_index; j++) {
-                batch.push_back(tuples[j]);
-            }
-
-            auto result_idx = GetFirstOrLastTupleId(batch);
-            responses.push_back(batch[result_idx]);
-        }
-        tuples = responses;
-    };
-
-    return tuples[0]["content"];
+    return batch_tuples[0]["content"];
 }
 
 // Static member initialization

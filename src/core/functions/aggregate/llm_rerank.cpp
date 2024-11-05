@@ -1,6 +1,6 @@
 #include <nlohmann/json.hpp>
 #include <inja/inja.hpp>
-#include <flockmtl/core/functions/prompt_builder.hpp>
+#include <flockmtl/core/functions/batch_response_builder.hpp>
 #include "flockmtl/core/module.hpp"
 #include "templates/llm_rerank_prompt_template.hpp"
 #include <flockmtl/common.hpp>

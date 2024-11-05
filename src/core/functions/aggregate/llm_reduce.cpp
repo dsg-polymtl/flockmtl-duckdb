@@ -4,8 +4,9 @@
 #include <flockmtl/core/config/config.hpp>
 #include <flockmtl/core/functions/aggregate.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
-#include <flockmtl/core/functions/prompt_builder.hpp>
+#include <flockmtl/core/functions/batch_response_builder.hpp>
 #include <templates/llm_reduce_prompt_template.hpp>
+#include <flockmtl/core/model_manager/tiktoken.hpp>
 
 namespace flockmtl {
 namespace core {
@@ -53,27 +54,28 @@ public:
     };
 
     nlohmann::json ReduceLoop(vector<nlohmann::json> &tuples) {
-        auto accumulated_rows_tokens = 0u;
-        auto window_tuples = nlohmann::json::array();
-        int signed start_index = tuples.size() - 1;
+        auto accumulated_tuples_tokens = 0u;
+        auto batch_tuples = nlohmann::json::array();
+        int start_index = 0;
 
         do {
-            accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
-            while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
+            accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
+            while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
                 auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
-                if (accumulated_rows_tokens + num_tokens > available_tokens) {
+                if (accumulated_tuples_tokens + num_tokens > available_tokens) {
                     break;
                 }
-                window_tuples.push_back(tuples[start_index]);
-                accumulated_rows_tokens += num_tokens;
-                start_index--;
+                batch_tuples.push_back(tuples[start_index]);
+                accumulated_tuples_tokens += num_tokens;
+                start_index++;
             }
-            auto response = Reduce(window_tuples);
-            window_tuples.clear();
-            window_tuples.push_back(response);
-        } while (start_index >= 0);
+            auto response = Reduce(batch_tuples);
+            batch_tuples.clear();
+            batch_tuples.push_back(response);
+            accumulated_tuples_tokens = 0;
+        } while (start_index < tuples.size());
 
-        return window_tuples[0];
+        return batch_tuples[0];
     }
 };
 
