@@ -4,7 +4,7 @@
 #include "session.hpp"
 
 #include <iostream>
-#include <nlohmann/json.hpp> // nlohmann/json
+#include <nlohmann/json.hpp>
 #include <stdexcept>
 #include <string>
 

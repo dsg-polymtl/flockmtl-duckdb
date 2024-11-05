@@ -48,10 +48,11 @@ private:
 
     static nlohmann::json AwsBedrockCallEmbedding(const std::string &input, const ModelDetails &model_details);
 
-    static std::pair<bool, nlohmann::json> CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details,
-                                               const bool json_response);
+    static std::pair<bool, nlohmann::json>
+    CallCompleteProvider(const std::string &prompt, const ModelDetails &model_details, const bool json_response);
 
-    static std::pair<bool, nlohmann::json> CallEmbeddingProvider(const std::string &prompt, const ModelDetails &model_details);
+    static std::pair<bool, nlohmann::json> CallEmbeddingProvider(const std::string &prompt,
+                                                                 const ModelDetails &model_details);
 };
 
 } // namespace core
