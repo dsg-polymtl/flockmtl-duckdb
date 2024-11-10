@@ -96,15 +96,18 @@ struct LlmReduceOperation {
 
     static void Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
                           idx_t count) {
-        reduce_query = inputs[0].GetValue(0).ToString();
-
-        if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+        if (inputs[0].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for model details");
         }
-
-        auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+        auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
         LlmReduceOperation::model_details =
             ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
+
+        if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+            throw std::runtime_error("Expected a struct type for prompt details");
+        }
+        auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+        reduce_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
 
         if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -160,11 +163,22 @@ struct LlmReduceOperation {
 
     static void SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
                              data_ptr_t state_p, idx_t count) {
-        reduce_query = inputs[0].GetValue(0).ToString();
-        auto model_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+        if (inputs[0].GetType().id() != LogicalTypeId::STRUCT) {
+            throw std::runtime_error("Expected a struct type for model details");
+        }
+        auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
         LlmReduceOperation::model_details =
             ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
 
+        if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+            throw std::runtime_error("Expected a struct type for prompt details");
+        }
+        auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
+        reduce_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
+
+        if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
+            throw std::runtime_error("Expected a struct type for prompt inputs");
+        }
         auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
         auto state_map_p = reinterpret_cast<LlmAggState *>(state_p);
@@ -187,7 +201,7 @@ std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmReduceOperation::sta
 
 void CoreAggregateFunctions::RegisterLlmReduceFunction(DatabaseInstance &db) {
     auto string_concat = AggregateFunction(
-        "llm_reduce", {LogicalType::VARCHAR, LogicalType::ANY, LogicalType::ANY}, LogicalType::VARCHAR,
+        "llm_reduce", {LogicalType::ANY, LogicalType::ANY, LogicalType::ANY}, LogicalType::VARCHAR,
         AggregateFunction::StateSize<LlmAggState>, LlmReduceOperation::Initialize, LlmReduceOperation::Operation,
         LlmReduceOperation::Combine, LlmReduceOperation::Finalize, LlmReduceOperation::SimpleUpdate);
 
