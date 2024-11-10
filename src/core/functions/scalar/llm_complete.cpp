@@ -19,27 +19,21 @@ static void LlmCompleteScalarFunction(DataChunk &args, ExpressionState &state, V
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmCompleteScalarParser(args);
 
-    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[0], 1)[0];
     auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
+    auto prompt_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto prompt_details = CreatePromptDetails(con, prompt_details_json);
 
     if (args.ColumnCount() == 2) {
-        auto query_result =
-            con.Query("SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
-                      args.data[0].GetValue(0).ToString() + "'");
-
-        if (query_result->RowCount() == 0) {
-            throw std::runtime_error("Prompt not found");
-        }
-
-        auto template_str = query_result->GetValue(0, 0).ToString();
+        auto template_str = prompt_details.prompt;
         auto response = ModelManager::CallComplete(template_str, model_details, false);
 
         result.SetValue(0, response.dump());
     } else {
         auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
-        auto responses = BatchAndComplete(tuples, con, args.data[0].GetValue(0).ToString(),
-                                          llm_complete_prompt_template, model_details);
+        auto responses =
+            BatchAndComplete(tuples, con, prompt_details.prompt, llm_complete_prompt_template, model_details);
 
         auto index = 0;
         Vector vec(LogicalType::VARCHAR, args.size());

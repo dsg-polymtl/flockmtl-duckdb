@@ -21,13 +21,14 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmFilterScalarParser(args);
 
-    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[0], 1)[0];
     auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
+    auto prompt_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto prompt_details = CreatePromptDetails(con, prompt_details_json);
 
     auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
-    auto responses =
-        BatchAndComplete(tuples, con, args.data[0].GetValue(0).ToString(), llm_filter_prompt_template, model_details);
+    auto responses = BatchAndComplete(tuples, con, prompt_details.prompt, llm_filter_prompt_template, model_details);
 
     auto index = 0;
     Vector vec(LogicalType::VARCHAR, args.size());
