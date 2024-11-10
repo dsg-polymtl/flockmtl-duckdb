@@ -14,8 +14,8 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
     Connection con(*state.GetContext().db);
     CoreScalarParsers::LlmEmbeddingScalarParser(args);
 
-    auto inputs = CoreScalarParsers::Struct2Json(args.data[0], args.size());
-    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[1], 1)[0];
+    auto inputs = CoreScalarParsers::Struct2Json(args.data[1], args.size());
+    auto model_details_json = CoreScalarParsers::Struct2Json(args.data[0], 1)[0];
     auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
 
     vector<string> prepared_inputs;
