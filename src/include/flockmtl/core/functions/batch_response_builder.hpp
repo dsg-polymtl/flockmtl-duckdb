@@ -8,6 +8,13 @@ namespace core {
 
 std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int size);
 
+struct PromptDetails {
+    std::string prompt_name;
+    std::string prompt;
+};
+
+PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_details_json);
+
 nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, const std::string &llm_template,
                         const ModelDetails &model_details);
 
