@@ -11,11 +11,10 @@ void CoreScalarParsers::LlmEmbeddingScalarParser(DataChunk &args) {
         throw std::runtime_error("LlmEmbedScalarParser: Invalid number of arguments.");
     }
     if (args.data[0].GetType().id() != LogicalTypeId::STRUCT) {
-        throw std::runtime_error("LlmEmbedScalarParser: Inputs must be a struct.");
-    }
-    // check if model details is a struct
-    if (args.data[1].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("LlmEmbedScalarParser: Model details must be a struct.");
+    }
+    if (args.data[1].GetType().id() != LogicalTypeId::STRUCT) {
+        throw std::runtime_error("LlmEmbedScalarParser: Inputs must be a struct.");
     }
 }
 
