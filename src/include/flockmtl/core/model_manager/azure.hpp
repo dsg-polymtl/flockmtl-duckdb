@@ -1,12 +1,11 @@
 #ifndef _FLOCK_MTL_MODEL_MANAGER_AZURE_H
 #define _FLOCK_MTL_MODEL_MANAGER_AZURE_H
 
-#include "session.hpp"
-
 #include <iostream>
-#include <nlohmann/json.hpp> // nlohmann/json
 #include <stdexcept>
 #include <string>
+#include "session.hpp"
+#include <nlohmann/json.hpp>
 
 namespace flockmtl {
 namespace core {

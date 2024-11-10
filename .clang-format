@@ -6,6 +6,8 @@ TabWidth: 4
 ColumnLimit: 120
 AllowShortFunctionsOnASingleLine: false
 CompactNamespaces: false
+IncludeBlocks: Preserve
+SortIncludes: false
 ---
 DerivePointerAlignment: false
 PointerAlignment: Right
@@ -24,7 +26,6 @@ SpacesInConditionalStatement: false
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
-IncludeBlocks: Regroup
 Language: Cpp
 AccessModifierOffset: -4
 ---

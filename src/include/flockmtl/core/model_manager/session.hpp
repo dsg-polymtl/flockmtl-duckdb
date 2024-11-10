@@ -1,13 +1,13 @@
 #ifndef _FLOCK_MANAGER_SESSION_H
 #define _FLOCK_MANAGER_SESSION_H
 
+#include <mutex>
+#include <string>
 #ifndef CURL_STATICLIB
 #include <curl/curl.h>
 #else
 #include "curl/curl.h"
 #endif
-#include <mutex>
-#include <string>
 
 struct Response {
     std::string text;
