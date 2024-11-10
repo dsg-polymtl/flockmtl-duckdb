@@ -1,4 +1,5 @@
 #include <inja/inja.hpp>
+#include <flockmtl/core/module.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 
@@ -17,6 +18,44 @@ std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int
         vector_json.push_back(json);
     }
     return vector_json;
+}
+
+struct PromptDetails {
+    std::string prompt_name;
+    std::string prompt;
+
+    std::string GetPrompt() {
+        if (prompt_name.empty()) {
+            return prompt;
+        }
+
+        auto query_result = CoreModule::GetConnection().Query(
+            "SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" + prompt_name +
+            "'");
+        if (query_result->RowCount() == 0) {
+            throw std::runtime_error("The provided `" + prompt_name + "` prompt not found");
+        }
+        prompt = query_result->GetValue(0, 0).ToString();
+        return prompt;
+    }
+};
+
+PromptDetails CreatePormptDetails(Connection &con, const nlohmann::json prompt_details_json) {
+    PromptDetails prompt_details;
+    if (prompt_details_json.size() != 1) {
+        throw std::runtime_error(
+            "The prompt_details_json should contain a single key value pair of prompt_name or prompt");
+    }
+
+    if (prompt_details_json.contains("prompt_name")) {
+        prompt_details.prompt_name = prompt_details_json["prompt_name"];
+    } else if (prompt_details_json.contains("prompt")) {
+        prompt_details.prompt = prompt_details_json["prompt"];
+    } else {
+        throw std::runtime_error(
+            "The prompt_details_json should contain a single key value pair of prompt_name or prompt");
+    }
+    return prompt_details;
 }
 
 nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, const std::string &llm_template,
