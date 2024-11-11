@@ -27,7 +27,7 @@ static void LlmFilterScalarFunction(DataChunk &args, ExpressionState &state, Vec
 
     auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
-    auto responses = BatchAndComplete(tuples, con, prompt_details.prompt, ScalarPromptType::FILTER, model_details);
+    auto responses = BatchAndComplete(tuples, con, prompt_details.prompt, ScalarFunctionType::FILTER, model_details);
 
     auto index = 0;
     Vector vec(LogicalType::VARCHAR, args.size());

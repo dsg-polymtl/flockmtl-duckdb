@@ -66,7 +66,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer &tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto create_statement = std::make_unique<CreatePromptStatement>();
+        auto create_statement = make_uniq<CreatePromptStatement>();
         create_statement->prompt_name = prompt_name;
         create_statement->prompt = prompt;
         statement = std::move(create_statement);
@@ -90,7 +90,7 @@ void PromptParser::ParseDeletePrompt(Tokenizer &tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto delete_statement = std::make_unique<DeletePromptStatement>();
+        auto delete_statement = make_uniq<DeletePromptStatement>();
         delete_statement->prompt_name = prompt_name;
         statement = std::move(delete_statement);
     } else {
@@ -134,7 +134,7 @@ void PromptParser::ParseUpdatePrompt(Tokenizer &tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto update_statement = std::make_unique<UpdatePromptStatement>();
+        auto update_statement = make_uniq<UpdatePromptStatement>();
         update_statement->prompt_name = prompt_name;
         update_statement->new_prompt = new_prompt;
         statement = std::move(update_statement);
@@ -152,7 +152,7 @@ void PromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QuerySta
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto get_all_statement = std::make_unique<GetAllPromptStatement>();
+        auto get_all_statement = make_uniq<GetAllPromptStatement>();
         statement = std::move(get_all_statement);
     } else {
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
@@ -162,7 +162,7 @@ void PromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QuerySta
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
-            auto get_statement = std::make_unique<GetPromptStatement>();
+            auto get_statement = make_uniq<GetPromptStatement>();
             get_statement->prompt_name = prompt_name;
             statement = std::move(get_statement);
         } else {

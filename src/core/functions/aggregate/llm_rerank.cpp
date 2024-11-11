@@ -1,25 +1,24 @@
 #include <nlohmann/json.hpp>
-#include <inja/inja.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include "flockmtl/core/module.hpp"
-#include "templates/llm_rerank_prompt_template.hpp"
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/aggregate.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
 #include <flockmtl_extension.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
-#include "templates/llm_rerank_prompt_template.hpp"
+#include <templates/llm_aggregate_prompt_template.hpp>
 #include <flockmtl/core/config/config.hpp>
 #include <flockmtl/core/functions/aggregate/llm_rerank.hpp>
 
 namespace flockmtl {
 namespace core {
 
-LlmReranker::LlmReranker(std::string &model, int model_context_size, std::string &search_query,
-                         std::string &llm_reranking_template)
-    : model(model), model_context_size(model_context_size), search_query(search_query),
-      llm_reranking_template(llm_reranking_template) {
+LlmReranker::LlmReranker(std::string &model, int model_context_size, std::string &search_query)
+    : model(model), model_context_size(model_context_size), search_query(search_query) {
+
+    function_type = AggregateFunctionType::RERANK;
+    llm_reranking_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
 
     auto num_tokens_meta_and_search_query = CalculateFixedTokens();
 
@@ -46,8 +45,9 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
         next_tuples.clear();
         batch_size = half_batch;
         accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
+        accumulated_rows_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
         while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
-            auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+            auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
             if (accumulated_rows_tokens + num_tokens > available_tokens) {
                 break;
             }
@@ -59,9 +59,8 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
 
         auto indexed_tuples = nlohmann::json::array();
         for (auto i = 0; i < window_tuples.size(); i++) {
-            auto indexed_tuple = nlohmann::json::object();
-            indexed_tuple["id"] = i;
-            indexed_tuple["content"] = window_tuples[i];
+            auto indexed_tuple = window_tuples[i];
+            indexed_tuple["flockmtl_tuple_id"] = i;
             indexed_tuples.push_back(indexed_tuple);
         }
 
@@ -85,14 +84,10 @@ int LlmReranker::CalculateFixedTokens() const {
 }
 
 vector<int> LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tuples) {
-    inja::Environment env;
     nlohmann::json data;
-    data["tuples"] = tuples;
-    data["search_query"] = search_query;
-    auto prompt = env.render(llm_reranking_template, data);
-
+    auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
+    auto prompt = AggregatePromptTemplate::GetPrompt(search_query, markdown_tuples, function_type);
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
-
     return response["ranking"].get<vector<int>>();
 };
 
@@ -105,15 +100,13 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
         auto state_ptr = states_vector[idx];
         auto state = state_map[state_ptr];
 
-        auto llm_rerank_prompt_template_str = std::string(llm_rerank_prompt_template);
-
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
             tuples_with_ids.push_back(state->value[i]);
         }
 
         LlmReranker llm_reranker(LlmAggOperation::model_details.model, Config::default_context_window,
-                                 LlmAggOperation::search_query, llm_rerank_prompt_template_str);
+                                 LlmAggOperation::search_query);
 
         auto reranked_tuples = llm_reranker.SlidingWindowRerank(tuples_with_ids);
 

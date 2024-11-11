@@ -23,10 +23,10 @@ void LlmAggState::Combine(const LlmAggState &source) {
 }
 
 LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
-                               std::string &llm_first_or_last_template)
-    : model(model), model_context_size(model_context_size), search_query(search_query),
-      llm_first_or_last_template(llm_first_or_last_template) {
+                               AggregateFunctionType function_type)
+    : model(model), model_context_size(model_context_size), search_query(search_query), function_type(function_type) {
 
+    llm_first_or_last_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
     auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
     if (num_tokens_meta_and_search_query > model_context_size) {
@@ -44,11 +44,9 @@ int LlmFirstOrLast::calculateFixedTokens() const {
 }
 
 int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
-    inja::Environment env;
     nlohmann::json data;
-    data["tuples"] = tuples;
-    data["search_query"] = search_query;
-    auto prompt = env.render(llm_first_or_last_template, data);
+    auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
+    auto prompt = AggregatePromptTemplate::GetPrompt(search_query, markdown_tuples, function_type);
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
     return response["selected"].get<int>();
 }
@@ -61,8 +59,9 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 
     do {
         accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
+        accumulated_tuples_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
         while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
-            auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+            auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
             if (accumulated_tuples_tokens + num_tokens > available_tokens) {
                 break;
             }
@@ -75,7 +74,9 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
         batch_tuples.push_back(tuples[result_idx]);
     } while (start_index < tuples.size());
 
-    return batch_tuples[0]["content"];
+    batch_tuples[0].erase("flockmtl_tuple_id");
+
+    return batch_tuples[0];
 }
 
 // Static member initialization
@@ -140,7 +141,7 @@ void LlmAggOperation::Combine(Vector &source, Vector &target, AggregateInputData
 }
 
 void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                                      idx_t offset, string llm_prompt_template) {
+                                      idx_t offset, AggregateFunctionType function_type) {
     auto states_vector = FlatVector::GetData<LlmAggState *>(states);
 
     for (idx_t i = 0; i < count; i++) {
@@ -150,29 +151,30 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
 
         auto tuples_with_ids = nlohmann::json::array();
         for (auto i = 0; i < state->value.size(); i++) {
-            auto tuple_with_id = nlohmann::json::object();
-            tuple_with_id["id"] = i;
-            tuple_with_id["content"] = state->value[i];
+            auto tuple_with_id = state->value[i];
+            tuple_with_id["flockmtl_tuple_id"] = i;
             tuples_with_ids.push_back(tuple_with_id);
         }
 
         LlmFirstOrLast llm_first_or_last(LlmAggOperation::model_details.model, Config::default_context_window,
-                                         search_query, llm_prompt_template);
+                                         search_query, function_type);
         auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
 }
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::LAST>(Vector &states, AggregateInputData &aggr_input_data,
-                                                             Vector &result, idx_t count, idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::LAST>());
+void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::LAST>(Vector &states,
+                                                                       AggregateInputData &aggr_input_data,
+                                                                       Vector &result, idx_t count, idx_t offset) {
+    FinalizeResults(states, aggr_input_data, result, count, offset, AggregateFunctionType::LAST);
 };
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<FirstOrLast::FIRST>(Vector &states, AggregateInputData &aggr_input_data,
-                                                              Vector &result, idx_t count, idx_t offset) {
-    FinalizeResults(states, aggr_input_data, result, count, offset, GetFirstOrLastPromptTemplate<FirstOrLast::FIRST>());
+void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::FIRST>(Vector &states,
+                                                                        AggregateInputData &aggr_input_data,
+                                                                        Vector &result, idx_t count, idx_t offset) {
+    FinalizeResults(states, aggr_input_data, result, count, offset, AggregateFunctionType::FIRST);
 };
 
 void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,

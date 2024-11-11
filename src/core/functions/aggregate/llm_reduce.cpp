@@ -1,11 +1,10 @@
-#include <inja/inja.hpp>
 #include <nlohmann/json.hpp>
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/config/config.hpp>
 #include <flockmtl/core/functions/aggregate.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
-#include <templates/llm_reduce_prompt_template.hpp>
+#include <templates/llm_aggregate_prompt_template.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 
 namespace flockmtl {
@@ -19,6 +18,7 @@ public:
     std::string llm_reduce_template;
     int available_tokens;
     ModelDetails model_details;
+    AggregateFunctionType function_type;
 
     int calculateFixedTokens() const {
         int num_tokens_meta_and_reduce_query = 0;
@@ -27,11 +27,12 @@ public:
         return num_tokens_meta_and_reduce_query;
     }
 
-    LlmReduce(std::string &model, int model_context_size, std::string &reduce_query, std::string &llm_reduce_template,
-              ModelDetails model_details)
+    LlmReduce(std::string &model, int model_context_size, std::string &reduce_query, ModelDetails model_details)
         : model(model), model_context_size(model_context_size), reduce_query(reduce_query),
-          llm_reduce_template(llm_reduce_template), model_details(model_details) {
+          model_details(model_details) {
 
+        function_type = AggregateFunctionType::REDUCE;
+        llm_reduce_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
         auto num_tokens_meta_and_reduce_query = calculateFixedTokens();
 
         if (num_tokens_meta_and_reduce_query > model_context_size) {
@@ -42,14 +43,10 @@ public:
     }
 
     nlohmann::json Reduce(nlohmann::json &tuples) {
-        inja::Environment env;
         nlohmann::json data;
-        data["tuples"] = tuples;
-        data["reduce_query"] = reduce_query;
-        auto prompt = env.render(llm_reduce_template, data);
-
+        auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
+        auto prompt = AggregatePromptTemplate::GetPrompt(reduce_query, markdown_tuples, function_type);
         auto response = ModelManager::CallComplete(prompt, model_details);
-
         return response["output"];
     };
 
@@ -60,8 +57,9 @@ public:
 
         do {
             accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
+            accumulated_tuples_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
             while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
-                auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+                auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
                 if (accumulated_tuples_tokens + num_tokens > available_tokens) {
                     break;
                 }
@@ -136,9 +134,8 @@ struct LlmReduceOperation {
             auto source_state = state_map[source_ptr];
             auto target_state = state_map[target_ptr];
 
-            auto template_str = string(llm_reduce_prompt_template);
             LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
-                                 template_str, LlmReduceOperation::model_details);
+                                 LlmReduceOperation::model_details);
             auto result = llm_reduce.ReduceLoop(source_state->value);
             target_state->Update(result);
         }
@@ -153,9 +150,8 @@ struct LlmReduceOperation {
             auto state_ptr = states_vector[idx];
             auto state = state_map[state_ptr];
 
-            auto template_str = string(llm_reduce_prompt_template);
             LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
-                                 template_str, LlmReduceOperation::model_details);
+                                 LlmReduceOperation::model_details);
             auto response = llm_reduce.ReduceLoop(state->value);
             result.SetValue(idx, response.dump());
         }
