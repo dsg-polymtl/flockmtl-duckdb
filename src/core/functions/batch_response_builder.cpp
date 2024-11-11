@@ -20,6 +20,37 @@ std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int
     return vector_json;
 }
 
+std::string ConstructMarkdownHeader(const nlohmann::json &tuple) {
+    std::string header_markdown = "|";
+    for (const auto &key : tuple.items()) {
+        header_markdown += key.key() + " | ";
+    }
+    header_markdown += "\n";
+    for (const auto &key : tuple.items()) {
+        header_markdown += "|---";
+    }
+    header_markdown += "|\n";
+    return header_markdown;
+}
+
+std::string ConstructMarkdownSingleTuple(const nlohmann::json &tuple) {
+    std::string tuple_markdown = "|";
+    for (const auto &key : tuple.items()) {
+        tuple_markdown += key.value().get<std::string>() + " | ";
+    }
+    tuple_markdown += "\n";
+    return tuple_markdown;
+}
+
+std::string ConstructMarkdownArrayTuples(const nlohmann::json &tuples) {
+    std::string tuples_markdown = "";
+    tuples_markdown += ConstructMarkdownHeader(tuples[0]);
+    for (const auto &tuple : tuples) {
+        tuples_markdown += ConstructMarkdownSingleTuple(tuple);
+    }
+    return tuples_markdown;
+}
+
 PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_details_json) {
     PromptDetails prompt_details;
     if (prompt_details_json.size() != 1) {
@@ -45,7 +76,7 @@ PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_d
     return prompt_details;
 }
 
-nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, const std::string &llm_template,
+nlohmann::json Complete(const std::string &tuples, const std::string &user_prompt, const std::string &llm_template,
                         const ModelDetails &model_details) {
     inja::Environment env;
     nlohmann::json data;
@@ -53,13 +84,18 @@ nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_pr
     data["tuples"] = tuples;
     auto prompt = env.render(llm_template, data);
 
+    std::cout << prompt << std::endl;
+
     auto response = ModelManager::CallComplete(prompt, model_details);
+
+    std::cout << response.dump() << std::endl;
 
     return response["tuples"];
 };
 
 nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection &con, std::string user_prompt,
-                                const std::string &llm_template, const ModelDetails &model_details) {
+                                ScalarPromptType prompt_type, const ModelDetails &model_details) {
+    auto llm_template = ScalarPromptTemplate::GetScalarPromptTemplate(prompt_type);
 
     int num_tokens_meta_and_user_pormpt = 0;
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);
@@ -78,9 +114,10 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
         int start_index = 0;
 
         do {
+            accumulated_tuples_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
             while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size() &&
                    batch_tuples.size() < batch_size) {
-                auto num_tokens = Tiktoken::GetNumTokens(tuples[start_index].dump());
+                auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
                 if (accumulated_tuples_tokens + num_tokens > available_tokens) {
                     break;
                 }
@@ -91,7 +128,8 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
 
             nlohmann::json response;
             try {
-                response = Complete(batch_tuples, user_prompt, llm_template, model_details);
+                response =
+                    Complete(ConstructMarkdownArrayTuples(batch_tuples), user_prompt, llm_template, model_details);
             } catch (const LengthExceededError &e) {
                 batch_tuples.clear();
                 accumulated_tuples_tokens = 0;
