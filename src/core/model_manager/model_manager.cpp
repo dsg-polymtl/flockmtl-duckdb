@@ -85,7 +85,7 @@ std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(Connecti
 
 nlohmann::json ModelManager::OllamaCallComplete(const std::string &prompt, const ModelDetails &model_details,
                                                 const bool json_response) {
-    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
+    auto ollama_model_manager_uptr = make_uniq<OllamaModelManager>(false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
@@ -192,7 +192,7 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     auto api_version = AzureModelManager::get_azure_api_version();
 
     auto azure_model_manager_uptr =
-        std::make_unique<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
+        make_uniq<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
@@ -261,7 +261,7 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
 }
 
 nlohmann::json ModelManager::OllamaCallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
-    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
+    auto ollama_model_manager_uptr = make_uniq<OllamaModelManager>(false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
@@ -324,7 +324,7 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &input
     auto api_version = AzureModelManager::get_azure_api_version();
 
     auto azure_model_manager_uptr =
-        std::make_unique<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
+        make_uniq<AzureModelManager>(api_key, resource_name, model_details.model, api_version, false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {

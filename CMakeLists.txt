@@ -14,7 +14,6 @@ add_subdirectory(src)
 
 # Find dependencies
 find_package(CURL REQUIRED)
-find_package(inja REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
 # Build the DuckDB static and loadable extensions
@@ -36,11 +35,11 @@ endif()
 
 # Link libraries for the static extension
 target_link_libraries(${EXTENSION_NAME} CURL::libcurl
-                      nlohmann_json::nlohmann_json pantor::inja)
+                      nlohmann_json::nlohmann_json)
 
 # Link libraries for the loadable extension
 target_link_libraries(${LOADABLE_EXTENSION_NAME} CURL::libcurl
-                      nlohmann_json::nlohmann_json pantor::inja)
+                      nlohmann_json::nlohmann_json)
 
 # Install the extension
 install(

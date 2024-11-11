@@ -1,4 +1,3 @@
-#include <inja/inja.hpp>
 #include <flockmtl/core/module.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
@@ -36,7 +35,7 @@ std::string ConstructMarkdownHeader(const nlohmann::json &tuple) {
 std::string ConstructMarkdownSingleTuple(const nlohmann::json &tuple) {
     std::string tuple_markdown = "|";
     for (const auto &key : tuple.items()) {
-        tuple_markdown += key.value().get<std::string>() + " | ";
+        tuple_markdown += key.value().dump() + " | ";
     }
     tuple_markdown += "\n";
     return tuple_markdown;
@@ -76,26 +75,18 @@ PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_d
     return prompt_details;
 }
 
-nlohmann::json Complete(const std::string &tuples, const std::string &user_prompt, const std::string &llm_template,
+nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, ScalarFunctionType function_type,
                         const ModelDetails &model_details) {
-    inja::Environment env;
     nlohmann::json data;
-    data["user_prompt"] = user_prompt;
-    data["tuples"] = tuples;
-    auto prompt = env.render(llm_template, data);
-
-    std::cout << prompt << std::endl;
-
+    auto tuples_markdown = ConstructMarkdownArrayTuples(tuples);
+    auto prompt = ScalarPromptTemplate::GetPrompt(user_prompt, tuples_markdown, function_type);
     auto response = ModelManager::CallComplete(prompt, model_details);
-
-    std::cout << response.dump() << std::endl;
-
     return response["tuples"];
 };
 
 nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection &con, std::string user_prompt,
-                                ScalarPromptType prompt_type, const ModelDetails &model_details) {
-    auto llm_template = ScalarPromptTemplate::GetScalarPromptTemplate(prompt_type);
+                                ScalarFunctionType function_type, const ModelDetails &model_details) {
+    auto llm_template = ScalarPromptTemplate::GetPromptTemplate(function_type);
 
     int num_tokens_meta_and_user_pormpt = 0;
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);
@@ -128,8 +119,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
 
             nlohmann::json response;
             try {
-                response =
-                    Complete(ConstructMarkdownArrayTuples(batch_tuples), user_prompt, llm_template, model_details);
+                response = Complete(batch_tuples, user_prompt, function_type, model_details);
             } catch (const LengthExceededError &e) {
                 batch_tuples.clear();
                 accumulated_tuples_tokens = 0;
