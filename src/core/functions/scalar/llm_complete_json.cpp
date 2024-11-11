@@ -13,7 +13,6 @@
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
-#include <templates/llm_complete_json_prompt_template.hpp>
 
 namespace flockmtl {
 namespace core {
@@ -36,7 +35,7 @@ static void LlmCompleteJsonScalarFunction(DataChunk &args, ExpressionState &stat
         auto tuples = CoreScalarParsers::Struct2Json(args.data[2], args.size());
 
         auto responses =
-            BatchAndComplete(tuples, con, prompt_details.prompt, llm_complete_json_prompt_template, model_details);
+            BatchAndComplete(tuples, con, prompt_details.prompt, ScalarPromptType::COMPLETE_JSON, model_details);
 
         auto index = 0;
         for (const auto &response : responses) {
