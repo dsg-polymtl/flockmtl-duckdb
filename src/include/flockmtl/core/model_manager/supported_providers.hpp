@@ -1,5 +1,14 @@
 #pragma once
 #include <string>
+
+const std::string OLLAMA = "ollama";
+const std::string OPENAI = "openai";
+const std::string AZURE = "azure";
+const std::string DEFAULT_PROVIDER = "default";
+const std::string EMPTY_PROVIDER = "";
+const std::string BEDROCK = "bedrock";
+
+
 enum SupportedProviders {
     FLOCKMTL_OPENAI = 0,
     FLOCKMTL_AZURE,
@@ -11,13 +20,13 @@ enum SupportedProviders {
 
 inline SupportedProviders GetProviderType(std::string provider) {
     std::transform(provider.begin(), provider.end(), provider.begin(), [](unsigned char c) { return std::tolower(c); });
-    if (provider == "openai" || provider == "default" || provider == "")
+    if (provider == OLLAMA || provider == DEFAULT_PROVIDER || provider == EMPTY_PROVIDER)
         return FLOCKMTL_OPENAI;
-    if (provider == "azure")
+    if (provider == AZURE)
         return FLOCKMTL_AZURE;
-    if (provider == "ollama")
+    if (provider == OLLAMA)
         return FLOCKMTL_OLLAMA;
-    if (provider == "bedrock")
+    if (provider == BEDROCK)
         return FLOCKMTL_AWS_BEDROCK;
 
     return FLOCKMTL_UNSUPPORTED_PROVIDER;

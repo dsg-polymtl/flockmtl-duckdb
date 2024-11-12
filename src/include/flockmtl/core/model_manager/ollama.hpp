@@ -20,14 +20,46 @@ public:
     OllamaModelManager(OllamaModelManager &&) = delete;
     OllamaModelManager &operator=(OllamaModelManager &&) = delete;
 
+    std::string GetChatUrl (){
+        static int check_done = -1;
+        static const char *chat_url = nullptr;
+
+        if (check_done == -1) {
+            chat_url = std::getenv("OLLAMA_CHAT_URL");
+            check_done = 1;
+        }
+
+        if (!chat_url) {
+            throw std::runtime_error("OLLAMA_CHAT_URL environment variable is not set.");
+        }
+
+        return chat_url;
+    }
+
+    std::string GetEmbedUrl (){
+        static int check_done = -1;
+        static const char *embed_url = nullptr;
+
+        if (check_done == -1) {
+            embed_url = std::getenv("OLLAMA_EMBED_URL");
+            check_done = 1;
+        }
+
+        if (!embed_url) {
+            throw std::runtime_error("OLLAMA_EMBED_URL environment variable is not set.");
+        }
+
+        return embed_url;
+    }
+
     nlohmann::json CallComplete(const nlohmann::json &json, const std::string &contentType = "application/json") {
-        std::string url = "http://localhost:11434/api/chat";
+        std::string url = GetChatUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
 
     nlohmann::json CallEmbedding(const nlohmann::json &json, const std::string &contentType = "application/json") {
-        std::string url = "http://localhost:11434/api/embed";
+        std::string url = GetEmbedUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
@@ -35,16 +67,14 @@ public:
     bool validModel(const std::string &user_model_name) {
         auto response = _session.validOllamaModelsJson();
         auto json = nlohmann::json::parse(response.text);
+        bool res = false;
         for (const auto &model : json["models"]) {
             if (model.contains("name")) {
                 const auto &available_model = model["name"].get<std::string>();
-                auto res = available_model.find(user_model_name) != std::string::npos;
-
-                if (res)
-                    return true;
+                res |= available_model.find(user_model_name) != std::string::npos;
             }
         }
-        return false;
+        return res;
     }
 
 private:
