@@ -8,7 +8,6 @@ const std::string DEFAULT_PROVIDER = "default";
 const std::string EMPTY_PROVIDER = "";
 const std::string BEDROCK = "bedrock";
 
-
 enum SupportedProviders {
     FLOCKMTL_OPENAI = 0,
     FLOCKMTL_AZURE,
@@ -20,7 +19,7 @@ enum SupportedProviders {
 
 inline SupportedProviders GetProviderType(std::string provider) {
     std::transform(provider.begin(), provider.end(), provider.begin(), [](unsigned char c) { return std::tolower(c); });
-    if (provider == OLLAMA || provider == DEFAULT_PROVIDER || provider == EMPTY_PROVIDER)
+    if (provider == OPENAI || provider == DEFAULT_PROVIDER || provider == EMPTY_PROVIDER)
         return FLOCKMTL_OPENAI;
     if (provider == AZURE)
         return FLOCKMTL_AZURE;

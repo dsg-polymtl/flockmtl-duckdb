@@ -52,10 +52,10 @@ std::pair<std::string, int32_t> ModelManager::GetQueriedModel(Connection &con, c
     std::transform(provider_name_lower.begin(), provider_name_lower.end(), provider_name_lower.begin(),
                    [](unsigned char c) { return std::tolower(c); });
 
-    if (provider_name_lower == "ollama") {
+    if (provider_name_lower == OLLAMA) {
         OllamaModelManager olam(false);
         if (!olam.validModel(model_name)) {
-            throw std::runtime_error("Specified ollama model not deployed, please deploy before using");
+            throw std::runtime_error("Specified ollama model not deployed, please deploy before using it");
         }
         return {model_name, Config::default_max_tokens};
     }
@@ -253,21 +253,21 @@ nlohmann::json ModelManager::CallComplete(const std::string &prompt, const Model
     auto model = GetModelType(model_details.model, model_details.provider_name);
     if (model == FLOCKMTL_UNSUPPORTED_MODEL) {
 
-        throw std::invalid_argument("Model '" + model_details.model +
-                                    "' is not supported. Please choose one from the supported list: "
-                                    "gpt-4o, gpt-4o-mini, ollama-models (only with ollama as provider).");
+        throw std::runtime_error("Model '" + model_details.model +
+                                 "' is not supported. Please choose one from the supported list: "
+                                 "gpt-4o, gpt-4o-mini, ollama-models (only with ollama as provider).");
     }
 
     return CallCompleteProvider(prompt, model_details, json_response).second;
 }
 
-nlohmann::json ModelManager::OllamaCallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::OllamaCallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
     auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
         {"model", model_details.model},
-        {"input", input},
+        {"input", inputs},
     };
 
     nlohmann::json completion;
@@ -277,15 +277,20 @@ nlohmann::json ModelManager::OllamaCallEmbedding(const std::string &input, const
         throw std::runtime_error("Error in making request to Ollama API: " + std::string(e.what()));
     }
 
-    auto embedding = completion["embeddings"][0];
-    return embedding;
+    auto embeddings = nlohmann::json::array();
+    for (auto &item : completion["embeddings"]) {
+        embeddings.push_back(item);
+    }
+
+    return embeddings;
 }
 
-nlohmann::json ModelManager::AwsBedrockCallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::AwsBedrockCallEmbedding(const std::vector<string> &inputs,
+                                                     const ModelDetails &model_details) {
     return nlohmann::json();
 }
 
-nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const ModelDetails &model_details) {
+nlohmann::json ModelManager::OpenAICallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto key = openai::OpenAI::get_openai_api_key();
     openai::start(key);
@@ -314,7 +319,7 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::string &input, const
     return embeddings;
 }
 
-nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
+nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
     // Get API key from the environment variable
     auto api_key = AzureModelManager::get_azure_api_key();
     auto resource_name = AzureModelManager::get_azure_resource_name();
@@ -337,7 +342,6 @@ nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, co
         // Handle the error when the context window is too long
         throw std::runtime_error(
             "The response exceeded the context window length you can increase your max_tokens parameter.");
-        // Add error handling code here
     }
 
     auto embeddings = nlohmann::json::array();
@@ -348,7 +352,7 @@ nlohmann::json ModelManager::AzureCallEmbedding(const vector<string> &inputs, co
     return embeddings;
 }
 
-nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const ModelDetails &model_details) {
+nlohmann::json ModelManager::CallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
 
     // Check if the provider is in the list of supported provider
     auto provider = GetProviderType(model_details.provider_name);
@@ -363,13 +367,13 @@ nlohmann::json ModelManager::CallEmbedding(const vector<string> &inputs, const M
     auto model = GetEmbeddingModelType(model_details.model, model_details.provider_name);
     if (model == FLOCKMTL_UNSUPPORTED_EMBEDDING_MODEL) {
 
-        throw std::invalid_argument(
+        throw std::runtime_error(
             "Model '" + model_details.model +
             "' is not supported. Please choose one from the supported list: "
             "text-embedding-3-small, text-embedding-3-large, ollama-models (only with ollama as provider).");
     }
 
-    auto result = CallEmbeddingProvider(input, model_details);
+    auto result = CallEmbeddingProvider(inputs, model_details);
     return result.second;
 }
 
@@ -391,18 +395,18 @@ std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::st
     }
 }
 
-std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::string &input,
+std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::vector<std::string> &inputs,
                                                                     const ModelDetails &model_details) {
     auto provider = GetProviderType(model_details.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:
-        return {true, OpenAICallEmbedding(input, model_details)};
+        return {true, OpenAICallEmbedding(inputs, model_details)};
     case FLOCKMTL_AZURE:
-        return {true, AzureCallEmbedding(input, model_details)};
+        return {true, AzureCallEmbedding(inputs, model_details)};
     case FLOCKMTL_OLLAMA:
-        return {true, OllamaCallEmbedding(input, model_details)};
+        return {true, OllamaCallEmbedding(inputs, model_details)};
     case FLOCKMTL_AWS_BEDROCK:
-        return {true, AwsBedrockCallEmbedding(input, model_details)};
+        return {true, AwsBedrockCallEmbedding(inputs, model_details)};
     default:
         return {false, {}};
     }

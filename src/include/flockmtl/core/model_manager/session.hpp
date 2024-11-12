@@ -80,7 +80,7 @@ public:
     Response makeRequest(const std::string &contentType = "");
     void set_auth_header(struct curl_slist **headers_ptr);
     std::string easyEscape(const std::string &text);
-    Response validOllamaModelsJson();
+    Response validOllamaModelsJson(const std::string &url);
 
 private:
     static size_t writeFunction(void *ptr, size_t size, size_t nmemb, std::string *data) {
@@ -103,8 +103,7 @@ private:
     std::mutex mutex_request_;
 };
 
-inline Response Session::validOllamaModelsJson() {
-    const std::string url = "http://localhost:11434/api/ps";
+inline Response Session::validOllamaModelsJson(const std::string &url) {
     std::lock_guard<std::mutex> lock(mutex_request_);
 
     struct curl_slist *headers = NULL;

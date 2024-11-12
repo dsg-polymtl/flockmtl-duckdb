@@ -20,7 +20,7 @@ public:
     OllamaModelManager(OllamaModelManager &&) = delete;
     OllamaModelManager &operator=(OllamaModelManager &&) = delete;
 
-    std::string GetChatUrl (){
+    std::string GetChatUrl() {
         static int check_done = -1;
         static const char *chat_url = nullptr;
 
@@ -36,7 +36,7 @@ public:
         return chat_url;
     }
 
-    std::string GetEmbedUrl (){
+    std::string GetEmbedUrl() {
         static int check_done = -1;
         static const char *embed_url = nullptr;
 
@@ -52,6 +52,22 @@ public:
         return embed_url;
     }
 
+    std::string GetAvailableOllamaModelsUrl() {
+        static int check_done = -1;
+        static const char *url = nullptr;
+
+        if (check_done == -1) {
+            url = std::getenv("OLLAMA_AVAILABLE_MODELS_URL");
+            check_done = 1;
+        }
+
+        if (!url) {
+            throw std::runtime_error("OLLAMA_AVAILABLE_MODELS_URL environment variable is not set.");
+        }
+
+        return url;
+    }
+
     nlohmann::json CallComplete(const nlohmann::json &json, const std::string &contentType = "application/json") {
         std::string url = GetChatUrl();
         _session.setUrl(url);
@@ -65,7 +81,8 @@ public:
     }
 
     bool validModel(const std::string &user_model_name) {
-        auto response = _session.validOllamaModelsJson();
+        std::string url = GetAvailableOllamaModelsUrl();
+        auto response = _session.validOllamaModelsJson(url);
         auto json = nlohmann::json::parse(response.text);
         bool res = false;
         for (const auto &model : json["models"]) {
