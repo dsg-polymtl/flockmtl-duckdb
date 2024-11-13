@@ -1,6 +1,7 @@
 #include "flockmtl/core/parser/query/prompt_parser.hpp"
 
 #include "flockmtl/common.hpp"
+#include <flockmtl/core/module.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -151,7 +152,7 @@ void PromptParser::ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QuerySta
     }
 
     token = tokenizer.NextToken();
-    if (token.type == TokenType::SYMBOL || token.value == ";") {
+    if ((token.type == TokenType::SYMBOL || token.value == ";") && value == "PROMPTS") {
         auto get_all_statement = make_uniq<GetAllPromptStatement>();
         statement = std::move(get_all_statement);
     } else {
@@ -177,6 +178,13 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     switch (statement.type) {
     case StatementType::CREATE_PROMPT: {
         const auto &create_stmt = static_cast<const CreatePromptStatement &>(statement);
+        // check if prompt_name already exists
+        auto &con = CoreModule::GetConnection();
+        auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
+                                create_stmt.prompt_name + "';");
+        if (result->RowCount() > 0) {
+            throw std::runtime_error("Prompt `" + create_stmt.prompt_name + "` already exists.");
+        }
         sql << "INSERT INTO flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE(prompt_name, prompt) VALUES ('"
             << create_stmt.prompt_name << "', '" << create_stmt.prompt << "');";
         break;
@@ -189,18 +197,31 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::UPDATE_PROMPT: {
         const auto &update_stmt = static_cast<const UpdatePromptStatement &>(statement);
-        sql << "UPDATE flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE SET prompt = '" << update_stmt.new_prompt
-            << "' WHERE prompt_name = '" << update_stmt.prompt_name << "';";
+        // get the existing prompt version
+        auto &con = CoreModule::GetConnection();
+        auto result =
+            con.Query("SELECT version FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
+                      update_stmt.prompt_name + "' ORDER BY version DESC LIMIT 1;");
+        if (result->RowCount() == 0) {
+            throw std::runtime_error("Prompt `" + update_stmt.prompt_name + "` does not exist.");
+        }
+        int version = result->GetValue<int>(0, 0) + 1;
+        sql << "INSERT INTO flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE(prompt_name, prompt, version) VALUES ('"
+            << update_stmt.prompt_name << "', '" << update_stmt.new_prompt << "', " << version << ");";
         break;
     }
     case StatementType::GET_PROMPT: {
         const auto &get_stmt = static_cast<const GetPromptStatement &>(statement);
         sql << "SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '"
-            << get_stmt.prompt_name << "';";
+            << get_stmt.prompt_name << "' ORDER BY version DESC;";
         break;
     }
     case StatementType::GET_ALL_PROMPT: {
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE;";
+        sql << "SELECT t1.* FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE AS t1 "
+            << "JOIN (SELECT prompt_name, MAX(version) AS max_version "
+            << "FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+            << "GROUP BY prompt_name) AS t2 "
+            << "ON t1.prompt_name = t2.prompt_name AND t1.version = t2.max_version;";
         break;
     }
     default:

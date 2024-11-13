@@ -111,8 +111,11 @@ void Config::ConfigPromptTable(duckdb::Connection &con, std::string &schema_name
     if (result->RowCount() == 0) {
         con.Query("CREATE TABLE " + schema_name + "." + table_name +
                   " ("
-                  "prompt_name VARCHAR NOT NULL PRIMARY KEY,"
-                  "prompt VARCHAR NOT NULL"
+                  "prompt_name VARCHAR NOT NULL,"
+                  "prompt VARCHAR NOT NULL,"
+                  "update_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,"
+                  "version INT DEFAULT 1,"
+                  "PRIMARY KEY (prompt_name, version)"
                   ");");
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
