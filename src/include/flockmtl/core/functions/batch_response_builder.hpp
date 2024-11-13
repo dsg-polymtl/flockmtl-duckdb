@@ -12,6 +12,7 @@ std::vector<nlohmann::json> CastVectorOfStructsToJson(Vector &struct_vector, int
 struct PromptDetails {
     std::string prompt_name;
     std::string prompt;
+    int version;
 };
 
 std::string ConstructMarkdownHeader(const nlohmann::json &tuple);

@@ -52,25 +52,38 @@ std::string ConstructMarkdownArrayTuples(const nlohmann::json &tuples) {
 
 PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_details_json) {
     PromptDetails prompt_details;
-    if (prompt_details_json.size() != 1) {
-        throw std::runtime_error(
-            "The prompt details struct should contain a single key value pair of prompt_name or prompt");
-    }
 
     if (prompt_details_json.contains("prompt_name")) {
+        if (!prompt_details_json.contains("version") && prompt_details_json.size() > 1) {
+            throw std::runtime_error("The prompt details struct should contain a single key value pair of prompt or "
+                                     "prompt_name with prompt version");
+        } else if (prompt_details_json.contains("version") && prompt_details_json.size() > 2) {
+            throw std::runtime_error("The prompt details struct should contain a single key value pair of prompt or "
+                                     "prompt_name with prompt version");
+        }
         prompt_details.prompt_name = prompt_details_json["prompt_name"];
-        auto query_result =
-            con.Query("SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
-                      prompt_details.prompt_name + "'");
+        std::string prompt_details_query =
+            "SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
+            prompt_details.prompt_name + "'";
+        std::string error_message = "The provided `" + prompt_details.prompt_name + "` prompt ";
+        if (prompt_details_json.contains("version")) {
+            prompt_details.version = std::stoi(prompt_details_json["version"].get<std::string>());
+            prompt_details_query += " AND version = " + std::to_string(prompt_details.version) + ";";
+            error_message += "with version " + std::to_string(prompt_details.version) + " not found";
+        } else {
+            prompt_details_query += " ORDER BY version DESC LIMIT 1;";
+            error_message += "not found";
+        }
+        auto query_result = con.Query(prompt_details_query);
         if (query_result->RowCount() == 0) {
-            throw std::runtime_error("The provided `" + prompt_details.prompt_name + "` prompt not found");
+            throw std::runtime_error(error_message);
         }
         prompt_details.prompt = query_result->GetValue(0, 0).ToString();
     } else if (prompt_details_json.contains("prompt")) {
         prompt_details.prompt = prompt_details_json["prompt"];
     } else {
-        throw std::runtime_error(
-            "The prompt details struct should contain a single key value pair of prompt_name or prompt");
+        throw std::runtime_error("The prompt details struct should contain a single key value pair of prompt or "
+                                 "prompt_name with prompt version");
     }
     return prompt_details;
 }
