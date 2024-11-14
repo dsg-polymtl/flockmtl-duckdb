@@ -21,6 +21,10 @@ std::string Config::get_prompts_table_name() {
     return "FLOCKMTL_PROMPT_INTERNAL_TABLE";
 }
 
+std::string Config::get_secrets_table_name() {
+    return "FLOCKMTL_SECRET_INTERNAL_TABLE";
+}
+
 void Config::Configure(duckdb::DatabaseInstance &db) {
     std::string schema = Config::get_schema_name();
     duckdb::Connection con(db);
@@ -29,6 +33,7 @@ void Config::Configure(duckdb::DatabaseInstance &db) {
     ConfigSchema(con, schema);
     ConfigModelTable(con, schema);
     ConfigPromptTable(con, schema);
+    ConfigSecretTable(con, schema);
 
     con.Commit();
 }
@@ -120,6 +125,20 @@ void Config::ConfigPromptTable(duckdb::Connection &con, std::string &schema_name
 
         con.Query("INSERT INTO " + schema_name + "." + table_name +
                   " (prompt_name ,prompt) VALUES ('hello-world', 'Tell me hello world');");
+    }
+}
+
+void Config::ConfigSecretTable(duckdb::Connection &con, std::string &schema_name) {
+    const std::string table_name = get_secrets_table_name();
+
+    auto result = con.Query("SELECT table_name FROM information_schema.tables WHERE table_schema = '" + schema_name +
+                            "' AND table_name = '" + table_name + "';");
+    if (result->RowCount() == 0) {
+        con.Query("CREATE TABLE " + schema_name + "." + table_name +
+                  " ("
+                  "provider VARCHAR NOT NULL PRIMARY KEY,"
+                  "secret VARCHAR NOT NULL"
+                  ");");
     }
 }
 

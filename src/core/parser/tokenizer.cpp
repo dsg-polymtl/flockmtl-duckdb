@@ -108,6 +108,8 @@ Token Tokenizer::GetNextToken() {
         return ParseKeyword();
     } else if (ch == ';' || ch == ',') {
         return ParseSymbol();
+    } else if (ch == '=') {
+        return ParseSymbol();
     } else if (ch == '(' || ch == ')') {
         return ParseParenthesis();
     } else if (std::isdigit(ch)) {

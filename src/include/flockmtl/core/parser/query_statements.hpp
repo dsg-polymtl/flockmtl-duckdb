@@ -20,6 +20,11 @@ enum class StatementType {
     UPDATE_PROMPT,
     GET_PROMPT,
     GET_ALL_PROMPT,
+    CREATE_SECRET,
+    DELETE_SECRET,
+    UPDATE_SECRET,
+    GET_SECRET,
+    GET_ALL_SECRET,
 };
 
 // Abstract base class for statements

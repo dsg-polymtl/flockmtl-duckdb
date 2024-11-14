@@ -28,6 +28,10 @@ std::string QueryParser::ParseQuery(const std::string &query) {
         PromptParser prompt_parser;
         prompt_parser.Parse(query, statement);
         return prompt_parser.ToSQL(*statement);
+    } else if (token.type == TokenType::KEYWORD && ((value == "SECRET" || value == "SECRETS"))) {
+        SecretParser secret_parser;
+        secret_parser.Parse(query, statement);
+        return secret_parser.ToSQL(*statement);
     } else {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
