@@ -11,6 +11,7 @@ struct CoreScalarFunctions {
         RegisterLlmCompleteScalarFunction(db);
         RegisterLlmEmbeddingScalarFunction(db);
         RegisterLlmFilterScalarFunction(db);
+        RegisterFusionRelativeScalarFunction(db);
     }
 
 private:
@@ -18,6 +19,7 @@ private:
     static void RegisterLlmCompleteScalarFunction(DatabaseInstance &db);
     static void RegisterLlmEmbeddingScalarFunction(DatabaseInstance &db);
     static void RegisterLlmFilterScalarFunction(DatabaseInstance &db);
+    static void RegisterFusionRelativeScalarFunction(DatabaseInstance &db);
 };
 
 } // namespace core

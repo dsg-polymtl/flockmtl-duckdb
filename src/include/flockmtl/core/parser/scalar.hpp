@@ -13,6 +13,7 @@ struct CoreScalarParsers {
     static void LlmCompleteScalarParser(DataChunk &args);
     static void LlmFilterScalarParser(DataChunk &args);
     static void LlmEmbeddingScalarParser(DataChunk &args);
+    static void FusionRelativeScalarParser(DataChunk &args);
 };
 
 } // namespace core
