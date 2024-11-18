@@ -16,11 +16,15 @@ static void FusionRelativeScalarFunction(DataChunk &args, ExpressionState &state
     for (auto i = 0; i < args.size(); i++) {
         auto max = 0.0;
         for (auto j = 0; j < args.ColumnCount(); j++) {
-            auto value = args.data[j].GetValue(i).GetValue<double>();
-            if (value > max) {
-                max = value;
+            auto valueWrapper = args.data[j].GetValue(i);
+            if (!valueWrapper.IsNull()) {
+                auto value = valueWrapper.GetValue<double>();
+                if (value > max) {
+                    max = value;
+                }
             }
         }
+
         result.SetValue(i, max);
     }
 }
