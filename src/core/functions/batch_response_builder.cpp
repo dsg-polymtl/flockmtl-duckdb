@@ -89,7 +89,7 @@ PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_d
 }
 
 nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, ScalarFunctionType function_type,
-                        const ModelDetails &model_details) {
+                        ModelDetails &model_details) {
     nlohmann::json data;
     auto tuples_markdown = ConstructMarkdownArrayTuples(tuples);
     auto prompt = ScalarPromptTemplate::GetPrompt(user_prompt, tuples_markdown, function_type);
@@ -98,7 +98,7 @@ nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_pr
 };
 
 nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection &con, std::string user_prompt,
-                                ScalarFunctionType function_type, const ModelDetails &model_details) {
+                                ScalarFunctionType function_type, ModelDetails &model_details) {
     auto llm_template = ScalarPromptTemplate::GetPromptTemplate(function_type);
 
     int num_tokens_meta_and_user_pormpt = 0;

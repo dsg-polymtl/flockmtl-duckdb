@@ -44,7 +44,8 @@ void SecretParser::ParseCreateSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
-    auto provider = value;
+
+    auto provider = StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
@@ -80,7 +81,8 @@ void SecretParser::ParseDeleteSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
-    auto provider = value;
+
+    auto provider = StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
@@ -103,7 +105,8 @@ void SecretParser::ParseUpdateSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
-    auto provider = value;
+
+    auto provider = StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
@@ -143,7 +146,7 @@ void SecretParser::ParseGetSecret(Tokenizer &tokenizer, std::unique_ptr<QuerySta
         if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
             throw std::runtime_error("Expected 'OPENAI' or 'AZURE' keyword after 'SECRET'.");
         }
-        auto provider = value;
+        auto provider = StringUtil::Lower(value);
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {

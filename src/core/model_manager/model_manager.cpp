@@ -12,6 +12,7 @@
 #include <string>
 #include <stdexcept>
 #include <nlohmann/json.hpp>
+#include <flockmtl/core/module.hpp>
 
 namespace flockmtl {
 namespace core {
@@ -134,9 +135,12 @@ nlohmann::json ModelManager::AwsBedrockCallComplete(const std::string &prompt, c
 nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const ModelDetails &model_details,
                                                 const bool json_response) {
 
-    // Get API key from the environment variable
-    auto key = openai::OpenAI::get_openai_api_key();
-    openai::start(key);
+    auto api_key = model_details.secret;
+    if (api_key.empty()) {
+        api_key = openai::OpenAI::get_openai_api_key();
+    }
+
+    openai::start(api_key);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details.model},
@@ -186,8 +190,11 @@ nlohmann::json ModelManager::OpenAICallComplete(const std::string &prompt, const
 
 nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const ModelDetails &model_details,
                                                const bool json_response) {
-    // Get API key from the environment variable
-    auto api_key = AzureModelManager::get_azure_api_key();
+    auto api_key = model_details.secret;
+    if (api_key.empty()) {
+        api_key = AzureModelManager::get_azure_api_key();
+    }
+
     auto resource_name = AzureModelManager::get_azure_resource_name();
     auto api_version = AzureModelManager::get_azure_api_version();
 
@@ -236,7 +243,7 @@ nlohmann::json ModelManager::AzureCallComplete(const std::string &prompt, const 
     return content_str;
 }
 
-nlohmann::json ModelManager::CallComplete(const std::string &prompt, const ModelDetails &model_details,
+nlohmann::json ModelManager::CallComplete(const std::string &prompt, ModelDetails &model_details,
                                           const bool json_response) {
 
     // Check if the provider is in the list of supported provider
@@ -290,9 +297,12 @@ nlohmann::json ModelManager::AwsBedrockCallEmbedding(const std::vector<string> &
 }
 
 nlohmann::json ModelManager::OpenAICallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
-    // Get API key from the environment variable
-    auto key = openai::OpenAI::get_openai_api_key();
-    openai::start(key);
+    auto api_key = model_details.secret;
+    if (api_key.empty()) {
+        api_key = openai::OpenAI::get_openai_api_key();
+    }
+
+    openai::start(api_key);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {
@@ -318,8 +328,10 @@ nlohmann::json ModelManager::OpenAICallEmbedding(const std::vector<string> &inpu
 }
 
 nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
-    // Get API key from the environment variable
-    auto api_key = AzureModelManager::get_azure_api_key();
+    auto api_key = model_details.secret;
+    if (api_key.empty()) {
+        api_key = AzureModelManager::get_azure_api_key();
+    }
     auto resource_name = AzureModelManager::get_azure_resource_name();
     auto api_version = AzureModelManager::get_azure_api_version();
 
@@ -350,7 +362,7 @@ nlohmann::json ModelManager::AzureCallEmbedding(const std::vector<string> &input
     return embeddings;
 }
 
-nlohmann::json ModelManager::CallEmbedding(const std::vector<string> &inputs, const ModelDetails &model_details) {
+nlohmann::json ModelManager::CallEmbedding(const std::vector<string> &inputs, ModelDetails &model_details) {
 
     // Check if the provider is in the list of supported provider
     auto provider = GetProviderType(model_details.provider_name);
@@ -375,10 +387,32 @@ nlohmann::json ModelManager::CallEmbedding(const std::vector<string> &inputs, co
     return result.second;
 }
 
-std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::string &prompt,
-                                                                   const ModelDetails &model_details,
-                                                                   const bool json_response) {
+std::string ModelManager::GetProviderSecret(const SupportedProviders &provider) {
+
+    auto provider_name = GetProviderName(provider);
+
+    if (provider_name.empty()) {
+        throw std::runtime_error("Provider not found");
+    }
+
+    auto query = "SELECT secret FROM "
+                 "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                 "WHERE provider = '" +
+                 provider_name + "'";
+
+    auto query_result = CoreModule::GetConnection().Query(query);
+
+    if (query_result->RowCount() == 0) {
+        return "";
+    }
+
+    return query_result->GetValue(0, 0).ToString();
+}
+
+std::pair<bool, nlohmann::json>
+ModelManager::CallCompleteProvider(const std::string &prompt, ModelDetails &model_details, const bool json_response) {
     auto provider = GetProviderType(model_details.provider_name);
+    model_details.secret = GetProviderSecret(provider);
     switch (provider) {
     case FLOCKMTL_OPENAI:
         return {true, OpenAICallComplete(prompt, model_details, json_response)};
@@ -394,8 +428,9 @@ std::pair<bool, nlohmann::json> ModelManager::CallCompleteProvider(const std::st
 }
 
 std::pair<bool, nlohmann::json> ModelManager::CallEmbeddingProvider(const std::vector<std::string> &inputs,
-                                                                    const ModelDetails &model_details) {
+                                                                    ModelDetails &model_details) {
     auto provider = GetProviderType(model_details.provider_name);
+    model_details.secret = GetProviderSecret(provider);
     switch (provider) {
     case FLOCKMTL_OPENAI:
         return {true, OpenAICallEmbedding(inputs, model_details)};

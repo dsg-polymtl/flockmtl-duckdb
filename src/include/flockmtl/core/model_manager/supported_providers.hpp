@@ -30,3 +30,18 @@ inline SupportedProviders GetProviderType(std::string provider) {
 
     return FLOCKMTL_UNSUPPORTED_PROVIDER;
 }
+
+inline std::string GetProviderName(SupportedProviders provider) {
+    switch (provider) {
+    case FLOCKMTL_OPENAI:
+        return OPENAI;
+    case FLOCKMTL_AZURE:
+        return AZURE;
+    case FLOCKMTL_OLLAMA:
+        return OLLAMA;
+    case FLOCKMTL_AWS_BEDROCK:
+        return BEDROCK;
+    default:
+        return "";
+    }
+}
