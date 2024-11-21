@@ -1,0 +1,4 @@
+set(EXTENSION_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/prompt_manager.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/repository.cpp ${EXTENSION_SOURCES}
+    PARENT_SCOPE)
