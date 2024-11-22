@@ -7,7 +7,7 @@
 #include <flockmtl_extension.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
-#include <templates/llm_aggregate_prompt_template.hpp>
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
 #include <flockmtl/core/config/config.hpp>
 #include <flockmtl/core/functions/aggregate/llm_rerank.hpp>
 
@@ -18,7 +18,7 @@ LlmReranker::LlmReranker(std::string &model, int model_context_size, std::string
     : model(model), model_context_size(model_context_size), search_query(search_query) {
 
     function_type = AggregateFunctionType::RERANK;
-    llm_reranking_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
+    llm_reranking_template = PromptManager::GetTemplate(function_type);
 
     auto num_tokens_meta_and_search_query = CalculateFixedTokens();
 
@@ -86,7 +86,7 @@ int LlmReranker::CalculateFixedTokens() const {
 vector<int> LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tuples) {
     nlohmann::json data;
     auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
-    auto prompt = AggregatePromptTemplate::GetPrompt(search_query, markdown_tuples, function_type);
+    auto prompt = PromptManager::Render(search_query, markdown_tuples, function_type);
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
     return response["ranking"].get<vector<int>>();
 };

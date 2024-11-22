@@ -4,7 +4,7 @@
 #include <flockmtl/core/functions/aggregate.hpp>
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
-#include <templates/llm_aggregate_prompt_template.hpp>
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
 #include <flockmtl/core/model_manager/tiktoken.hpp>
 
 namespace flockmtl {
@@ -32,7 +32,7 @@ public:
           model_details(model_details) {
 
         function_type = AggregateFunctionType::REDUCE;
-        llm_reduce_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
+        llm_reduce_template = PromptManager::GetTemplate(function_type);
         auto num_tokens_meta_and_reduce_query = calculateFixedTokens();
 
         if (num_tokens_meta_and_reduce_query > model_context_size) {
@@ -45,7 +45,7 @@ public:
     nlohmann::json Reduce(nlohmann::json &tuples) {
         nlohmann::json data;
         auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
-        auto prompt = AggregatePromptTemplate::GetPrompt(reduce_query, markdown_tuples, function_type);
+        auto prompt = PromptManager::Render(reduce_query, markdown_tuples, function_type);
         auto response = ModelManager::CallComplete(prompt, model_details);
         return response["output"];
     };
@@ -186,9 +186,7 @@ struct LlmReduceOperation {
         }
     }
 
-    static bool IgnoreNull() {
-        return true;
-    }
+    static bool IgnoreNull() { return true; }
 };
 
 ModelDetails LlmReduceOperation::model_details;

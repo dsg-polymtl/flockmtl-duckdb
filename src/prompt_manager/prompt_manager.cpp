@@ -16,14 +16,16 @@ std::string PromptManager::ToString<PromptSection>(PromptSection section) {
         return "{{RESPONSE_FORMAT}}";
     case PromptSection::INSTRUCTIONS:
         return "{{INSTRUCTIONS}}";
+    default:
+        return "";
     }
-};
+}
 
 std::string PromptManager::ReplaceSection(const std::string &prompt_template, const PromptSection section,
                                           const std::string &section_content) {
     auto replace_string = PromptManager::ToString(section);
     return PromptManager::ReplaceSection(prompt_template, replace_string, section_content);
-};
+}
 
 std::string PromptManager::ReplaceSection(const std::string &prompt_template, const std::string &replace_string,
                                           const std::string &section_content) {
@@ -37,23 +39,6 @@ std::string PromptManager::ReplaceSection(const std::string &prompt_template, co
     }
 
     return prompt;
-};
-
-template <typename FunctionType>
-std::string PromptManager::GetTemplate(FunctionType option) {
-    auto prompt_template =
-        PromptManager::ReplaceSection(META_PROMPT, PromptSection::INSTRUCTIONS, INSTRUCTIONS::Get(option));
-    auto response_format = RESPONSE_FORMAT::Get(option);
-    prompt_template = PromptManager::ReplaceSection(prompt_template, PromptSection::RESPONSE_FORMAT, response_format);
-    return prompt_template;
-};
-
-template <typename FunctionType>
-std::string PromptManager::Render(const std::string &user_prompt, const std::string &tuples, FunctionType option) {
-    auto prompt = PromptManager::GetTemplate(option);
-    prompt = PromptManager::ReplaceSection(prompt, PromptSection::USER_PROMPT, user_prompt);
-    prompt = PromptManager::ReplaceSection(prompt, PromptSection::TUPLES, tuples);
-    return prompt;
-};
+}
 
 } // namespace flockmtl

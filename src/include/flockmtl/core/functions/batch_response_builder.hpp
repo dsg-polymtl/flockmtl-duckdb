@@ -2,7 +2,7 @@
 #include <nlohmann/json.hpp>
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/model_manager/model_manager.hpp>
-#include <templates/llm_scalar_prompt_template.hpp>
+#include <flockmtl/prompt_manager/prompt_manager.hpp>
 
 namespace flockmtl {
 namespace core {

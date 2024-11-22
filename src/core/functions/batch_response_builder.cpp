@@ -1,6 +1,7 @@
 #include <flockmtl/core/module.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include <flockmtl/core/model_manager/tiktoken.hpp>
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
 
 namespace flockmtl {
 namespace core {
@@ -92,14 +93,14 @@ nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_pr
                         ModelDetails &model_details) {
     nlohmann::json data;
     auto tuples_markdown = ConstructMarkdownArrayTuples(tuples);
-    auto prompt = ScalarPromptTemplate::GetPrompt(user_prompt, tuples_markdown, function_type);
+    auto prompt = PromptManager::Render(user_prompt, tuples_markdown, function_type);
     auto response = ModelManager::CallComplete(prompt, model_details);
     return response["tuples"];
 };
 
 nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection &con, std::string user_prompt,
                                 ScalarFunctionType function_type, ModelDetails &model_details) {
-    auto llm_template = ScalarPromptTemplate::GetPromptTemplate(function_type);
+    auto llm_template = PromptManager::GetTemplate(function_type);
 
     int num_tokens_meta_and_user_pormpt = 0;
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);

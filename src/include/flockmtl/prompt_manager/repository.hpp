@@ -4,6 +4,12 @@
 
 namespace flockmtl {
 
+enum class PromptSection { USER_PROMPT, TUPLES, RESPONSE_FORMAT, INSTRUCTIONS };
+
+enum class AggregateFunctionType { REDUCE, FIRST, LAST, RERANK };
+
+enum class ScalarFunctionType { COMPLETE_JSON, COMPLETE, FILTER };
+
 constexpr auto META_PROMPT =
     "You are a semantic analysis tool for DBMS. The tool will analyze each tuple in the provided data and respond to "
     "user requests based on this context.\n\nUser Prompt:\n\n- {{USER_PROMPT}}\n\nTuples "
@@ -23,27 +29,27 @@ public:
         "according to the expected response format.";
 
     template <typename FunctionType>
-    static std::string Get(const FunctionType option);
+    static std::string Get(FunctionType option);
 };
 
 class RESPONSE_FORMAT {
 public:
     // Scalar Functions
     static constexpr auto COMPLETE_JSON =
-        "Return a single, coherent output that synthesizes the most relevant information from the tuples provided. "
-        "Respond in the following JSON format. **Do not add explanations or additional words beyond the summarized "
-        "content.**\n\nResponse Format:\n\n```json\n{\n  \"output\": <summarized content here>\n}\n```";
+        "The system should interpret database tuples and provide a response to the user's prompt for each tuple in a "
+        "JSON format that contains the necessary columns for the answer.\n\nThe tool should respond in JSON format as "
+        "follows:\n\n```json\n{\t\"tuples\": [\n\t\t{<response 1>},\n\t\t{<response 2>},\n\t\t...\n\t\t{<response "
+        "n>}\n\t]\n}\n```";
     static constexpr auto COMPLETE =
-        "Return a single, coherent output that synthesizes the most relevant information from the tuples provided. "
-        "**Do not add explanations or additional words beyond the summarized content.**";
+        "The system should interpret database tuples and provide a response to the user's prompt for each tuple in "
+        "plain text.\n\tThe tool should respond in JSON format as follows:\n\n```json\n{\"tuples\": [\"<response 1>\", "
+        "\"<response 2>\", ... , \"<response n>\"]}";
     static constexpr auto FILTER =
-        "Return a list of all tuples that meet the criteria specified in the user prompt. Respond in the following "
-        "JSON format. **Do not add explanations or additional words beyond the summarized content.**\n\nResponse "
-        "Format:\n\n```json\n{\n  \"output\": [flockmtl_tuple_id1, flockmtl_tuple_id2, flockmtl_tuple_id3, "
-        "...]\n}\n```";
+        "The system should interpret database tuples and provide a response to the user's prompt for each tuple in a "
+        "BOOL format that would be true/false.\n\tThe tool should respond in JSON format as "
+        "follows:\n\n```json\n{\"tuples\": [<bool response 1>, <bool response 2>, ... , <bool response n>]}";
 
     // Aggregate Functions
-
     static constexpr auto REDUCE =
         "Return a single, coherent output that synthesizes the most relevant information from the tuples provided. "
         "Respond in the following JSON format. **Do not add explanations or additional words beyond the summarized "

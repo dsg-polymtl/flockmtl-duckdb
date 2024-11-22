@@ -9,12 +9,9 @@
 namespace flockmtl {
 namespace core {
 
-void LlmAggState::Initialize() {
-}
+void LlmAggState::Initialize() {}
 
-void LlmAggState::Update(const nlohmann::json &input) {
-    value.push_back(input);
-}
+void LlmAggState::Update(const nlohmann::json &input) { value.push_back(input); }
 
 void LlmAggState::Combine(const LlmAggState &source) {
     for (auto &input : source.value) {
@@ -26,7 +23,7 @@ LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::
                                AggregateFunctionType function_type)
     : model(model), model_context_size(model_context_size), search_query(search_query), function_type(function_type) {
 
-    llm_first_or_last_template = AggregatePromptTemplate::GetPromptTemplate(function_type);
+    llm_first_or_last_template = PromptManager::GetTemplate(function_type);
     auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
     if (num_tokens_meta_and_search_query > model_context_size) {
@@ -46,7 +43,7 @@ int LlmFirstOrLast::calculateFixedTokens() const {
 int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
     nlohmann::json data;
     auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
-    auto prompt = AggregatePromptTemplate::GetPrompt(search_query, markdown_tuples, function_type);
+    auto prompt = PromptManager::Render(search_query, markdown_tuples, function_type);
     auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
     return response["selected"].get<int>();
 }
@@ -205,9 +202,7 @@ void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_inp
     }
 }
 
-bool LlmAggOperation::IgnoreNull() {
-    return true;
-}
+bool LlmAggOperation::IgnoreNull() { return true; }
 
 } // namespace core
 } // namespace flockmtl

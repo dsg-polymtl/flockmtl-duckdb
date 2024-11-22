@@ -3,7 +3,7 @@
 #include <vector>
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
-#include "templates/llm_aggregate_prompt_template.hpp"
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
 #include "flockmtl/core/model_manager/model_manager.hpp"
 
 namespace flockmtl {

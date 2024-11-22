@@ -4,7 +4,7 @@ UseTab: Never
 IndentWidth: 4
 TabWidth: 4
 ColumnLimit: 120
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
 CompactNamespaces: false
 ---
 DerivePointerAlignment: false
@@ -25,7 +25,7 @@ AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
 IncludeBlocks: Preserve
-SortIncludes: false
+SortIncludes: Never
 Language: Cpp
 AccessModifierOffset: -4
 ---

@@ -2,7 +2,7 @@
 #include "flockmtl/common.hpp"
 
 #include <nlohmann/json.hpp>
-#include <templates/llm_aggregate_prompt_template.hpp>
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
 
 namespace flockmtl {
 namespace core {

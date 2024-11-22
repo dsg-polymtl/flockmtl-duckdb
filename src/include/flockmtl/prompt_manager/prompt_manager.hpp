@@ -1,26 +1,29 @@
 #pragma once
 
 #include <string>
+#include <flockmtl/prompt_manager/repository.hpp>
 
 namespace flockmtl {
-
-enum class PromptSection { USER_PROMPT, TUPLES, RESPONSE_FORMAT, INSTRUCTIONS };
-
-enum class AggregateFunctionType { REDUCE, FIRST, LAST, RERANK };
-
-enum class ScalarFunctionType {
-    COMPLETE_JSON,
-    COMPLETE,
-    FILTER,
-};
 
 class PromptManager {
 public:
     template <typename FunctionType>
-    static std::string Render(const std::string &user_prompt, const std::string &tuples, const FunctionType option);
+    static std::string GetTemplate(FunctionType option) {
+        auto prompt_template =
+            PromptManager::ReplaceSection(META_PROMPT, PromptSection::INSTRUCTIONS, INSTRUCTIONS::Get(option));
+        auto response_format = RESPONSE_FORMAT::Get(option);
+        prompt_template =
+            PromptManager::ReplaceSection(prompt_template, PromptSection::RESPONSE_FORMAT, response_format);
+        return prompt_template;
+    };
 
     template <typename FunctionType>
-    static std::string GetTemplate(const FunctionType option);
+    static std::string Render(const std::string &user_prompt, const std::string &tuples, FunctionType option) {
+        auto prompt = PromptManager::GetTemplate(option);
+        prompt = PromptManager::ReplaceSection(prompt, PromptSection::USER_PROMPT, user_prompt);
+        prompt = PromptManager::ReplaceSection(prompt, PromptSection::TUPLES, tuples);
+        return prompt;
+    };
     // Replace the predefined sections in the meta prompt with the provided content
     static std::string ReplaceSection(const std::string &prompt_template, const PromptSection section,
                                       const std::string &section_content);
