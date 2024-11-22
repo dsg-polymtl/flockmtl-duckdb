@@ -7,6 +7,16 @@ namespace flockmtl {
 
 class PromptManager {
 public:
+    static std::string ReplaceSection(const std::string &prompt_template, const PromptSection section,
+                                      const std::string &section_content);
+    static std::string ReplaceSection(const std::string &prompt_template, const std::string &replace_string,
+                                      const std::string &section_content);
+
+    template <typename T>
+    static std::string ToString(const T element);
+    template <typename T>
+    static T FromString(const std::string &element);
+
     template <typename FunctionType>
     static std::string GetTemplate(FunctionType option) {
         auto prompt_template =
@@ -24,17 +34,6 @@ public:
         prompt = PromptManager::ReplaceSection(prompt, PromptSection::TUPLES, tuples);
         return prompt;
     };
-    // Replace the predefined sections in the meta prompt with the provided content
-    static std::string ReplaceSection(const std::string &prompt_template, const PromptSection section,
-                                      const std::string &section_content);
-    // Replace the defined string in the meta prompt with the provided content
-    static std::string ReplaceSection(const std::string &prompt_template, const std::string &replace_string,
-                                      const std::string &section_content);
-
-    template <typename T>
-    static std::string ToString(const T element);
-    template <typename T>
-    static T FromString(const std::string &element);
 };
 
 } // namespace flockmtl
