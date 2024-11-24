@@ -3,9 +3,6 @@
 namespace flockmtl {
 
 nlohmann::json OpenAIProvider::CallComplete(const std::string &prompt, bool json_response) {
-    std::cout << "OpenAIProvider::CallComplete" << std::endl;
-    std::cout << model_details_.secret << std::endl;
-
     openai::start(model_details_.secret);
 
     // Create a JSON request payload with the provided parameters
