@@ -63,23 +63,24 @@ PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_d
                                      "prompt_name with prompt version");
         }
         prompt_details.prompt_name = prompt_details_json["prompt_name"];
-        std::string prompt_details_query =
-            "SELECT prompt FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
-            prompt_details.prompt_name + "'";
-        std::string error_message = "The provided `" + prompt_details.prompt_name + "` prompt ";
+        Query query(con);
+        auto prompt_details_query = query.select("prompt")
+                                        .from(FLOCK_TABLE::PROMPT)
+                                        .where("prompt_name = '" + prompt_details.prompt_name + "'");
+        auto error_message = "The provided `" + prompt_details.prompt_name + "` prompt ";
         if (prompt_details_json.contains("version")) {
             prompt_details.version = std::stoi(prompt_details_json["version"].get<std::string>());
-            prompt_details_query += " AND version = " + std::to_string(prompt_details.version) + ";";
+            prompt_details_query.where("version = " + std::to_string(prompt_details.version));
             error_message += "with version " + std::to_string(prompt_details.version) + " not found";
         } else {
-            prompt_details_query += " ORDER BY version DESC LIMIT 1;";
+            prompt_details_query.order_by("version DESC").limit("1");
             error_message += "not found";
         }
-        auto query_result = con.Query(prompt_details_query);
-        if (query_result->RowCount() == 0) {
+        auto query_result = prompt_details_query.execute();
+        if (query_result.empty()) {
             throw std::runtime_error(error_message);
         }
-        prompt_details.prompt = query_result->GetValue(0, 0).ToString();
+        prompt_details.prompt = std::any_cast<std::string>(query_result[0][0]);
     } else if (prompt_details_json.contains("prompt")) {
         prompt_details.prompt = prompt_details_json["prompt"];
     } else {

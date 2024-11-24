@@ -1,3 +1,9 @@
 set(EXTENSION_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/query.cpp ${EXTENSION_SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/query.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/select_query.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/insert_query.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/create_query.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/update_query.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/delete_query.cpp
+    ${EXTENSION_SOURCES}
     PARENT_SCOPE)

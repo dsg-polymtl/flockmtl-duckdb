@@ -3,6 +3,7 @@
 
 #include "duckdb/main/connection.hpp"
 #include "duckdb/main/database.hpp"
+#include "flockmtl/query_manager/query.hpp"
 
 namespace flockmtl {
 namespace core {

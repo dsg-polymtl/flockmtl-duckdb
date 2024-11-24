@@ -3,6 +3,7 @@
 #include <flockmtl/common.hpp>
 #include <flockmtl/model_manager/model.hpp>
 #include <flockmtl/prompt_manager/prompt_manager.hpp>
+#include <flockmtl/query_manager/query.hpp>
 
 namespace flockmtl {
 namespace core {

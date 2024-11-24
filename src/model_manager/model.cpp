@@ -31,42 +31,41 @@ void Model::LoadModelDetails(const nlohmann::json &model_json) {
 }
 
 std::string Model::LoadSecret(const std::string &provider_name) {
-    auto query = "SELECT secret FROM "
-                 "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                 "WHERE provider = '" +
-                 provider_name + "'";
 
-    auto query_result = core::CoreModule::GetConnection().Query(query);
+    auto con = core::CoreModule::GetConnection();
+    Query query(con);
+    auto query_result =
+        query.select("secret").from(FLOCK_TABLE::SECRET).where("provider = '" + provider_name + "'").execute();
 
-    if (query_result->RowCount() == 0) {
-        return "";
+    if (query_result.empty()) {
+        throw std::runtime_error("Secret not found");
     }
 
-    return query_result->GetValue(0, 0).ToString();
+    return std::any_cast<std::string>(query_result[0][0]);
 }
 
 std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string &model_name) {
-    std::string query = "SELECT model, provider_name, model_args FROM "
-                        "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
-                        "WHERE model_name = '" +
-                        model_name + "'";
-
     auto con = core::CoreModule::GetConnection();
-    auto query_result = con.Query(query);
+    Query query(con);
+    auto query_result = query.select("model, provider_name, model_args")
+                            .from(FLOCK_TABLE::USER_DEFINED_MODEL)
+                            .where("model_name = '" + model_name + "'")
+                            .execute();
 
-    if (query_result->RowCount() == 0) {
-        query_result = con.Query("SELECT model, provider_name, model_args FROM "
-                                 "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
-                                 model_name + "'");
+    if (query_result.empty()) {
+        query_result = query.select("model, provider_name, model_args")
+                           .from(FLOCK_TABLE::DEFAULT_MODEL)
+                           .where("model_name = '" + model_name + "'")
+                           .execute();
 
-        if (query_result->RowCount() == 0) {
+        if (query_result.empty()) {
             throw std::runtime_error("Model not found");
         }
     }
 
-    auto model = query_result->GetValue(0, 0).ToString();
-    auto provider_name = query_result->GetValue(1, 0).ToString();
-    auto model_args = nlohmann::json::parse(query_result->GetValue(2, 0).ToString());
+    auto model = std::any_cast<std::string>(query_result[0][0]);
+    auto provider_name = std::any_cast<string>(query_result[0][1]);
+    auto model_args = nlohmann::json::parse(std::any_cast<std::string>(query_result[0][2]));
 
     return {model, provider_name, model_args["context_window"], model_args["max_output_tokens"]};
 }

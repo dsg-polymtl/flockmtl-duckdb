@@ -13,6 +13,7 @@
 #include "flockmtl/model_manager/providers/adapters/azure.hpp"
 #include "flockmtl/model_manager/providers/adapters/ollama.hpp"
 #include "flockmtl/model_manager/providers/handlers/ollama.hpp"
+#include "flockmtl/query_manager/query.hpp"
 #include "duckdb/main/connection.hpp"
 
 namespace flockmtl {
