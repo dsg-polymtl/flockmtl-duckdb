@@ -8,17 +8,14 @@
 namespace flockmtl {
 namespace core {
 
-Connection &CoreModule::GetConnection(DatabaseInstance *db) {
-    static Connection *con = nullptr;
+DatabaseInstance *CoreModule::db;
 
-    if (!con) {
-        if (!db) {
-            throw std::runtime_error("Connection is not initialized. Provide DatabaseInstance on first call.");
-        }
-        con = new Connection(*db);
+Connection CoreModule::GetConnection(DatabaseInstance *db) {
+    if (db) {
+        CoreModule::db = db;
     }
-
-    return *con;
+    Connection con(*CoreModule::db);
+    return con;
 }
 
 void CoreModule::Register(DatabaseInstance &db) {

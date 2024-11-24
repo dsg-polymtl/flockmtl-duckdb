@@ -1,6 +1,6 @@
 #include <flockmtl/core/module.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
-#include <flockmtl/core/model_manager/tiktoken.hpp>
+#include <flockmtl/model_manager/tiktoken.hpp>
 #include "flockmtl/prompt_manager/prompt_manager.hpp"
 
 namespace flockmtl {
@@ -90,22 +90,22 @@ PromptDetails CreatePromptDetails(Connection &con, const nlohmann::json prompt_d
 }
 
 nlohmann::json Complete(const nlohmann::json &tuples, const std::string &user_prompt, ScalarFunctionType function_type,
-                        ModelDetails &model_details) {
+                        Model &model) {
     nlohmann::json data;
     auto tuples_markdown = ConstructMarkdownArrayTuples(tuples);
     auto prompt = PromptManager::Render(user_prompt, tuples_markdown, function_type);
-    auto response = ModelManager::CallComplete(prompt, model_details);
+    auto response = model.CallComplete(prompt);
     return response["tuples"];
 };
 
 nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection &con, std::string user_prompt,
-                                ScalarFunctionType function_type, ModelDetails &model_details) {
+                                ScalarFunctionType function_type, Model &model) {
     auto llm_template = PromptManager::GetTemplate(function_type);
 
     int num_tokens_meta_and_user_pormpt = 0;
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(llm_template);
-    int available_tokens = model_details.context_window - num_tokens_meta_and_user_pormpt;
+    int available_tokens = model.model_details_.context_window - num_tokens_meta_and_user_pormpt;
 
     auto responses = nlohmann::json::array();
 
@@ -133,7 +133,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
 
             nlohmann::json response;
             try {
-                response = Complete(batch_tuples, user_prompt, function_type, model_details);
+                response = Complete(batch_tuples, user_prompt, function_type, model);
             } catch (const LengthExceededError &e) {
                 batch_tuples.clear();
                 accumulated_tuples_tokens = 0;
@@ -145,7 +145,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
             }
             auto output_tokens_per_tuple = Tiktoken::GetNumTokens(response.dump()) / batch_tuples.size();
 
-            batch_size = model_details.max_output_tokens / output_tokens_per_tuple;
+            batch_size = model.model_details_.max_output_tokens / output_tokens_per_tuple;
             batch_tuples.clear();
             accumulated_tuples_tokens = 0;
 

@@ -5,19 +5,17 @@
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include "flockmtl/prompt_manager/prompt_manager.hpp"
-#include <flockmtl/core/model_manager/tiktoken.hpp>
+#include <flockmtl/model_manager/tiktoken.hpp>
 
 namespace flockmtl {
 namespace core {
 
 class LlmReduce {
 public:
-    std::string model;
-    int model_context_size;
+    Model &model;
     std::string reduce_query;
     std::string llm_reduce_template;
     int available_tokens;
-    ModelDetails model_details;
     AggregateFunctionType function_type;
 
     int calculateFixedTokens() const {
@@ -27,14 +25,13 @@ public:
         return num_tokens_meta_and_reduce_query;
     }
 
-    LlmReduce(std::string &model, int model_context_size, std::string &reduce_query, ModelDetails model_details)
-        : model(model), model_context_size(model_context_size), reduce_query(reduce_query),
-          model_details(model_details) {
+    LlmReduce(Model &model, std::string &reduce_query) : model(model), reduce_query(reduce_query) {
 
         function_type = AggregateFunctionType::REDUCE;
         llm_reduce_template = PromptManager::GetTemplate(function_type);
         auto num_tokens_meta_and_reduce_query = calculateFixedTokens();
 
+        auto model_context_size = model.model_details_.context_window;
         if (num_tokens_meta_and_reduce_query > model_context_size) {
             throw std::runtime_error("Fixed tokens exceed model context size");
         }
@@ -46,7 +43,7 @@ public:
         nlohmann::json data;
         auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
         auto prompt = PromptManager::Render(reduce_query, markdown_tuples, function_type);
-        auto response = ModelManager::CallComplete(prompt, model_details);
+        auto response = model.CallComplete(prompt);
         return response["output"];
     };
 
@@ -78,7 +75,7 @@ public:
 };
 
 struct LlmReduceOperation {
-    static ModelDetails model_details;
+    static Model &model;
     static std::string reduce_query;
     static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;
 
@@ -98,14 +95,14 @@ struct LlmReduceOperation {
             throw std::runtime_error("Expected a struct type for model details");
         }
         auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
-        LlmReduceOperation::model_details =
-            ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
+        LlmReduceOperation::model = Model(model_details_json);
 
         if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for prompt details");
         }
         auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-        reduce_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
+        auto connection = CoreModule::GetConnection();
+        reduce_query = CreatePromptDetails(connection, prompt_details_json).prompt;
 
         if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -134,8 +131,7 @@ struct LlmReduceOperation {
             auto source_state = state_map[source_ptr];
             auto target_state = state_map[target_ptr];
 
-            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
-                                 LlmReduceOperation::model_details);
+            LlmReduce llm_reduce(LlmReduceOperation::model, reduce_query);
             auto result = llm_reduce.ReduceLoop(source_state->value);
             target_state->Update(result);
         }
@@ -150,8 +146,7 @@ struct LlmReduceOperation {
             auto state_ptr = states_vector[idx];
             auto state = state_map[state_ptr];
 
-            LlmReduce llm_reduce(LlmReduceOperation::model_details.model, Config::default_context_window, reduce_query,
-                                 LlmReduceOperation::model_details);
+            LlmReduce llm_reduce(LlmReduceOperation::model, reduce_query);
             auto response = llm_reduce.ReduceLoop(state->value);
             result.SetValue(idx, response.dump());
         }
@@ -163,14 +158,14 @@ struct LlmReduceOperation {
             throw std::runtime_error("Expected a struct type for model details");
         }
         auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
-        LlmReduceOperation::model_details =
-            ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
+        LlmReduceOperation::model = Model(model_details_json);
 
         if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for prompt details");
         }
         auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-        reduce_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
+        auto connection = CoreModule::GetConnection();
+        reduce_query = CreatePromptDetails(connection, prompt_details_json).prompt;
 
         if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
             throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -189,7 +184,7 @@ struct LlmReduceOperation {
     static bool IgnoreNull() { return true; }
 };
 
-ModelDetails LlmReduceOperation::model_details;
+Model &LlmReduceOperation::model(LlmReduceOperation::model);
 std::string LlmReduceOperation::reduce_query;
 std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmReduceOperation::state_map;
 

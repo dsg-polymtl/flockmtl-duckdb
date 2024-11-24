@@ -4,7 +4,7 @@
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/prompt_manager/prompt_manager.hpp"
-#include "flockmtl/core/model_manager/model_manager.hpp"
+#include "flockmtl/model_manager/model.hpp"
 
 namespace flockmtl {
 namespace core {
@@ -20,15 +20,13 @@ public:
 
 class LlmFirstOrLast {
 public:
-    std::string model;
-    int model_context_size;
+    Model &model;
     std::string search_query;
     std::string llm_first_or_last_template;
     int available_tokens;
     AggregateFunctionType function_type;
 
-    LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
-                   AggregateFunctionType function_type);
+    LlmFirstOrLast(Model &model, std::string &search_query, AggregateFunctionType function_type);
 
     int GetFirstOrLastTupleId(const nlohmann::json &tuples);
     nlohmann::json Evaluate(nlohmann::json &tuples);
@@ -38,7 +36,7 @@ private:
 };
 
 struct LlmAggOperation {
-    static ModelDetails model_details;
+    static Model &model;
     static std::string search_query;
     static std::unordered_map<void *, std::shared_ptr<LlmAggState>> state_map;
 

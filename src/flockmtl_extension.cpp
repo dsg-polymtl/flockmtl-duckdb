@@ -8,7 +8,7 @@
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/parser/query_parser.hpp"
 
-#include <flockmtl/core/model_manager/model_manager.hpp>
+#include <flockmtl/model_manager/model.hpp>
 
 namespace duckdb {
 
@@ -69,13 +69,9 @@ BoundStatement duck_bind(ClientContext &context, Binder &binder, OperatorExtensi
     }
 }
 
-void FlockmtlExtension::Load(DuckDB &db) {
-    LoadInternal(*db.instance);
-}
+void FlockmtlExtension::Load(DuckDB &db) { LoadInternal(*db.instance); }
 
-std::string FlockmtlExtension::Name() {
-    return "flockmtl";
-}
+std::string FlockmtlExtension::Name() { return "flockmtl"; }
 std::string FlockmtlExtension::Version() const {
 #ifdef EXT_VERSION_FLOCKMTL
     return EXT_VERSION_FLOCKMTL;
@@ -93,9 +89,7 @@ DUCKDB_EXTENSION_API void flockmtl_init(DatabaseInstance &db) {
     db_wrapper.LoadExtension<duckdb::FlockmtlExtension>();
 }
 
-DUCKDB_EXTENSION_API const char *flockmtl_version() {
-    return duckdb::DuckDB::LibraryVersion();
-}
+DUCKDB_EXTENSION_API const char *flockmtl_version() { return duckdb::DuckDB::LibraryVersion(); }
 }
 
 #ifndef DUCKDB_EXTENSION_MAIN

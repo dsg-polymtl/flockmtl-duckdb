@@ -1,8 +1,8 @@
 #include <flockmtl/core/functions/aggregate/llm_agg.hpp>
 #include <flockmtl/core/functions/batch_response_builder.hpp>
 #include "flockmtl/core/module.hpp"
-#include "flockmtl/core/model_manager/model_manager.hpp"
-#include "flockmtl/core/model_manager/tiktoken.hpp"
+#include "flockmtl/model_manager/model.hpp"
+#include "flockmtl/model_manager/tiktoken.hpp"
 #include <flockmtl/core/config/config.hpp>
 #include <vector>
 
@@ -19,13 +19,13 @@ void LlmAggState::Combine(const LlmAggState &source) {
     }
 }
 
-LlmFirstOrLast::LlmFirstOrLast(std::string &model, int model_context_size, std::string &search_query,
-                               AggregateFunctionType function_type)
-    : model(model), model_context_size(model_context_size), search_query(search_query), function_type(function_type) {
+LlmFirstOrLast::LlmFirstOrLast(Model &model, std::string &search_query, AggregateFunctionType function_type)
+    : model(model), search_query(search_query), function_type(function_type) {
 
     llm_first_or_last_template = PromptManager::GetTemplate(function_type);
     auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
+    auto model_context_size = model.model_details_.context_window;
     if (num_tokens_meta_and_search_query > model_context_size) {
         throw std::runtime_error("Fixed tokens exceed model context size");
     }
@@ -44,7 +44,7 @@ int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
     nlohmann::json data;
     auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
     auto prompt = PromptManager::Render(search_query, markdown_tuples, function_type);
-    auto response = ModelManager::CallComplete(prompt, LlmAggOperation::model_details);
+    auto response = model.CallComplete(prompt);
     return response["selected"].get<int>();
 }
 
@@ -77,7 +77,7 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 }
 
 // Static member initialization
-ModelDetails LlmAggOperation::model_details {};
+Model &LlmAggOperation::model(LlmAggOperation::model);
 std::string LlmAggOperation::search_query;
 
 std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
@@ -98,13 +98,14 @@ void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_
         throw std::runtime_error("Expected a struct type for model details");
     }
     auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
-    LlmAggOperation::model_details = ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
+    LlmAggOperation::model = Model(model_details_json);
 
     if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt details");
     }
     auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    search_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
+    auto connection = CoreModule::GetConnection();
+    search_query = CreatePromptDetails(connection, prompt_details_json).prompt;
 
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
@@ -153,8 +154,7 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
             tuples_with_ids.push_back(tuple_with_id);
         }
 
-        LlmFirstOrLast llm_first_or_last(LlmAggOperation::model_details.model, Config::default_context_window,
-                                         search_query, function_type);
+        LlmFirstOrLast llm_first_or_last(LlmAggOperation::model, search_query, function_type);
         auto response = llm_first_or_last.Evaluate(tuples_with_ids);
         result.SetValue(idx, response.dump());
     }
@@ -180,13 +180,14 @@ void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_inp
         throw std::runtime_error("Expected a struct type for model details");
     }
     auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
-    LlmAggOperation::model_details = ModelManager::CreateModelDetails(CoreModule::GetConnection(), model_details_json);
+    LlmAggOperation::model = Model(model_details_json);
 
     if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt details");
     }
     auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    search_query = CreatePromptDetails(CoreModule::GetConnection(), prompt_details_json).prompt;
+    auto connection = CoreModule::GetConnection();
+    search_query = CreatePromptDetails(connection, prompt_details_json).prompt;
 
     if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");

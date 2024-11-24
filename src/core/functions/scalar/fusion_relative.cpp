@@ -1,6 +1,6 @@
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/scalar.hpp>
-#include <flockmtl/core/model_manager/model_manager.hpp>
+#include <flockmtl/model_manager/model.hpp>
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>

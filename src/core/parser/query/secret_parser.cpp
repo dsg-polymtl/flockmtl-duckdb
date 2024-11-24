@@ -165,7 +165,7 @@ std::string SecretParser::ToSQL(const QueryStatement &statement) const {
     switch (statement.type) {
     case StatementType::CREATE_SECRET: {
         const auto &create_stmt = static_cast<const CreateSecretStatement &>(statement);
-        auto &con = CoreModule::GetConnection();
+        auto con = CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider="
                                 "'" +
                                 create_stmt.provider + "';");
@@ -184,7 +184,7 @@ std::string SecretParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::UPDATE_SECRET: {
         const auto &update_stmt = static_cast<const UpdateSecretStatement &>(statement);
-        auto &con = CoreModule::GetConnection();
+        auto con = CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = "
                                 "'" +
                                 update_stmt.provider + "';");

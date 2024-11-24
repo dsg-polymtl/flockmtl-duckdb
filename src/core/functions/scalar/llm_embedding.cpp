@@ -1,6 +1,6 @@
 #include <flockmtl/common.hpp>
 #include <flockmtl/core/functions/scalar.hpp>
-#include <flockmtl/core/model_manager/model_manager.hpp>
+#include <flockmtl/model_manager/model.hpp>
 #include <flockmtl/core/parser/llm_response.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>
@@ -16,7 +16,7 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
 
     auto inputs = CoreScalarParsers::Struct2Json(args.data[1], args.size());
     auto model_details_json = CoreScalarParsers::Struct2Json(args.data[0], 1)[0];
-    auto model_details = ModelManager::CreateModelDetails(con, model_details_json);
+    Model model(model_details_json);
 
     vector<string> prepared_inputs;
     for (auto &row : inputs) {
@@ -27,7 +27,7 @@ static void LlmEmbeddingScalarFunction(DataChunk &args, ExpressionState &state, 
         prepared_inputs.push_back(concat_input);
     }
 
-    auto embeddings = ModelManager::CallEmbedding(prepared_inputs, model_details);
+    auto embeddings = model.CallEmbedding(prepared_inputs);
 
     for (size_t index = 0; index < embeddings.size(); index++) {
         vector<Value> embedding;

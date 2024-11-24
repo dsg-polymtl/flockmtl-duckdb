@@ -179,7 +179,7 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::CREATE_PROMPT: {
         const auto &create_stmt = static_cast<const CreatePromptStatement &>(statement);
         // check if prompt_name already exists
-        auto &con = CoreModule::GetConnection();
+        auto con = CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
                                 create_stmt.prompt_name + "';");
         if (result->RowCount() > 0) {
@@ -198,7 +198,7 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::UPDATE_PROMPT: {
         const auto &update_stmt = static_cast<const UpdatePromptStatement &>(statement);
         // get the existing prompt version
-        auto &con = CoreModule::GetConnection();
+        auto con = CoreModule::GetConnection();
         auto result =
             con.Query("SELECT version FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
                       update_stmt.prompt_name + "' ORDER BY version DESC LIMIT 1;");
