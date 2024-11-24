@@ -1,4 +1,5 @@
 add_subdirectory(core)
+add_subdirectory(model_manager)
 add_subdirectory(prompt_manager)
 
 set(EXTENSION_SOURCES

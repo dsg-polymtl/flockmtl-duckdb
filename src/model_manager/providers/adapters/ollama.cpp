@@ -1,6 +1,4 @@
-#pragma once
-
-#include <flockmtl/model_manager/providers/adapters/ollama.hpp>
+#include "flockmtl/model_manager/providers/adapters/ollama.hpp"
 
 namespace flockmtl {
 

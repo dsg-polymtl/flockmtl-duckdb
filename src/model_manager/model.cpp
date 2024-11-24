@@ -2,33 +2,28 @@
 
 namespace flockmtl {
 
-Model::Model(const nlohmann::json &model_json) {
+Model::Model(const nlohmann::json &model_json) : con(core::CoreModule::GetConnection()) {
     LoadModelDetails(model_json);
     ConstructProvider();
 }
 
 void Model::LoadModelDetails(const nlohmann::json &model_json) {
-    model_details_.provider_name = model_json.contains("provider") ? model_json.at("provider").dump() : "";
-    model_details_.model_name = model_json.contains("model_name") ? model_json.at("model_name").dump() : "";
-    model_details_.secret = LoadSecret(model_details_.provider_name);
-
-    auto query_result = GetQueriedModel(model_details_.model_name, model_details_.provider_name);
-    model_details_.model = std::get<0>(query_result);
-    model_details_.context_window = std::get<1>(query_result);
-    model_details_.max_output_tokens = std::get<2>(query_result);
-    model_details_.temperature = 0.5;
-
-    for (auto &[key, value] : model_json.items()) {
-        if (key == "max_output_tokens") {
-            model_details_.max_output_tokens = std::stoi(static_cast<std::string>(value));
-        } else if (key == "temperature") {
-            model_details_.temperature = std::stof(static_cast<std::string>(value));
-        } else if (key == "provider" || key == "model_name") {
-            continue;
-        } else {
-            throw std::invalid_argument("Invalid setting key: " + key);
-        }
+    model_details_.model_name = model_json.contains("model_name") ? model_json.at("model_name").get<std::string>() : "";
+    if (model_details_.model_name.empty()) {
+        throw std::invalid_argument("`model_name` is required in model settings");
     }
+    auto query_result = GetQueriedModel(model_details_.model_name);
+    model_details_.model =
+        model_json.contains("model") ? model_json.at("model").get<std::string>() : std::get<0>(query_result);
+    model_details_.provider_name =
+        model_json.contains("provider") ? model_json.at("provider").get<std::string>() : std::get<1>(query_result);
+    model_details_.secret = LoadSecret(model_details_.provider_name);
+    model_details_.context_window =
+        model_json.contains("context_window") ? model_json.at("context_window").get<int>() : std::get<2>(query_result);
+    model_details_.max_output_tokens = model_json.contains("max_output_tokens")
+                                           ? model_json.at("max_output_tokens").get<int>()
+                                           : std::get<3>(query_result);
+    model_details_.temperature = model_json.contains("temperature") ? model_json.at("temperature").get<float>() : 0.5;
 }
 
 std::string Model::LoadSecret(const std::string &provider_name) {
@@ -46,34 +41,16 @@ std::string Model::LoadSecret(const std::string &provider_name) {
     return query_result->GetValue(0, 0).ToString();
 }
 
-std::tuple<std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string &model_name,
-                                                                 const std::string &provider_name) {
-
-    auto provider_name_lower = provider_name;
-    std::transform(provider_name_lower.begin(), provider_name_lower.end(), provider_name_lower.begin(),
-                   [](unsigned char c) { return std::tolower(c); });
-
-    if (provider_name_lower == OLLAMA) {
-        OllamaModel olam(false);
-        if (!olam.validModel(model_name)) {
-            throw std::runtime_error("Specified ollama model not deployed, please deploy before using it");
-        }
-        return {model_name, core::Config::default_context_window, core::Config::default_max_output_tokens};
-    }
-
-    std::string query = "SELECT model, model_args FROM "
+std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string &model_name) {
+    std::string query = "SELECT model, provider_name, model_args FROM "
                         "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
                         "WHERE model_name = '" +
                         model_name + "'";
-    if (!provider_name.empty()) {
-        query += " AND provider_name = '" + provider_name + "'";
-    }
 
-    auto &con = core::CoreModule::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query("SELECT model, model_args FROM "
+        query_result = con.Query("SELECT model, provider_name, model_args FROM "
                                  "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
                                  model_name + "'");
 
@@ -83,22 +60,24 @@ std::tuple<std::string, int32_t, int32_t> Model::GetQueriedModel(const std::stri
     }
 
     auto model = query_result->GetValue(0, 0).ToString();
-    auto model_args = nlohmann::json::parse(query_result->GetValue(1, 0).ToString());
+    auto provider_name = query_result->GetValue(1, 0).ToString();
+    auto model_args = nlohmann::json::parse(query_result->GetValue(2, 0).ToString());
 
-    return {query_result->GetValue(0, 0).ToString(), model_args["context_window"], model_args["max_output_tokens"]};
+    return {model, provider_name, model_args["context_window"], model_args["max_output_tokens"]};
 }
 
 void Model::ConstructProvider() {
     auto provider = GetProviderType(model_details_.provider_name);
+
     switch (provider) {
     case FLOCKMTL_OPENAI:
-        provider_ = std::make_unique<OpenAIProvider>(model_details_);
+        provider_ = std::make_shared<OpenAIProvider>(model_details_);
         break;
     case FLOCKMTL_AZURE:
-        provider_ = std::make_unique<AzureProvider>(model_details_);
+        provider_ = std::make_shared<AzureProvider>(model_details_);
         break;
     case FLOCKMTL_OLLAMA:
-        provider_ = std::make_unique<OllamaProvider>(model_details_);
+        provider_ = std::make_shared<OllamaProvider>(model_details_);
         break;
     default:
         throw std::invalid_argument("Unsupported provider: " + model_details_.provider_name);

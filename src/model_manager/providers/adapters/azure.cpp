@@ -1,6 +1,4 @@
-#pragma once
-
-#include "model_manager/providers/adapters/azure.hpp"
+#include "flockmtl/model_manager/providers/adapters/azure.hpp"
 
 namespace flockmtl {
 

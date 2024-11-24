@@ -9,7 +9,7 @@ class IProvider {
 public:
     ModelDetails model_details_;
 
-    explicit IProvider(const ModelDetails &model_details) : model_details_(model_details) {}
+    explicit IProvider(const ModelDetails &model_details) : model_details_(model_details) {};
     virtual ~IProvider() = default;
 
     virtual nlohmann::json CallComplete(const std::string &prompt, bool json_response) = 0;
