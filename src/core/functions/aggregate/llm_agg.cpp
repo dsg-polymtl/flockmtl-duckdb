@@ -77,7 +77,7 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 }
 
 // Static member initialization
-Model &LlmAggOperation::model(LlmAggOperation::model);
+Model &LlmAggOperation::model(*(new Model(nlohmann::json())));
 std::string LlmAggOperation::search_query;
 
 std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;

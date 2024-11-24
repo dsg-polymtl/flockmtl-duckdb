@@ -19,7 +19,6 @@ namespace flockmtl {
 
 class Model {
 public:
-    Connection con;
     std::shared_ptr<IProvider> provider_;
     ModelDetails model_details_;
 

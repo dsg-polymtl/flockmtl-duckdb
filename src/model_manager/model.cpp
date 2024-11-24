@@ -2,7 +2,11 @@
 
 namespace flockmtl {
 
-Model::Model(const nlohmann::json &model_json) : con(core::CoreModule::GetConnection()) {
+Model::Model(const nlohmann::json &model_json) {
+    // TODO: remove this when refactoring the aggregate functions
+    if (model_json.empty()) {
+        return;
+    }
     LoadModelDetails(model_json);
     ConstructProvider();
 }
@@ -47,6 +51,7 @@ std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(co
                         "WHERE model_name = '" +
                         model_name + "'";
 
+    auto con = core::CoreModule::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {

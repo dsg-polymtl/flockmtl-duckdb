@@ -184,7 +184,7 @@ struct LlmReduceOperation {
     static bool IgnoreNull() { return true; }
 };
 
-Model &LlmReduceOperation::model(LlmReduceOperation::model);
+Model &LlmReduceOperation::model(*(new Model(nlohmann::json())));
 std::string LlmReduceOperation::reduce_query;
 std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmReduceOperation::state_map;
 
