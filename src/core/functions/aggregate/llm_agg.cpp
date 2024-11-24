@@ -25,7 +25,7 @@ LlmFirstOrLast::LlmFirstOrLast(Model &model, std::string &search_query, Aggregat
     llm_first_or_last_template = PromptManager::GetTemplate(function_type);
     auto num_tokens_meta_and_search_query = calculateFixedTokens();
 
-    auto model_context_size = model.model_details_.context_window;
+    auto model_context_size = model.GetModelDetails().context_window;
     if (num_tokens_meta_and_search_query > model_context_size) {
         throw std::runtime_error("Fixed tokens exceed model context size");
     }

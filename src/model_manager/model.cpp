@@ -89,6 +89,8 @@ void Model::ConstructProvider() {
     }
 }
 
+ModelDetails Model::GetModelDetails() { return model_details_; }
+
 nlohmann::json Model::CallComplete(const std::string &prompt, bool json_response) {
     return provider_->CallComplete(prompt, json_response);
 }

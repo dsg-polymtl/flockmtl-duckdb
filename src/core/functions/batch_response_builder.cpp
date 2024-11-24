@@ -105,7 +105,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
     int num_tokens_meta_and_user_pormpt = 0;
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);
     num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(llm_template);
-    int available_tokens = model.model_details_.context_window - num_tokens_meta_and_user_pormpt;
+    int available_tokens = model.GetModelDetails().context_window - num_tokens_meta_and_user_pormpt;
 
     auto responses = nlohmann::json::array();
 
@@ -145,7 +145,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
             }
             auto output_tokens_per_tuple = Tiktoken::GetNumTokens(response.dump()) / batch_tuples.size();
 
-            batch_size = model.model_details_.max_output_tokens / output_tokens_per_tuple;
+            batch_size = model.GetModelDetails().max_output_tokens / output_tokens_per_tuple;
             batch_tuples.clear();
             accumulated_tuples_tokens = 0;
 

@@ -19,14 +19,14 @@ namespace flockmtl {
 
 class Model {
 public:
-    std::shared_ptr<IProvider> provider_;
-    ModelDetails model_details_;
-
     explicit Model(const nlohmann::json &model_json);
     nlohmann::json CallComplete(const std::string &prompt, const bool json_response = true);
     nlohmann::json CallEmbedding(const std::vector<string> &inputs);
+    ModelDetails GetModelDetails();
 
 private:
+    std::shared_ptr<IProvider> provider_;
+    ModelDetails model_details_;
     void ConstructProvider();
     void LoadModelDetails(const nlohmann::json &model_json);
     std::string LoadSecret(const std::string &provider);
