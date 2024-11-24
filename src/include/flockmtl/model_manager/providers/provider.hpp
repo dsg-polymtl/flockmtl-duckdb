@@ -16,7 +16,7 @@ public:
     virtual nlohmann::json CallEmbedding(const std::vector<std::string> &inputs) = 0;
 };
 
-class LengthExceededError : public std::exception {
+class ExceededMaxOutputTokensError : public std::exception {
 public:
     const char *what() const noexcept override {
         return "The response exceeded the max_output_tokens length; increase your max_output_tokens parameter.";

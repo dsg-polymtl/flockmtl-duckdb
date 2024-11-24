@@ -27,7 +27,7 @@ nlohmann::json AzureProvider::CallComplete(const std::string &prompt, const bool
     // Check if the conversation was too long for the context window
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
-        throw LengthExceededError();
+        throw ExceededMaxOutputTokensError();
     }
 
     // Check if the safety system refused the request
@@ -75,7 +75,7 @@ nlohmann::json AzureProvider::CallEmbedding(const std::vector<std::string> &inpu
     // Check if the conversation was too long for the context window
     if (completion["choices"][0]["finish_reason"] == "length") {
         // Handle the error when the context window is too long
-        throw LengthExceededError();
+        throw ExceededMaxOutputTokensError();
         // Add error handling code here
     }
 

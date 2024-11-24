@@ -134,7 +134,7 @@ nlohmann::json BatchAndComplete(std::vector<nlohmann::json> &tuples, Connection 
             nlohmann::json response;
             try {
                 response = Complete(batch_tuples, user_prompt, function_type, model);
-            } catch (const LengthExceededError &e) {
+            } catch (const ExceededMaxOutputTokensError &e) {
                 batch_tuples.clear();
                 accumulated_tuples_tokens = 0;
                 auto new_batch_size = int(batch_size * 0.1);
