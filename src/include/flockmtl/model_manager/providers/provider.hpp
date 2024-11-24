@@ -1,7 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
-#include <flockmtl/model_manager/model_details.hpp>
+#include <flockmtl/model_manager/repository.hpp>
 
 namespace flockmtl {
 

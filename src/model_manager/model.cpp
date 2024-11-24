@@ -1,20 +1,18 @@
-#include "flockmtl/model_manager/model_manager.hpp"
-#include "flockmtl/model_manager/providers/adapters/openai.hpp"
-#include "flockmtl/model_manager/providers/adapters/azure.hpp"
-#include "flockmtl/model_manager/providers/adapters/ollama.hpp"
+#include "flockmtl/model_manager/model.hpp"
 
 namespace flockmtl {
 
-ModelManager::ModelManager(const nlohmann::json &model_json) {
+Model::Model(const nlohmann::json &model_json) {
     LoadModelDetails(model_json);
     ConstructProvider();
 }
 
-void ModelManager::LoadModelDetails(const nlohmann::json &model_json) {
+void Model::LoadModelDetails(const nlohmann::json &model_json) {
     model_details_.provider_name = model_json.contains("provider") ? model_json.at("provider").dump() : "";
     model_details_.model_name = model_json.contains("model_name") ? model_json.at("model_name").dump() : "";
-    auto query_result = GetQueriedModel(model_details_.model_name, model_details_.provider_name);
     model_details_.secret = LoadSecret(model_details_.provider_name);
+
+    auto query_result = GetQueriedModel(model_details_.model_name, model_details_.provider_name);
     model_details_.model = std::get<0>(query_result);
     model_details_.context_window = std::get<1>(query_result);
     model_details_.max_output_tokens = std::get<2>(query_result);
@@ -33,7 +31,7 @@ void ModelManager::LoadModelDetails(const nlohmann::json &model_json) {
     }
 }
 
-std::string ModelManager::LoadSecret(const std::string &provider_name) {
+std::string Model::LoadSecret(const std::string &provider_name) {
     auto query = "SELECT secret FROM "
                  "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
                  "WHERE provider = '" +
@@ -48,15 +46,15 @@ std::string ModelManager::LoadSecret(const std::string &provider_name) {
     return query_result->GetValue(0, 0).ToString();
 }
 
-std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(const std::string &model_name,
-                                                                        const std::string &provider_name) {
+std::tuple<std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string &model_name,
+                                                                 const std::string &provider_name) {
 
     auto provider_name_lower = provider_name;
     std::transform(provider_name_lower.begin(), provider_name_lower.end(), provider_name_lower.begin(),
                    [](unsigned char c) { return std::tolower(c); });
 
     if (provider_name_lower == OLLAMA) {
-        OllamaModelManager olam(false);
+        OllamaModel olam(false);
         if (!olam.validModel(model_name)) {
             throw std::runtime_error("Specified ollama model not deployed, please deploy before using it");
         }
@@ -90,7 +88,7 @@ std::tuple<std::string, int32_t, int32_t> ModelManager::GetQueriedModel(const st
     return {query_result->GetValue(0, 0).ToString(), model_args["context_window"], model_args["max_output_tokens"]};
 }
 
-void ModelManager::ConstructProvider() {
+void Model::ConstructProvider() {
     auto provider = GetProviderType(model_details_.provider_name);
     switch (provider) {
     case FLOCKMTL_OPENAI:
@@ -107,12 +105,10 @@ void ModelManager::ConstructProvider() {
     }
 }
 
-nlohmann::json ModelManager::CallComplete(const std::string &prompt, bool json_response) {
+nlohmann::json Model::CallComplete(const std::string &prompt, bool json_response) {
     return provider_->CallComplete(prompt, json_response);
 }
 
-nlohmann::json ModelManager::CallEmbedding(const std::vector<std::string> &inputs) {
-    return provider_->CallEmbedding(inputs);
-}
+nlohmann::json Model::CallEmbedding(const std::vector<std::string> &inputs) { return provider_->CallEmbedding(inputs); }
 
 } // namespace flockmtl

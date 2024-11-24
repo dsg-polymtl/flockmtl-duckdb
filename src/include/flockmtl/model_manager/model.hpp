@@ -1,26 +1,28 @@
 #pragma once
 
-#include <nlohmann/json.hpp>
-#include <utility>
 #include <tuple>
 #include <vector>
 #include <string>
+#include <utility>
+#include <nlohmann/json.hpp>
 
-#include "flockmtl/model_manager/providers/provider.hpp"
 #include "flockmtl/core/module.hpp"
 #include "flockmtl/core/config/config.hpp"
-#include "flockmtl/model_manager/model_details.hpp"
-#include "flockmtl/model_manager/supported/providers.hpp"
+#include "flockmtl/model_manager/repository.hpp"
+#include "flockmtl/model_manager/providers/provider.hpp"
+#include "flockmtl/model_manager/providers/adapters/openai.hpp"
+#include "flockmtl/model_manager/providers/adapters/azure.hpp"
+#include "flockmtl/model_manager/providers/adapters/ollama.hpp"
 #include "flockmtl/model_manager/providers/handlers/ollama.hpp"
 
 namespace flockmtl {
 
-class ModelManager {
+class Model {
 public:
     std::unique_ptr<IProvider> provider_;
     ModelDetails model_details_;
 
-    explicit ModelManager(const nlohmann::json &model_json);
+    explicit Model(const nlohmann::json &model_json);
     nlohmann::json CallComplete(const std::string &prompt, const bool json_response = true);
     nlohmann::json CallEmbedding(const std::vector<string> &inputs);
 

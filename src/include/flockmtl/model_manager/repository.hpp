@@ -1,5 +1,19 @@
 #pragma once
+
 #include <string>
+#include <algorithm>
+
+namespace flockmtl {
+
+struct ModelDetails {
+    std::string provider_name;
+    std::string model_name;
+    std::string model;
+    int32_t context_window;
+    int32_t max_output_tokens;
+    float temperature;
+    std::string secret;
+};
 
 const std::string OLLAMA = "ollama";
 const std::string OPENAI = "openai";
@@ -45,3 +59,5 @@ inline std::string GetProviderName(SupportedProviders provider) {
         return "";
     }
 }
+
+} // namespace flockmtl
