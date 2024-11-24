@@ -3,7 +3,6 @@
 namespace flockmtl {
 
 Model::Model(const nlohmann::json &model_json) {
-    // TODO: remove this when refactoring the aggregate functions
     if (model_json.empty()) {
         return;
     }
