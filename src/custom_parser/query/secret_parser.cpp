@@ -165,46 +165,53 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
     case StatementType::CREATE_SECRET: {
         const auto& create_stmt = static_cast<const CreateSecretStatement&>(statement);
         auto con = core::CoreModule::GetConnection();
-        auto result = con.Query(
-            duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
-                               create_stmt.provider));
+        auto result = con.Query(duckdb_fmt::format(" SELECT * "
+                                                   "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                                   "  WHERE provider = '{}'; ",
+                                                   create_stmt.provider));
         if (result->RowCount() > 0) {
             throw std::runtime_error("OPENAI secret already exists.");
         }
-        query =
-            duckdb_fmt::format("INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE(provider, secret) VALUES "
-                               "('{}', '{}');",
-                               create_stmt.provider, create_stmt.secret);
+        query = duckdb_fmt::format(" INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                   " (provider, secret)
+                                   " VALUES ('{}', '{}'); ",
+                                   create_stmt.provider, create_stmt.secret);
         break;
     }
     case StatementType::DELETE_SECRET: {
         const auto& delete_stmt = static_cast<const DeleteSecretStatement&>(statement);
-        query = duckdb_fmt::format("DELETE FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
+        query = duckdb_fmt::format(" DELETE FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                   "  WHERE provider = '{}'; ",
                                    delete_stmt.provider);
         break;
     }
     case StatementType::UPDATE_SECRET: {
         const auto& update_stmt = static_cast<const UpdateSecretStatement&>(statement);
         auto con = core::CoreModule::GetConnection();
-        auto result = con.Query(
-            duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
-                               update_stmt.provider));
+        auto result = con.Query(duckdb_fmt::format(" SELECT * "
+                                                   "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                                   "  WHERE provider = '{}'; ",
+                                                   update_stmt.provider));
         if (result->RowCount() == 0) {
             throw std::runtime_error(duckdb_fmt::format("Provider '{}' secret does not exist.", update_stmt.provider));
         }
-        query = duckdb_fmt::format(
-            "UPDATE flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE SET secret = '{}' WHERE provider = '{}';",
-            update_stmt.secret, update_stmt.provider);
+        query = duckdb_fmt::format(" UPDATE flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                   "    SET secret = '{}' "
+                                   " WHERE provider = '{}'; ",
+                                   update_stmt.secret, update_stmt.provider);
         break;
     }
     case StatementType::GET_SECRET: {
         const auto& get_stmt = static_cast<const GetSecretStatement&>(statement);
-        query = duckdb_fmt::format(
-            "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';", get_stmt.provider);
+        query = duckdb_fmt::format(" SELECT * "
+                                   "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                   "  WHERE provider = '{}'; ",
+                                   get_stmt.provider);
         break;
     }
     case StatementType::GET_ALL_SECRET: {
-        query = "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE;";
+        query = " SELECT * "
+                "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE; ";
         break;
     }
     default:

@@ -240,42 +240,50 @@ std::string ModelParser::ToSQL(const QueryStatement& statement) const {
     switch (statement.type) {
     case StatementType::CREATE_MODEL: {
         const auto& create_stmt = static_cast<const CreateModelStatement&>(statement);
-        query = duckdb_fmt::format("INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, "
-                                   "model, provider_name, model_args) VALUES ('{}', '{}', '{}', '{}');",
+        query = duckdb_fmt::format(" INSERT INTO "
+                                   " flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                   " (model_name, model, provider_name, model_args) "
+                                   " VALUES ('{}', '{}', '{}', '{}');",
                                    create_stmt.model_name, create_stmt.model, create_stmt.provider_name,
                                    create_stmt.model_args.dump());
         break;
     }
     case StatementType::DELETE_MODEL: {
         const auto& delete_stmt = static_cast<const DeleteModelStatement&>(statement);
-        query = duckdb_fmt::format(
-            "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '{}';",
-            delete_stmt.model_name);
+        query = duckdb_fmt::format(" DELETE FROM "
+                                   " flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                   "  WHERE model_name = '{}';",
+                                   delete_stmt.model_name);
         break;
     }
     case StatementType::UPDATE_MODEL: {
         const auto& update_stmt = static_cast<const UpdateModelStatement&>(statement);
-        query =
-            duckdb_fmt::format("UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET model = '{}', "
-                               "provider_name = '{}', model_args = '{}' WHERE model_name = '{}';",
-                               update_stmt.new_model, update_stmt.provider_name, update_stmt.new_model_args.dump(),
-                               update_stmt.model_name);
+        query = duckdb_fmt::format(" UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                   "    SET model = '{}', provider_name = '{}', "
+                                   " model_args = '{}' WHERE model_name = '{}'; ",
+                                   update_stmt.new_model, update_stmt.provider_name, update_stmt.new_model_args.dump(),
+                                   update_stmt.model_name);
         break;
     }
     case StatementType::GET_MODEL: {
         const auto& get_stmt = static_cast<const GetModelStatement&>(statement);
-        query = duckdb_fmt::format(
-            "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '{}'"
-            " UNION ALL "
-            "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '{}';",
-            get_stmt.model_name, get_stmt.model_name);
+        query = duckdb_fmt::format(" SELECT * "
+                                   "   FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                                   "  WHERE model_name = '{}' "
+                                   "  UNION ALL "
+                                   " SELECT * "
+                                   "   FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                   "  WHERE model_name = '{}';",
+                                   get_stmt.model_name, get_stmt.model_name);
         break;
     }
 
     case StatementType::GET_ALL_MODEL: {
-        query = duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
-                                   "UNION ALL "
-                                   "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;");
+        query = duckdb_fmt::format(" SELECT * "
+                                   "   FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                                   "  UNION ALL "
+                                   " SELECT * "
+                                   "   FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE; ");
         break;
     }
     default:

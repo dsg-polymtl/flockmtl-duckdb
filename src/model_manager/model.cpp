@@ -30,9 +30,9 @@ void Model::LoadModelDetails(const nlohmann::json& model_json) {
 }
 
 std::string Model::LoadSecret(const std::string& provider_name) {
-    auto query = duckdb_fmt::format("SELECT secret FROM "
-                                    "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                    "WHERE provider = '{}'",
+    auto query = duckdb_fmt::format(" SELECT secret "
+                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                    "  WHERE provider = '{}' ",
                                     provider_name);
 
     auto query_result = core::CoreModule::GetConnection().Query(query);
@@ -45,18 +45,18 @@ std::string Model::LoadSecret(const std::string& provider_name) {
 }
 
 std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string& model_name) {
-    std::string query = duckdb_fmt::format("SELECT model, provider_name, model_args FROM "
-                                           "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
-                                           "WHERE model_name = '{}'",
+    std::string query = duckdb_fmt::format(" SELECT model, provider_name, model_args "
+                                           "   FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                           "  WHERE model_name = '{}' ",
                                            model_name);
 
     auto con = core::CoreModule::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query(duckdb_fmt::format("SELECT model, provider_name, model_args FROM "
-                                                    "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
-                                                    "WHERE model_name = '{}'",
+        query_result = con.Query(duckdb_fmt::format(" SELECT model, provider_name, model_args "
+                                                    "   FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                                                    "  WHERE model_name = '{}' ",
                                                     model_name));
 
         if (query_result->RowCount() == 0) {
