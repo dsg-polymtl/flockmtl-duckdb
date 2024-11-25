@@ -173,7 +173,7 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
             throw std::runtime_error("OPENAI secret already exists.");
         }
         query = duckdb_fmt::format(" INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                   " (provider, secret)
+                                   " (provider, secret) "
                                    " VALUES ('{}', '{}'); ",
                                    create_stmt.provider, create_stmt.secret);
         break;
