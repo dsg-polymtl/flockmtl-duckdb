@@ -1,5 +1,6 @@
 add_subdirectory(functions)
-add_subdirectory(parser)
+add_subdirectory(parser/llm_response)
+add_subdirectory(parser/scalar)
 add_subdirectory(config)
 
 set(EXTENSION_SOURCES

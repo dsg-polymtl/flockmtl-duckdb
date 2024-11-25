@@ -1,8 +1,8 @@
 #pragma once
 
 #include "flockmtl/common.hpp"
-#include "flockmtl/core/parser/query_statements.hpp"
-#include "flockmtl/core/parser/tokenizer.hpp"
+#include "flockmtl/custom_parser/query_statements.hpp"
+#include "flockmtl/custom_parser/tokenizer.hpp"
 
 #include <memory>
 #include <string>
@@ -11,14 +11,10 @@
 
 namespace flockmtl {
 
-namespace core {
-
 // Specific statements
 class CreateModelStatement : public QueryStatement {
 public:
-    CreateModelStatement() {
-        type = StatementType::CREATE_MODEL;
-    }
+    CreateModelStatement() { type = StatementType::CREATE_MODEL; }
     std::string model_name;
     std::string model;
     std::string provider_name;
@@ -27,18 +23,14 @@ public:
 
 class DeleteModelStatement : public QueryStatement {
 public:
-    DeleteModelStatement() {
-        type = StatementType::DELETE_MODEL;
-    }
+    DeleteModelStatement() { type = StatementType::DELETE_MODEL; }
     std::string model_name;
     std::string provider_name;
 };
 
 class UpdateModelStatement : public QueryStatement {
 public:
-    UpdateModelStatement() {
-        type = StatementType::UPDATE_MODEL;
-    }
+    UpdateModelStatement() { type = StatementType::UPDATE_MODEL; }
     std::string model_name;
     std::string new_model;
     std::string provider_name;
@@ -47,18 +39,14 @@ public:
 
 class GetModelStatement : public QueryStatement {
 public:
-    GetModelStatement() {
-        type = StatementType::GET_MODEL;
-    }
+    GetModelStatement() { type = StatementType::GET_MODEL; }
     std::string model_name;
     std::string provider_name;
 };
 
 class GetAllModelStatement : public QueryStatement {
 public:
-    GetAllModelStatement() {
-        type = StatementType::GET_ALL_MODEL;
-    }
+    GetAllModelStatement() { type = StatementType::GET_ALL_MODEL; }
 };
 
 class ModelParser {
@@ -72,6 +60,5 @@ private:
     void ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
     void ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
 };
-} // namespace core
 
 } // namespace flockmtl

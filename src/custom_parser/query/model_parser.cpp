@@ -1,4 +1,4 @@
-#include "flockmtl/core/parser/query/model_parser.hpp"
+#include "flockmtl/custom_parser/query/model_parser.hpp"
 
 #include "flockmtl/common.hpp"
 
@@ -7,7 +7,6 @@
 
 namespace flockmtl {
 
-namespace core {
 void ModelParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
@@ -285,7 +284,5 @@ std::string ModelParser::ToSQL(const QueryStatement &statement) const {
 
     return sql.str();
 }
-
-} // namespace core
 
 } // namespace flockmtl

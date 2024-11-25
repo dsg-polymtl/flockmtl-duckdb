@@ -6,7 +6,7 @@
 #include "duckdb/parser/statement/extension_statement.hpp"
 #include "flockmtl/common.hpp"
 #include "flockmtl/core/module.hpp"
-#include "flockmtl/core/parser/query_parser.hpp"
+#include "flockmtl/custom_parser/query_parser.hpp"
 
 #include <flockmtl/model_manager/model.hpp>
 
@@ -23,7 +23,7 @@ static void LoadInternal(DatabaseInstance &instance) {
 }
 
 ParserExtensionParseResult duck_parse(ParserExtensionInfo *, const std::string &query) {
-    flockmtl::core::QueryParser query_parser;
+    flockmtl::QueryParser query_parser;
 
     // Translate and print SQL queries for each input query
     std::string sql_query = query_parser.ParseQuery(query);

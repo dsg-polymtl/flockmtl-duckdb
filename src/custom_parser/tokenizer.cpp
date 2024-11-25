@@ -1,12 +1,13 @@
-#include "flockmtl/core/parser/tokenizer.hpp"
+#include "flockmtl/custom_parser/tokenizer.hpp"
 
 #include <cctype>
 #include <iostream>
 #include <stdexcept>
 
+namespace flockmtl {
+
 // Constructor
-Tokenizer::Tokenizer(const std::string &query) : query_(query), position_(0) {
-}
+Tokenizer::Tokenizer(const std::string &query) : query_(query), position_(0) {}
 
 // Skip whitespace
 void Tokenizer::SkipWhitespace() {
@@ -15,9 +16,7 @@ void Tokenizer::SkipWhitespace() {
     }
 }
 
-std::string Tokenizer::GetQuery() {
-    return query_;
-}
+std::string Tokenizer::GetQuery() { return query_; }
 
 // Parse a string literal
 Token Tokenizer::ParseStringLiteral() {
@@ -120,9 +119,7 @@ Token Tokenizer::GetNextToken() {
 }
 
 // Get the next token
-Token Tokenizer::NextToken() {
-    return GetNextToken();
-}
+Token Tokenizer::NextToken() { return GetNextToken(); }
 
 // Convert TokenType to string
 std::string TokenTypeToString(TokenType type) {
@@ -146,3 +143,5 @@ std::string TokenTypeToString(TokenType type) {
         return "UNKNOWN";
     }
 }
+
+} // namespace flockmtl

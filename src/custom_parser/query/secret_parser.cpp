@@ -1,14 +1,13 @@
-#include "flockmtl/core/parser/query/secret_parser.hpp"
+#include "flockmtl/custom_parser/query/secret_parser.hpp"
 
 #include "flockmtl/common.hpp"
-#include <flockmtl/core/module.hpp>
+#include "flockmtl/core/module.hpp"
 
 #include <sstream>
 #include <stdexcept>
 
 namespace flockmtl {
 
-namespace core {
 void SecretParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
@@ -165,7 +164,7 @@ std::string SecretParser::ToSQL(const QueryStatement &statement) const {
     switch (statement.type) {
     case StatementType::CREATE_SECRET: {
         const auto &create_stmt = static_cast<const CreateSecretStatement &>(statement);
-        auto con = CoreModule::GetConnection();
+        auto con = core::CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider="
                                 "'" +
                                 create_stmt.provider + "';");
@@ -184,7 +183,7 @@ std::string SecretParser::ToSQL(const QueryStatement &statement) const {
     }
     case StatementType::UPDATE_SECRET: {
         const auto &update_stmt = static_cast<const UpdateSecretStatement &>(statement);
-        auto con = CoreModule::GetConnection();
+        auto con = core::CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = "
                                 "'" +
                                 update_stmt.provider + "';");
@@ -212,7 +211,5 @@ std::string SecretParser::ToSQL(const QueryStatement &statement) const {
 
     return sql.str();
 }
-
-} // namespace core
 
 } // namespace flockmtl

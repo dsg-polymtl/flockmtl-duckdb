@@ -1,5 +1,3 @@
-add_subdirectory(llm_response)
-add_subdirectory(scalar)
 add_subdirectory(query)
 
 set(EXTENSION_SOURCES

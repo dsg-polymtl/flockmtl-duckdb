@@ -1,4 +1,4 @@
-#include "flockmtl/core/parser/query/prompt_parser.hpp"
+#include "flockmtl/custom_parser/query/prompt_parser.hpp"
 
 #include "flockmtl/common.hpp"
 #include <flockmtl/core/module.hpp>
@@ -8,7 +8,6 @@
 
 namespace flockmtl {
 
-namespace core {
 void PromptParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
@@ -179,7 +178,7 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::CREATE_PROMPT: {
         const auto &create_stmt = static_cast<const CreatePromptStatement &>(statement);
         // check if prompt_name already exists
-        auto con = CoreModule::GetConnection();
+        auto con = core::CoreModule::GetConnection();
         auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
                                 create_stmt.prompt_name + "';");
         if (result->RowCount() > 0) {
@@ -198,7 +197,7 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
     case StatementType::UPDATE_PROMPT: {
         const auto &update_stmt = static_cast<const UpdatePromptStatement &>(statement);
         // get the existing prompt version
-        auto con = CoreModule::GetConnection();
+        auto con = core::CoreModule::GetConnection();
         auto result =
             con.Query("SELECT version FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE WHERE prompt_name = '" +
                       update_stmt.prompt_name + "' ORDER BY version DESC LIMIT 1;");
@@ -230,7 +229,5 @@ std::string PromptParser::ToSQL(const QueryStatement &statement) const {
 
     return sql.str();
 }
-
-} // namespace core
 
 } // namespace flockmtl

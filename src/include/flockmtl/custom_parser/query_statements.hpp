@@ -7,7 +7,7 @@
 #include <vector>
 
 namespace flockmtl {
-namespace core {
+
 // Enum to represent different statement types
 enum class StatementType {
     CREATE_MODEL,
@@ -39,7 +39,5 @@ class CreateDuckStatement : public QueryStatement {
 public:
     std::string duck_string;
 };
-
-} // namespace core
 
 } // namespace flockmtl

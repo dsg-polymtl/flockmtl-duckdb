@@ -1,7 +1,8 @@
-#ifndef TOKENIZER_HPP
-#define TOKENIZER_HPP
+#pragma once
 
 #include <string>
+
+namespace flockmtl {
 
 // Define token types
 enum class TokenType { KEYWORD, STRING_LITERAL, JSON, SYMBOL, NUMBER, PARENTHESIS, END_OF_FILE, UNKNOWN };
@@ -36,4 +37,4 @@ private:
 // Utility function to convert TokenType to string
 std::string TokenTypeToString(TokenType type);
 
-#endif // TOKENIZER_HPP
+} // namespace flockmtl

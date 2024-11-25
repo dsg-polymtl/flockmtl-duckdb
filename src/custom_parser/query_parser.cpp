@@ -1,4 +1,4 @@
-#include "flockmtl/core/parser/query_parser.hpp"
+#include "flockmtl/custom_parser/query_parser.hpp"
 
 #include "flockmtl/common.hpp"
 
@@ -7,7 +7,6 @@
 
 namespace flockmtl {
 
-namespace core {
 std::string QueryParser::ParseQuery(const std::string &query) {
     Tokenizer tokenizer(query);
 
@@ -36,7 +35,5 @@ std::string QueryParser::ParseQuery(const std::string &query) {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 }
-
-} // namespace core
 
 } // namespace flockmtl
