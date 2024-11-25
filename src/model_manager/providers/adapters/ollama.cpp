@@ -2,7 +2,7 @@
 
 namespace flockmtl {
 
-nlohmann::json OllamaProvider::CallComplete(const std::string &prompt, const bool json_response) {
+nlohmann::json OllamaProvider::CallComplete(const std::string& prompt, const bool json_response) {
     auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
 
     // Create a JSON request payload with the provided parameters
@@ -24,8 +24,8 @@ nlohmann::json OllamaProvider::CallComplete(const std::string &prompt, const boo
     nlohmann::json completion;
     try {
         completion = ollama_model_manager_uptr->CallComplete(request_payload);
-    } catch (const std::exception &e) {
-        throw std::runtime_error("Error in making request to Ollama API: " + std::string(e.what()));
+    } catch (const std::exception& e) {
+        throw std::runtime_error(duckdb_fmt::format("Error in making request to Ollama API: {}", e.what()));
     }
 
     // Check if the call was not succesfull
@@ -44,7 +44,7 @@ nlohmann::json OllamaProvider::CallComplete(const std::string &prompt, const boo
     return content_str;
 }
 
-nlohmann::json OllamaProvider::CallEmbedding(const std::vector<std::string> &inputs) {
+nlohmann::json OllamaProvider::CallEmbedding(const std::vector<std::string>& inputs) {
     auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(false);
 
     // Create a JSON request payload with the provided parameters
@@ -56,12 +56,12 @@ nlohmann::json OllamaProvider::CallEmbedding(const std::vector<std::string> &inp
     nlohmann::json completion;
     try {
         completion = ollama_model_manager_uptr->CallEmbedding(request_payload);
-    } catch (const std::exception &e) {
-        throw std::runtime_error("Error in making request to Ollama API: " + std::string(e.what()));
+    } catch (const std::exception& e) {
+        throw std::runtime_error(duckdb_fmt::format("Error in making request to Ollama API: {}", e.what()));
     }
 
     auto embeddings = nlohmann::json::array();
-    for (auto &item : completion["embeddings"]) {
+    for (auto& item : completion["embeddings"]) {
         embeddings.push_back(item);
     }
 

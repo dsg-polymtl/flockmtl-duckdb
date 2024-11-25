@@ -2,7 +2,7 @@
 
 namespace flockmtl {
 
-nlohmann::json OpenAIProvider::CallComplete(const std::string &prompt, bool json_response) {
+nlohmann::json OpenAIProvider::CallComplete(const std::string& prompt, bool json_response) {
     openai::start(model_details_.secret);
 
     // Create a JSON request payload with the provided parameters
@@ -20,7 +20,7 @@ nlohmann::json OpenAIProvider::CallComplete(const std::string &prompt, bool json
     nlohmann::json completion;
     try {
         completion = openai::chat().create(request_payload);
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         throw std::runtime_error("Error in making request to OpenAI API: " + std::string(e.what()));
     }
     // Check if the conversation was too long for the context window
@@ -32,8 +32,9 @@ nlohmann::json OpenAIProvider::CallComplete(const std::string &prompt, bool json
     // Check if the OpenAI safety system refused the request
     if (completion["choices"][0]["message"]["refusal"] != nullptr) {
         // Handle refusal error
-        throw std::runtime_error("The request was refused due to OpenAI's safety system.{\"refusal\": \"" +
-                                 completion["choices"][0]["message"]["refusal"].get<std::string>() + "\"}");
+        throw std::runtime_error(
+            duckdb_fmt::format("The request was refused due to OpenAI's safety system.{{\"refusal\": \"{}\"}}",
+                               completion["choices"][0]["message"]["refusal"].get<std::string>()));
     }
 
     // Check if the model's output included restricted content
@@ -51,7 +52,7 @@ nlohmann::json OpenAIProvider::CallComplete(const std::string &prompt, bool json
     return content_str;
 }
 
-nlohmann::json OpenAIProvider::CallEmbedding(const std::vector<std::string> &inputs) {
+nlohmann::json OpenAIProvider::CallEmbedding(const std::vector<std::string>& inputs) {
     auto api_key = model_details_.secret;
     if (api_key.empty()) {
         api_key = openai::OpenAI::get_openai_api_key();
@@ -75,7 +76,7 @@ nlohmann::json OpenAIProvider::CallEmbedding(const std::vector<std::string> &inp
     }
 
     auto embeddings = nlohmann::json::array();
-    for (auto &item : completion["data"]) {
+    for (auto& item : completion["data"]) {
         embeddings.push_back(item["embedding"]);
     }
 
