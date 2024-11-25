@@ -2,7 +2,7 @@
 
 namespace flockmtl {
 
-nlohmann::json AzureProvider::CallComplete(const std::string &prompt, const bool json_response) {
+nlohmann::json AzureProvider::CallComplete(const std::string& prompt, const bool json_response) {
 
     auto resource_name = AzureModelManager::get_azure_resource_name();
     auto api_version = AzureModelManager::get_azure_api_version();
@@ -33,8 +33,9 @@ nlohmann::json AzureProvider::CallComplete(const std::string &prompt, const bool
     // Check if the safety system refused the request
     if (completion["choices"][0]["message"]["refusal"] != nullptr) {
         // Handle refusal error
-        throw std::runtime_error("The request was refused due to Azure's safety system.{\"refusal\": \"" +
-                                 completion["choices"][0]["message"]["refusal"].get<std::string>() + "\"}");
+        throw std::runtime_error(
+            duckdb_fmt::format("The request was refused due to Azure's safety system.{{\"refusal\": \"{}\"}}",
+                               completion["choices"][0]["message"]["refusal"].get<std::string>()));
     }
 
     // Check if the model's output included restricted content
@@ -52,7 +53,7 @@ nlohmann::json AzureProvider::CallComplete(const std::string &prompt, const bool
     return content_str;
 }
 
-nlohmann::json AzureProvider::CallEmbedding(const std::vector<std::string> &inputs) {
+nlohmann::json AzureProvider::CallEmbedding(const std::vector<std::string>& inputs) {
     auto api_key = model_details_.secret;
     if (api_key.empty()) {
         api_key = AzureModelManager::get_azure_api_key();
@@ -80,7 +81,7 @@ nlohmann::json AzureProvider::CallEmbedding(const std::vector<std::string> &inpu
     }
 
     auto embeddings = nlohmann::json::array();
-    for (auto &item : completion["data"]) {
+    for (auto& item : completion["data"]) {
         embeddings.push_back(item["embedding"]);
     }
 

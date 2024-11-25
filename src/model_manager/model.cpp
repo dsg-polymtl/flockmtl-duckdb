@@ -2,7 +2,7 @@
 
 namespace flockmtl {
 
-Model::Model(const nlohmann::json &model_json) {
+Model::Model(const nlohmann::json& model_json) {
     if (model_json.empty()) {
         return;
     }
@@ -10,7 +10,7 @@ Model::Model(const nlohmann::json &model_json) {
     ConstructProvider();
 }
 
-void Model::LoadModelDetails(const nlohmann::json &model_json) {
+void Model::LoadModelDetails(const nlohmann::json& model_json) {
     model_details_.model_name = model_json.contains("model_name") ? model_json.at("model_name").get<std::string>() : "";
     if (model_details_.model_name.empty()) {
         throw std::invalid_argument("`model_name` is required in model settings");
@@ -29,11 +29,11 @@ void Model::LoadModelDetails(const nlohmann::json &model_json) {
     model_details_.temperature = model_json.contains("temperature") ? model_json.at("temperature").get<float>() : 0.5;
 }
 
-std::string Model::LoadSecret(const std::string &provider_name) {
-    auto query = "SELECT secret FROM "
-                 "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                 "WHERE provider = '" +
-                 provider_name + "'";
+std::string Model::LoadSecret(const std::string& provider_name) {
+    auto query = duckdb_fmt::format("SELECT secret FROM "
+                                    "flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
+                                    "WHERE provider = '{}'",
+                                    provider_name);
 
     auto query_result = core::CoreModule::GetConnection().Query(query);
 
@@ -44,19 +44,20 @@ std::string Model::LoadSecret(const std::string &provider_name) {
     return query_result->GetValue(0, 0).ToString();
 }
 
-std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string &model_name) {
-    std::string query = "SELECT model, provider_name, model_args FROM "
-                        "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
-                        "WHERE model_name = '" +
-                        model_name + "'";
+std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string& model_name) {
+    std::string query = duckdb_fmt::format("SELECT model, provider_name, model_args FROM "
+                                           "flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
+                                           "WHERE model_name = '{}'",
+                                           model_name);
 
     auto con = core::CoreModule::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query("SELECT model, provider_name, model_args FROM "
-                                 "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '" +
-                                 model_name + "'");
+        query_result = con.Query(duckdb_fmt::format("SELECT model, provider_name, model_args FROM "
+                                                    "flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                                                    "WHERE model_name = '{}'",
+                                                    model_name));
 
         if (query_result->RowCount() == 0) {
             throw std::runtime_error("Model not found");
@@ -84,16 +85,16 @@ void Model::ConstructProvider() {
         provider_ = std::make_shared<OllamaProvider>(model_details_);
         break;
     default:
-        throw std::invalid_argument("Unsupported provider: " + model_details_.provider_name);
+        throw std::invalid_argument(duckdb_fmt::format("Unsupported provider: {}", model_details_.provider_name));
     }
 }
 
 ModelDetails Model::GetModelDetails() { return model_details_; }
 
-nlohmann::json Model::CallComplete(const std::string &prompt, bool json_response) {
+nlohmann::json Model::CallComplete(const std::string& prompt, bool json_response) {
     return provider_->CallComplete(prompt, json_response);
 }
 
-nlohmann::json Model::CallEmbedding(const std::vector<std::string> &inputs) { return provider_->CallEmbedding(inputs); }
+nlohmann::json Model::CallEmbedding(const std::vector<std::string>& inputs) { return provider_->CallEmbedding(inputs); }
 
 } // namespace flockmtl
