@@ -8,7 +8,7 @@ AllowShortFunctionsOnASingleLine: All
 CompactNamespaces: false
 ---
 DerivePointerAlignment: false
-PointerAlignment: Right
+PointerAlignment: Left
 AlignConsecutiveMacros: true
 AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: true
