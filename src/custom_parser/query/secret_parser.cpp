@@ -8,7 +8,7 @@
 
 namespace flockmtl {
 
-void SecretParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
+void SecretParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
@@ -30,7 +30,7 @@ void SecretParser::Parse(const std::string &query, std::unique_ptr<QueryStatemen
     }
 }
 
-void SecretParser::ParseCreateSecret(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "SECRET") {
@@ -68,7 +68,7 @@ void SecretParser::ParseCreateSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void SecretParser::ParseDeleteSecret(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void SecretParser::ParseDeleteSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     auto token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "SECRET") {
@@ -93,7 +93,7 @@ void SecretParser::ParseDeleteSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void SecretParser::ParseUpdateSecret(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     auto token = tokenizer.NextToken();
     if (token.type != TokenType::KEYWORD || StringUtil::Upper(token.value) != "SECRET") {
         throw std::runtime_error("Unknown keyword: " + token.value);
@@ -129,7 +129,7 @@ void SecretParser::ParseUpdateSecret(Tokenizer &tokenizer, std::unique_ptr<Query
     }
 }
 
-void SecretParser::ParseGetSecret(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void SecretParser::ParseGetSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     auto value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "SECRET" && value != "SECRETS")) {
@@ -158,58 +158,60 @@ void SecretParser::ParseGetSecret(Tokenizer &tokenizer, std::unique_ptr<QuerySta
     }
 }
 
-std::string SecretParser::ToSQL(const QueryStatement &statement) const {
-    std::ostringstream sql;
+std::string SecretParser::ToSQL(const QueryStatement& statement) const {
+    std::string query;
 
     switch (statement.type) {
     case StatementType::CREATE_SECRET: {
-        const auto &create_stmt = static_cast<const CreateSecretStatement &>(statement);
+        const auto& create_stmt = static_cast<const CreateSecretStatement&>(statement);
         auto con = core::CoreModule::GetConnection();
-        auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider="
-                                "'" +
-                                create_stmt.provider + "';");
+        auto result = con.Query(
+            duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
+                               create_stmt.provider));
         if (result->RowCount() > 0) {
             throw std::runtime_error("OPENAI secret already exists.");
         }
-        sql << "INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE(provider, secret) VALUES ("
-            << "'" + create_stmt.provider + "', '" << create_stmt.secret << "');";
+        query =
+            duckdb_fmt::format("INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE(provider, secret) VALUES "
+                               "('{}', '{}');",
+                               create_stmt.provider, create_stmt.secret);
         break;
     }
     case StatementType::DELETE_SECRET: {
-        const auto &delete_stmt = static_cast<const DeleteSecretStatement &>(statement);
-        sql << "DELETE FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '" + delete_stmt.provider +
-                   "';";
+        const auto& delete_stmt = static_cast<const DeleteSecretStatement&>(statement);
+        query = duckdb_fmt::format("DELETE FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
+                                   delete_stmt.provider);
         break;
     }
     case StatementType::UPDATE_SECRET: {
-        const auto &update_stmt = static_cast<const UpdateSecretStatement &>(statement);
+        const auto& update_stmt = static_cast<const UpdateSecretStatement&>(statement);
         auto con = core::CoreModule::GetConnection();
-        auto result = con.Query("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = "
-                                "'" +
-                                update_stmt.provider + "';");
+        auto result = con.Query(
+            duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';",
+                               update_stmt.provider));
         if (result->RowCount() == 0) {
-            throw std::runtime_error(update_stmt.provider + " secret does not exist.");
+            throw std::runtime_error(duckdb_fmt::format("Provider '{}' secret does not exist.", update_stmt.provider));
         }
-        sql << "UPDATE flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE SET "
-            << "secret = '" << update_stmt.secret << "',"
-            << "WHERE provider = '" << update_stmt.provider << "';";
+        query = duckdb_fmt::format(
+            "UPDATE flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE SET secret = '{}' WHERE provider = '{}';",
+            update_stmt.secret, update_stmt.provider);
         break;
     }
     case StatementType::GET_SECRET: {
-        const auto &get_stmt = static_cast<const GetSecretStatement &>(statement);
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '" << get_stmt.provider
-            << "';";
+        const auto& get_stmt = static_cast<const GetSecretStatement&>(statement);
+        query = duckdb_fmt::format(
+            "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE WHERE provider = '{}';", get_stmt.provider);
         break;
     }
     case StatementType::GET_ALL_SECRET: {
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE;";
+        query = "SELECT * FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE;";
         break;
     }
     default:
         throw std::runtime_error("Unknown statement type.");
     }
 
-    return sql.str();
+    return query;
 }
 
 } // namespace flockmtl
