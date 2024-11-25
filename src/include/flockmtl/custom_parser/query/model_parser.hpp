@@ -4,6 +4,7 @@
 #include "flockmtl/custom_parser/query_statements.hpp"
 #include "flockmtl/custom_parser/tokenizer.hpp"
 
+#include "fmt/format.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -51,14 +52,14 @@ public:
 
 class ModelParser {
 public:
-    void Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement);
-    std::string ToSQL(const QueryStatement &statement) const;
+    void Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement);
+    std::string ToSQL(const QueryStatement& statement) const;
 
 private:
-    void ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
+    void ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
 };
 
 } // namespace flockmtl

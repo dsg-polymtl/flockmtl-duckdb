@@ -7,7 +7,7 @@
 
 namespace flockmtl {
 
-void ModelParser::Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
@@ -29,7 +29,7 @@ void ModelParser::Parse(const std::string &query, std::unique_ptr<QueryStatement
     }
 }
 
-void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -106,7 +106,7 @@ void ModelParser::ParseCreateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 }
 
-void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -129,7 +129,7 @@ void ModelParser::ParseDeleteModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 }
 
-void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
@@ -206,7 +206,7 @@ void ModelParser::ParseUpdateModel(Tokenizer &tokenizer, std::unique_ptr<QuerySt
     }
 }
 
-void ModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement) {
+void ModelParser::ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "MODEL" && value != "MODELS")) {
@@ -234,55 +234,55 @@ void ModelParser::ParseGetModel(Tokenizer &tokenizer, std::unique_ptr<QueryState
     }
 }
 
-std::string ModelParser::ToSQL(const QueryStatement &statement) const {
-    std::ostringstream sql;
+std::string ModelParser::ToSQL(const QueryStatement& statement) const {
+    std::string query;
 
     switch (statement.type) {
     case StatementType::CREATE_MODEL: {
-        const auto &create_stmt = static_cast<const CreateModelStatement &>(statement);
-        sql << "INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, model, "
-               "provider_name, model_args) VALUES ('"
-            << create_stmt.model_name << "', '" << create_stmt.model << "', '" << create_stmt.provider_name << "', '"
-            << create_stmt.model_args << "');";
+        const auto& create_stmt = static_cast<const CreateModelStatement&>(statement);
+        query = duckdb_fmt::format("INSERT INTO flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE(model_name, "
+                                   "model, provider_name, model_args) VALUES ('{}', '{}', '{}', '{}');",
+                                   create_stmt.model_name, create_stmt.model, create_stmt.provider_name,
+                                   create_stmt.model_args.dump());
         break;
     }
     case StatementType::DELETE_MODEL: {
-        const auto &delete_stmt = static_cast<const DeleteModelStatement &>(statement);
-        sql << "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << delete_stmt.model_name << "';";
+        const auto& delete_stmt = static_cast<const DeleteModelStatement&>(statement);
+        query = duckdb_fmt::format(
+            "DELETE FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '{}';",
+            delete_stmt.model_name);
         break;
     }
     case StatementType::UPDATE_MODEL: {
-        const auto &update_stmt = static_cast<const UpdateModelStatement &>(statement);
-        sql << "UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET "
-            << "model = '" << update_stmt.new_model << "', "
-            << "provider_name = '" << update_stmt.provider_name << "', "
-            << "model_args = '" << update_stmt.new_model_args << "', "
-            << "WHERE model_name = '" << update_stmt.model_name << "';";
+        const auto& update_stmt = static_cast<const UpdateModelStatement&>(statement);
+        query =
+            duckdb_fmt::format("UPDATE flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE SET model = '{}', "
+                               "provider_name = '{}', model_args = '{}' WHERE model_name = '{}';",
+                               update_stmt.new_model, update_stmt.provider_name, update_stmt.new_model_args.dump(),
+                               update_stmt.model_name);
         break;
     }
     case StatementType::GET_MODEL: {
-        const auto &get_stmt = static_cast<const GetModelStatement &>(statement);
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '"
-            << get_stmt.model_name << "'"
-            << " UNION ALL "
-            << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '"
-            << get_stmt.model_name << "'"
-            << ";";
+        const auto& get_stmt = static_cast<const GetModelStatement&>(statement);
+        query = duckdb_fmt::format(
+            "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE WHERE model_name = '{}'"
+            " UNION ALL "
+            "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE WHERE model_name = '{}';",
+            get_stmt.model_name, get_stmt.model_name);
         break;
     }
 
     case StatementType::GET_ALL_MODEL: {
-        sql << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
-            << "UNION ALL "
-            << "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;";
+        query = duckdb_fmt::format("SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                                   "UNION ALL "
+                                   "SELECT * FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE;");
         break;
     }
     default:
         throw std::runtime_error("Unknown statement type.");
     }
 
-    return sql.str();
+    return query;
 }
 
 } // namespace flockmtl

@@ -7,14 +7,14 @@
 
 namespace flockmtl {
 
-std::string QueryParser::ParseQuery(const std::string &query) {
+std::string QueryParser::ParseQuery(const std::string& query) {
     Tokenizer tokenizer(query);
 
     Token token = tokenizer.NextToken();
     std::string value = StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD ||
         (value != "CREATE" && value != "DELETE" && value != "UPDATE" && value != "GET")) {
-        throw std::runtime_error("Unknown keyword: " + token.value);
+        throw std::runtime_error(duckdb_fmt::format("Unknown keyword: {}", token.value));
     }
 
     token = tokenizer.NextToken();
@@ -32,7 +32,7 @@ std::string QueryParser::ParseQuery(const std::string &query) {
         secret_parser.Parse(query, statement);
         return secret_parser.ToSQL(*statement);
     } else {
-        throw std::runtime_error("Unknown keyword: " + token.value);
+        throw std::runtime_error(duckdb_fmt::format("Unknown keyword: {}", token.value));
     }
 }
 

@@ -4,6 +4,7 @@
 #include "flockmtl/custom_parser/query_statements.hpp"
 #include "flockmtl/custom_parser/tokenizer.hpp"
 
+#include "fmt/format.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -44,14 +45,14 @@ public:
 
 class PromptParser {
 public:
-    void Parse(const std::string &query, std::unique_ptr<QueryStatement> &statement);
-    std::string ToSQL(const QueryStatement &statement) const;
+    void Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement);
+    std::string ToSQL(const QueryStatement& statement) const;
 
 private:
-    void ParseCreatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseDeletePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseUpdatePrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
-    void ParseGetPrompt(Tokenizer &tokenizer, std::unique_ptr<QueryStatement> &statement);
+    void ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
+    void ParseGetPrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement);
 };
 
 } // namespace flockmtl
