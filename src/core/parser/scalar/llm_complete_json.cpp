@@ -1,43 +1,26 @@
-#include <flockmtl/common.hpp>
-#include <flockmtl/core/functions/scalar.hpp>
+#include <flockmtl/core/common.hpp>
 #include <flockmtl/core/parser/scalar.hpp>
 #include <flockmtl_extension.hpp>
 
 namespace flockmtl {
-namespace core {
 
-std::vector<nlohmann::json> CoreScalarParsers::Struct2Json(Vector &struct_vector, int size) {
-    vector<nlohmann::json> vector_json;
-    for (auto i = 0; i < size; i++) {
-        nlohmann::json json;
-        for (auto j = 0; j < StructType::GetChildCount(struct_vector.GetType()); j++) {
-            auto key = StructType::GetChildName(struct_vector.GetType(), j);
-            auto value = StructValue::GetChildren(struct_vector.GetValue(i))[j].ToString();
-            json[key] = value;
-        }
-        vector_json.push_back(json);
-    }
-    return vector_json;
-}
-
-void CoreScalarParsers::LlmCompleteJsonScalarParser(DataChunk &args) {
+void CoreScalarParsers::LlmCompleteJsonScalarParser(duckdb::DataChunk& args) {
     if (args.ColumnCount() < 2 || args.ColumnCount() > 3) {
         throw std::runtime_error("LlmCompleteJsonScalarParser: Invalid number of arguments.");
     }
 
-    if (args.data[0].GetType().id() != LogicalTypeId::STRUCT) {
+    if (args.data[0].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("LlmCompleteJsonScalarParser: Model details must be a struct.");
     }
-    if (args.data[1].GetType().id() != LogicalTypeId::STRUCT) {
+    if (args.data[1].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("LlmCompleteJsonScalarParser: Prompt details must be a struct.");
     }
 
     if (args.ColumnCount() == 3) {
-        if (args.data[2].GetType().id() != LogicalTypeId::STRUCT) {
+        if (args.data[2].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
             throw std::runtime_error("LlmCompleteJsonScalarParser: Inputs must be a struct.");
         }
     }
 }
 
-} // namespace core
 } // namespace flockmtl

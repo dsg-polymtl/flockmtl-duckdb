@@ -1,4 +1,6 @@
 add_subdirectory(core)
+add_subdirectory(registry)
+add_subdirectory(functions)
 add_subdirectory(model_manager)
 add_subdirectory(prompt_manager)
 add_subdirectory(custom_parser)

@@ -1,6 +1,6 @@
 #include "flockmtl/custom_parser/query_parser.hpp"
 
-#include "flockmtl/common.hpp"
+#include "flockmtl/core/common.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -11,14 +11,14 @@ std::string QueryParser::ParseQuery(const std::string& query) {
     Tokenizer tokenizer(query);
 
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD ||
         (value != "CREATE" && value != "DELETE" && value != "UPDATE" && value != "GET")) {
         throw std::runtime_error(duckdb_fmt::format("Unknown keyword: {}", token.value));
     }
 
     token = tokenizer.NextToken();
-    value = StringUtil::Upper(token.value);
+    value = duckdb::StringUtil::Upper(token.value);
     if (token.type == TokenType::KEYWORD && value == "MODEL" || value == "MODELS") {
         ModelParser model_parser;
         model_parser.Parse(query, statement);

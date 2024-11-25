@@ -1,21 +1,17 @@
 #pragma once
-#include "flockmtl/common.hpp"
+#include "flockmtl/core/common.hpp"
 
 #include <nlohmann/json.hpp>
 
 namespace flockmtl {
 
-namespace core {
-
 struct CoreScalarParsers {
-    static std::vector<nlohmann::json> Struct2Json(Vector &struct_vector, int size);
-    static void LlmCompleteJsonScalarParser(DataChunk &args);
-    static void LlmCompleteScalarParser(DataChunk &args);
-    static void LlmFilterScalarParser(DataChunk &args);
-    static void LlmEmbeddingScalarParser(DataChunk &args);
-    static void FusionRelativeScalarParser(DataChunk &args);
+    static std::vector<nlohmann::json> Struct2Json(duckdb::Vector& struct_vector, int size);
+    static void LlmCompleteJsonScalarParser(duckdb::DataChunk& args);
+    static void LlmCompleteScalarParser(duckdb::DataChunk& args);
+    static void LlmFilterScalarParser(duckdb::DataChunk& args);
+    static void LlmEmbeddingScalarParser(duckdb::DataChunk& args);
+    static void FusionRelativeScalarParser(duckdb::DataChunk& args);
 };
-
-} // namespace core
 
 } // namespace flockmtl

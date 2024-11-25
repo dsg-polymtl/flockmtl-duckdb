@@ -7,8 +7,7 @@
 #include <nlohmann/json.hpp>
 #include "fmt/format.h"
 
-#include "flockmtl/core/module.hpp"
-#include "flockmtl/core/config/config.hpp"
+#include "flockmtl/core/config.hpp"
 #include "flockmtl/model_manager/repository.hpp"
 #include "flockmtl/model_manager/providers/adapters/openai.hpp"
 #include "flockmtl/model_manager/providers/adapters/azure.hpp"
@@ -22,7 +21,7 @@ class Model {
 public:
     explicit Model(const nlohmann::json& model_json);
     nlohmann::json CallComplete(const std::string& prompt, const bool json_response = true);
-    nlohmann::json CallEmbedding(const std::vector<string>& inputs);
+    nlohmann::json CallEmbedding(const std::vector<std::string>& inputs);
     ModelDetails GetModelDetails();
 
 private:

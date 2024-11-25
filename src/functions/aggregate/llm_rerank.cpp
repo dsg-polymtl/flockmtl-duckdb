@@ -1,20 +1,18 @@
 #include <nlohmann/json.hpp>
-#include <flockmtl/core/functions/batch_response_builder.hpp>
-#include "flockmtl/core/module.hpp"
-#include <flockmtl/common.hpp>
-#include <flockmtl/core/functions/aggregate.hpp>
+#include <flockmtl/functions/batch_response_builder.hpp>
+#include <flockmtl/core/common.hpp>
 #include <flockmtl/model_manager/model.hpp>
 #include <flockmtl_extension.hpp>
 #include <flockmtl/model_manager/tiktoken.hpp>
-#include <flockmtl/core/functions/aggregate/llm_agg.hpp>
+#include <flockmtl/functions/aggregate/llm_agg.hpp>
 #include "flockmtl/prompt_manager/prompt_manager.hpp"
-#include <flockmtl/core/config/config.hpp>
-#include <flockmtl/core/functions/aggregate/llm_rerank.hpp>
+#include <flockmtl/core/config.hpp>
+#include <flockmtl/functions/aggregate/llm_rerank.hpp>
+#include "flockmtl/registry/registry.hpp"
 
 namespace flockmtl {
-namespace core {
 
-LlmReranker::LlmReranker(Model &model, std::string &search_query) : model(model), search_query(search_query) {
+LlmReranker::LlmReranker(Model& model, std::string& search_query) : model(model), search_query(search_query) {
 
     function_type = AggregateFunctionType::RERANK;
     llm_reranking_template = PromptManager::GetTemplate(function_type);
@@ -29,7 +27,7 @@ LlmReranker::LlmReranker(Model &model, std::string &search_query) : model(model)
     available_tokens = model_context_size - num_tokens_meta_and_search_query;
 };
 
-nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
+nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json& tuples) {
     int num_tuples = tuples.size();
 
     auto accumulated_rows_tokens = 0u;
@@ -45,9 +43,9 @@ nlohmann::json LlmReranker::SlidingWindowRerank(nlohmann::json &tuples) {
         next_tuples.clear();
         batch_size = half_batch;
         accumulated_rows_tokens = Tiktoken::GetNumTokens(window_tuples.dump());
-        accumulated_rows_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
+        accumulated_rows_tokens += Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
         while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
-            auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
+            auto num_tokens = Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
             if (accumulated_rows_tokens + num_tokens > available_tokens) {
                 break;
             }
@@ -83,17 +81,16 @@ int LlmReranker::CalculateFixedTokens() const {
     return num_tokens_meta_and_search_query;
 }
 
-vector<int> LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json &tuples) {
+std::vector<int> LlmReranker::LlmRerankWithSlidingWindow(const nlohmann::json& tuples) {
     nlohmann::json data;
-    auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
-    auto prompt = PromptManager::Render(search_query, markdown_tuples, function_type);
+    auto prompt = PromptManager::Render(search_query, tuples, function_type);
     auto response = model.CallComplete(prompt);
-    return response["ranking"].get<vector<int>>();
+    return response["ranking"].get<std::vector<int>>();
 };
 
-void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                                       idx_t offset) {
-    auto states_vector = FlatVector::GetData<LlmAggState *>(states);
+void LlmAggOperation::RerankerFinalize(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data,
+                                       duckdb::Vector& result, idx_t count, idx_t offset) {
+    auto states_vector = duckdb::FlatVector::GetData<LlmAggState*>(states);
 
     for (idx_t i = 0; i < count; i++) {
         auto idx = i + offset;
@@ -113,14 +110,14 @@ void LlmAggOperation::RerankerFinalize(Vector &states, AggregateInputData &aggr_
     }
 }
 
-void CoreAggregateFunctions::RegisterLlmRerankFunction(DatabaseInstance &db) {
-    auto string_concat = AggregateFunction(
-        "llm_rerank", {LogicalType::ANY, LogicalType::ANY, LogicalType::ANY}, LogicalType::JSON(),
-        AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize, LlmAggOperation::Operation,
-        LlmAggOperation::Combine, LlmAggOperation::RerankerFinalize, LlmAggOperation::SimpleUpdate);
+void AggregateRegistry::RegisterLlmRerank(duckdb::DatabaseInstance& db) {
+    auto string_concat = duckdb::AggregateFunction(
+        "llm_rerank", {duckdb::LogicalType::ANY, duckdb::LogicalType::ANY, duckdb::LogicalType::ANY},
+        duckdb::LogicalType::JSON(), duckdb::AggregateFunction::StateSize<LlmAggState>, LlmAggOperation::Initialize,
+        LlmAggOperation::Operation, LlmAggOperation::Combine, LlmAggOperation::RerankerFinalize,
+        LlmAggOperation::SimpleUpdate);
 
-    ExtensionUtil::RegisterFunction(db, string_concat);
+    duckdb::ExtensionUtil::RegisterFunction(db, string_concat);
 }
 
-} // namespace core
 } // namespace flockmtl

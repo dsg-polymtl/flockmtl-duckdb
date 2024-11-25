@@ -1,7 +1,7 @@
 #include "flockmtl/custom_parser/query/secret_parser.hpp"
 
-#include "flockmtl/common.hpp"
-#include "flockmtl/core/module.hpp"
+#include "flockmtl/core/common.hpp"
+#include "flockmtl/core/config.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -11,7 +11,7 @@ namespace flockmtl {
 void SecretParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
 
     if (token.type == TokenType::KEYWORD) {
         if (value == "CREATE") {
@@ -32,19 +32,19 @@ void SecretParser::Parse(const std::string& query, std::unique_ptr<QueryStatemen
 
 void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "SECRET") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
     // the create secret format is as next CREATE SECRET OPENAI='key';
     token = tokenizer.NextToken();
-    value = StringUtil::Upper(token.value);
+    value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
 
-    auto provider = StringUtil::Lower(value);
+    auto provider = duckdb::StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
@@ -59,7 +59,7 @@ void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto create_statement = make_uniq<CreateSecretStatement>();
+        auto create_statement = std::make_unique<CreateSecretStatement>();
         create_statement->provider = provider;
         create_statement->secret = secret;
         statement = std::move(create_statement);
@@ -70,22 +70,22 @@ void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void SecretParser::ParseDeleteSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     auto token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "SECRET") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
     token = tokenizer.NextToken();
-    value = StringUtil::Upper(token.value);
+    value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
 
-    auto provider = StringUtil::Lower(value);
+    auto provider = duckdb::StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto delete_statement = make_uniq<DeleteSecretStatement>();
+        auto delete_statement = std::make_unique<DeleteSecretStatement>();
         delete_statement->provider = provider;
         statement = std::move(delete_statement);
     } else {
@@ -95,17 +95,17 @@ void SecretParser::ParseDeleteSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     auto token = tokenizer.NextToken();
-    if (token.type != TokenType::KEYWORD || StringUtil::Upper(token.value) != "SECRET") {
+    if (token.type != TokenType::KEYWORD || duckdb::StringUtil::Upper(token.value) != "SECRET") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
     token = tokenizer.NextToken();
-    auto value = StringUtil::Upper(token.value);
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
         throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
     }
 
-    auto provider = StringUtil::Lower(value);
+    auto provider = duckdb::StringUtil::Lower(value);
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
@@ -120,7 +120,7 @@ void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto update_statement = make_uniq<UpdateSecretStatement>();
+        auto update_statement = std::make_unique<UpdateSecretStatement>();
         update_statement->provider = provider;
         update_statement->secret = secret;
         statement = std::move(update_statement);
@@ -131,25 +131,25 @@ void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void SecretParser::ParseGetSecret(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    auto value = StringUtil::Upper(token.value);
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "SECRET" && value != "SECRETS")) {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
     token = tokenizer.NextToken();
     if ((token.type == TokenType::SYMBOL || token.value == ";") && value == "SECRETS") {
-        auto get_all_statement = make_uniq<GetAllSecretStatement>();
+        auto get_all_statement = std::make_unique<GetAllSecretStatement>();
         statement = std::move(get_all_statement);
     } else {
-        value = StringUtil::Upper(token.value);
+        value = duckdb::StringUtil::Upper(token.value);
         if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
             throw std::runtime_error("Expected 'OPENAI' or 'AZURE' keyword after 'SECRET'.");
         }
-        auto provider = StringUtil::Lower(value);
+        auto provider = duckdb::StringUtil::Lower(value);
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
-            auto get_statement = make_uniq<GetSecretStatement>();
+            auto get_statement = std::make_unique<GetSecretStatement>();
             get_statement->provider = provider;
             statement = std::move(get_statement);
         } else {
@@ -164,7 +164,7 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
     switch (statement.type) {
     case StatementType::CREATE_SECRET: {
         const auto& create_stmt = static_cast<const CreateSecretStatement&>(statement);
-        auto con = core::CoreModule::GetConnection();
+        auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
                                                    "  WHERE provider = '{}'; ",
@@ -187,7 +187,7 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
     }
     case StatementType::UPDATE_SECRET: {
         const auto& update_stmt = static_cast<const UpdateSecretStatement&>(statement);
-        auto con = core::CoreModule::GetConnection();
+        auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
                                                    "  WHERE provider = '{}'; ",

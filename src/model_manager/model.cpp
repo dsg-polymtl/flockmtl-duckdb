@@ -35,7 +35,7 @@ std::string Model::LoadSecret(const std::string& provider_name) {
                                     "  WHERE provider = '{}' ",
                                     provider_name);
 
-    auto query_result = core::CoreModule::GetConnection().Query(query);
+    auto query_result = Config::GetConnection().Query(query);
 
     if (query_result->RowCount() == 0) {
         return "";
@@ -50,7 +50,7 @@ std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(co
                                            "  WHERE model_name = '{}' ",
                                            model_name);
 
-    auto con = core::CoreModule::GetConnection();
+    auto con = Config::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {

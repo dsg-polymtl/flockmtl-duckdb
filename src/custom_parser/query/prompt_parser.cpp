@@ -1,7 +1,7 @@
 #include "flockmtl/custom_parser/query/prompt_parser.hpp"
 
-#include "flockmtl/common.hpp"
-#include <flockmtl/core/module.hpp>
+#include "flockmtl/core/config.hpp"
+#include "flockmtl/core/common.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -11,7 +11,7 @@ namespace flockmtl {
 void PromptParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
 
     if (token.type == TokenType::KEYWORD) {
         if (value == "CREATE") {
@@ -32,7 +32,7 @@ void PromptParser::Parse(const std::string& query, std::unique_ptr<QueryStatemen
 
 void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -66,7 +66,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto create_statement = make_uniq<CreatePromptStatement>();
+        auto create_statement = std::make_unique<CreatePromptStatement>();
         create_statement->prompt_name = prompt_name;
         create_statement->prompt = prompt;
         statement = std::move(create_statement);
@@ -77,7 +77,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -90,7 +90,7 @@ void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto delete_statement = make_uniq<DeletePromptStatement>();
+        auto delete_statement = std::make_unique<DeletePromptStatement>();
         delete_statement->prompt_name = prompt_name;
         statement = std::move(delete_statement);
     } else {
@@ -100,7 +100,7 @@ void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -134,7 +134,7 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto update_statement = make_uniq<UpdatePromptStatement>();
+        auto update_statement = std::make_unique<UpdatePromptStatement>();
         update_statement->prompt_name = prompt_name;
         update_statement->new_prompt = new_prompt;
         statement = std::move(update_statement);
@@ -145,14 +145,14 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 
 void PromptParser::ParseGetPrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "PROMPT" && value != "PROMPTS")) {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
 
     token = tokenizer.NextToken();
     if ((token.type == TokenType::SYMBOL || token.value == ";") && value == "PROMPTS") {
-        auto get_all_statement = make_uniq<GetAllPromptStatement>();
+        auto get_all_statement = duckdb::make_uniq<GetAllPromptStatement>();
         statement = std::move(get_all_statement);
     } else {
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
@@ -162,7 +162,7 @@ void PromptParser::ParseGetPrompt(Tokenizer& tokenizer, std::unique_ptr<QuerySta
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
-            auto get_statement = make_uniq<GetPromptStatement>();
+            auto get_statement = duckdb::make_uniq<GetPromptStatement>();
             get_statement->prompt_name = prompt_name;
             statement = std::move(get_statement);
         } else {
@@ -178,7 +178,7 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
     case StatementType::CREATE_PROMPT: {
         const auto& create_stmt = static_cast<const CreatePromptStatement&>(statement);
         // check if prompt_name already exists
-        auto con = core::CoreModule::GetConnection();
+        auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                    "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                                    "  WHERE prompt_name = '{}'; ",
@@ -202,7 +202,7 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
     case StatementType::UPDATE_PROMPT: {
         const auto& update_stmt = static_cast<const UpdatePromptStatement&>(statement);
         // get the existing prompt version
-        auto con = core::CoreModule::GetConnection();
+        auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT version "
                                                    "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                                    "  WHERE prompt_name = '{}' "

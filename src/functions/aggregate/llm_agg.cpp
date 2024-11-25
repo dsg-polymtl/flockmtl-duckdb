@@ -1,25 +1,25 @@
-#include <flockmtl/core/functions/aggregate/llm_agg.hpp>
-#include <flockmtl/core/functions/batch_response_builder.hpp>
-#include "flockmtl/core/module.hpp"
-#include "flockmtl/model_manager/model.hpp"
-#include "flockmtl/model_manager/tiktoken.hpp"
-#include <flockmtl/core/config/config.hpp>
 #include <vector>
 
+#include "flockmtl/functions/aggregate/llm_agg.hpp"
+#include "flockmtl/functions/batch_response_builder.hpp"
+#include "flockmtl/model_manager/model.hpp"
+#include "flockmtl/model_manager/tiktoken.hpp"
+#include "flockmtl/core/config.hpp"
+#include "flockmtl/prompt_manager/prompt_manager.hpp"
+
 namespace flockmtl {
-namespace core {
 
 void LlmAggState::Initialize() {}
 
-void LlmAggState::Update(const nlohmann::json &input) { value.push_back(input); }
+void LlmAggState::Update(const nlohmann::json& input) { value.push_back(input); }
 
-void LlmAggState::Combine(const LlmAggState &source) {
-    for (auto &input : source.value) {
+void LlmAggState::Combine(const LlmAggState& source) {
+    for (auto& input : source.value) {
         Update(std::move(input));
     }
 }
 
-LlmFirstOrLast::LlmFirstOrLast(Model &model, std::string &search_query, AggregateFunctionType function_type)
+LlmFirstOrLast::LlmFirstOrLast(Model& model, std::string& search_query, AggregateFunctionType function_type)
     : model(model), search_query(search_query), function_type(function_type) {
 
     llm_first_or_last_template = PromptManager::GetTemplate(function_type);
@@ -40,15 +40,15 @@ int LlmFirstOrLast::calculateFixedTokens() const {
     return num_tokens_meta_and_search_query;
 }
 
-int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json &tuples) {
+int LlmFirstOrLast::GetFirstOrLastTupleId(const nlohmann::json& tuples) {
     nlohmann::json data;
-    auto markdown_tuples = ConstructMarkdownArrayTuples(tuples);
+    auto markdown_tuples = PromptManager::ConstructMarkdownArrayTuples(tuples);
     auto prompt = PromptManager::Render(search_query, markdown_tuples, function_type);
     auto response = model.CallComplete(prompt);
     return response["selected"].get<int>();
 }
 
-nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
+nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json& tuples) {
 
     auto accumulated_tuples_tokens = 0u;
     auto batch_tuples = nlohmann::json::array();
@@ -56,9 +56,10 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 
     do {
         accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
-        accumulated_tuples_tokens += Tiktoken::GetNumTokens(ConstructMarkdownHeader(tuples[start_index]));
+        accumulated_tuples_tokens +=
+            Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
         while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
-            auto num_tokens = Tiktoken::GetNumTokens(ConstructMarkdownSingleTuple(tuples[start_index]));
+            auto num_tokens = Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
             if (accumulated_tuples_tokens + num_tokens > available_tokens) {
                 break;
             }
@@ -77,13 +78,13 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json &tuples) {
 }
 
 // Static member initialization
-Model &LlmAggOperation::model(*(new Model(nlohmann::json())));
+Model& LlmAggOperation::model(*(new Model(nlohmann::json())));
 std::string LlmAggOperation::search_query;
 
-std::unordered_map<void *, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
+std::unordered_map<void*, std::shared_ptr<LlmAggState>> LlmAggOperation::state_map;
 
-void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) {
-    auto state_ptr = reinterpret_cast<LlmAggState *>(state_p);
+void LlmAggOperation::Initialize(const duckdb::AggregateFunction&, duckdb::data_ptr_t state_p) {
+    auto state_ptr = reinterpret_cast<LlmAggState*>(state_p);
 
     if (state_map.find(state_ptr) == state_map.end()) {
         auto state = std::make_shared<LlmAggState>();
@@ -92,27 +93,27 @@ void LlmAggOperation::Initialize(const AggregateFunction &, data_ptr_t state_p) 
     }
 }
 
-void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count, Vector &states,
-                                idx_t count) {
-    if (inputs[0].GetType().id() != LogicalTypeId::STRUCT) {
+void LlmAggOperation::Operation(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data, idx_t input_count,
+                                duckdb::Vector& states, idx_t count) {
+    if (inputs[0].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for model details");
     }
     auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
     LlmAggOperation::model = Model(model_details_json);
 
-    if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+    if (inputs[1].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt details");
     }
     auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    auto connection = CoreModule::GetConnection();
-    search_query = CreatePromptDetails(connection, prompt_details_json).prompt;
+    auto connection = Config::GetConnection();
+    search_query = PromptManager::CreatePromptDetails(prompt_details_json).prompt;
 
-    if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
+    if (inputs[2].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
     }
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
-    auto states_vector = FlatVector::GetData<LlmAggState *>(states);
+    auto states_vector = duckdb::FlatVector::GetData<LlmAggState*>(states);
 
     for (idx_t i = 0; i < count; i++) {
         auto tuple = tuples[i];
@@ -123,9 +124,10 @@ void LlmAggOperation::Operation(Vector inputs[], AggregateInputData &aggr_input_
     }
 }
 
-void LlmAggOperation::Combine(Vector &source, Vector &target, AggregateInputData &aggr_input_data, idx_t count) {
-    auto source_vector = FlatVector::GetData<LlmAggState *>(source);
-    auto target_vector = FlatVector::GetData<LlmAggState *>(target);
+void LlmAggOperation::Combine(duckdb::Vector& source, duckdb::Vector& target,
+                              duckdb::AggregateInputData& aggr_input_data, idx_t count) {
+    auto source_vector = duckdb::FlatVector::GetData<LlmAggState*>(source);
+    auto target_vector = duckdb::FlatVector::GetData<LlmAggState*>(target);
 
     for (auto i = 0; i < count; i++) {
         auto source_ptr = source_vector[i];
@@ -138,9 +140,10 @@ void LlmAggOperation::Combine(Vector &source, Vector &target, AggregateInputData
     }
 }
 
-void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_input_data, Vector &result, idx_t count,
-                                      idx_t offset, AggregateFunctionType function_type) {
-    auto states_vector = FlatVector::GetData<LlmAggState *>(states);
+void LlmAggOperation::FinalizeResults(duckdb::Vector& states, duckdb::AggregateInputData& aggr_input_data,
+                                      duckdb::Vector& result, idx_t count, idx_t offset,
+                                      AggregateFunctionType function_type) {
+    auto states_vector = duckdb::FlatVector::GetData<LlmAggState*>(states);
 
     for (idx_t i = 0; i < count; i++) {
         auto idx = i + offset;
@@ -161,40 +164,42 @@ void LlmAggOperation::FinalizeResults(Vector &states, AggregateInputData &aggr_i
 }
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::LAST>(Vector &states,
-                                                                       AggregateInputData &aggr_input_data,
-                                                                       Vector &result, idx_t count, idx_t offset) {
+void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::LAST>(duckdb::Vector& states,
+                                                                       duckdb::AggregateInputData& aggr_input_data,
+                                                                       duckdb::Vector& result, idx_t count,
+                                                                       idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, AggregateFunctionType::LAST);
 };
 
 template <>
-void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::FIRST>(Vector &states,
-                                                                        AggregateInputData &aggr_input_data,
-                                                                        Vector &result, idx_t count, idx_t offset) {
+void LlmAggOperation::FirstOrLastFinalize<AggregateFunctionType::FIRST>(duckdb::Vector& states,
+                                                                        duckdb::AggregateInputData& aggr_input_data,
+                                                                        duckdb::Vector& result, idx_t count,
+                                                                        idx_t offset) {
     FinalizeResults(states, aggr_input_data, result, count, offset, AggregateFunctionType::FIRST);
 };
 
-void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_input_data, idx_t input_count,
-                                   data_ptr_t state_p, idx_t count) {
-    if (inputs[0].GetType().id() != LogicalTypeId::STRUCT) {
+void LlmAggOperation::SimpleUpdate(duckdb::Vector inputs[], duckdb::AggregateInputData& aggr_input_data,
+                                   idx_t input_count, duckdb::data_ptr_t state_p, idx_t count) {
+    if (inputs[0].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for model details");
     }
     auto model_details_json = CastVectorOfStructsToJson(inputs[0], 1)[0];
     LlmAggOperation::model = Model(model_details_json);
 
-    if (inputs[1].GetType().id() != LogicalTypeId::STRUCT) {
+    if (inputs[1].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt details");
     }
     auto prompt_details_json = CastVectorOfStructsToJson(inputs[1], 1)[0];
-    auto connection = CoreModule::GetConnection();
-    search_query = CreatePromptDetails(connection, prompt_details_json).prompt;
+    auto connection = Config::GetConnection();
+    search_query = PromptManager::CreatePromptDetails(prompt_details_json).prompt;
 
-    if (inputs[2].GetType().id() != LogicalTypeId::STRUCT) {
+    if (inputs[2].GetType().id() != duckdb::LogicalTypeId::STRUCT) {
         throw std::runtime_error("Expected a struct type for prompt inputs");
     }
     auto tuples = CastVectorOfStructsToJson(inputs[2], count);
 
-    auto state_map_p = reinterpret_cast<LlmAggState *>(state_p);
+    auto state_map_p = reinterpret_cast<LlmAggState*>(state_p);
 
     for (idx_t i = 0; i < count; i++) {
         auto tuple = tuples[i];
@@ -205,5 +210,4 @@ void LlmAggOperation::SimpleUpdate(Vector inputs[], AggregateInputData &aggr_inp
 
 bool LlmAggOperation::IgnoreNull() { return true; }
 
-} // namespace core
 } // namespace flockmtl

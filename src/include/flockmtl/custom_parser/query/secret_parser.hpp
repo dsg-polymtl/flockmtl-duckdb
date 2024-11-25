@@ -1,6 +1,6 @@
 #pragma once
 
-#include "flockmtl/common.hpp"
+#include "flockmtl/core/common.hpp"
 #include "flockmtl/custom_parser/query_statements.hpp"
 #include "flockmtl/custom_parser/tokenizer.hpp"
 

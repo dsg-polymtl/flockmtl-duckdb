@@ -1,8 +1,6 @@
-add_subdirectory(functions)
-add_subdirectory(parser/llm_response)
-add_subdirectory(parser/scalar)
 add_subdirectory(config)
+add_subdirectory(parser/scalar)
 
 set(EXTENSION_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/module.cpp ${EXTENSION_SOURCES}
+    ${EXTENSION_SOURCES}
     PARENT_SCOPE)

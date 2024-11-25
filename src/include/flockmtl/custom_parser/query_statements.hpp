@@ -1,6 +1,6 @@
 #pragma once
 
-#include "flockmtl/common.hpp"
+#include "flockmtl/core/common.hpp"
 
 #include <memory>
 #include <string>

@@ -68,4 +68,10 @@ public:
     static std::string Get(const FunctionType option);
 };
 
+struct PromptDetails {
+    std::string prompt_name;
+    std::string prompt;
+    int version;
+};
+
 } // namespace flockmtl

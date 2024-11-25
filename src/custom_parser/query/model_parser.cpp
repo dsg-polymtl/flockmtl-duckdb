@@ -1,6 +1,6 @@
 #include "flockmtl/custom_parser/query/model_parser.hpp"
 
-#include "flockmtl/common.hpp"
+#include "flockmtl/core/common.hpp"
 
 #include <sstream>
 #include <stdexcept>
@@ -10,7 +10,7 @@ namespace flockmtl {
 void ModelParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
 
     if (token.type == TokenType::KEYWORD) {
         if (value == "CREATE") {
@@ -31,7 +31,7 @@ void ModelParser::Parse(const std::string& query, std::unique_ptr<QueryStatement
 
 void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
         throw std::runtime_error("Expected 'MODEL' after 'CREATE'.");
     }
@@ -95,7 +95,7 @@ void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto create_statement = make_uniq<CreateModelStatement>();
+        auto create_statement = std::make_unique<CreateModelStatement>();
         create_statement->model_name = model_name;
         create_statement->model = model;
         create_statement->provider_name = provider_name;
@@ -108,7 +108,7 @@ void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
 void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -121,7 +121,7 @@ void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto delete_statement = make_uniq<DeleteModelStatement>();
+        auto delete_statement = std::make_unique<DeleteModelStatement>();
         delete_statement->model_name = model_name;
         statement = std::move(delete_statement);
     } else {
@@ -131,7 +131,7 @@ void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
 void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
         throw std::runtime_error("Expected 'MODEL' after 'UPDATE'.");
     }
@@ -195,7 +195,7 @@ void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
-        auto update_statement = make_uniq<UpdateModelStatement>();
+        auto update_statement = std::make_unique<UpdateModelStatement>();
         update_statement->new_model = new_model;
         update_statement->model_name = model_name;
         update_statement->provider_name = provider_name;
@@ -208,14 +208,14 @@ void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 
 void ModelParser::ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
-    std::string value = StringUtil::Upper(token.value);
+    std::string value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "MODEL" && value != "MODELS")) {
         throw std::runtime_error("Expected 'MODEL' after 'GET'.");
     }
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
-        auto get_all_statement = make_uniq<GetAllModelStatement>();
+        auto get_all_statement = std::make_unique<GetAllModelStatement>();
         statement = std::move(get_all_statement);
     } else {
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
@@ -225,7 +225,7 @@ void ModelParser::ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryState
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
-            auto get_statement = make_uniq<GetModelStatement>();
+            auto get_statement = std::make_unique<GetModelStatement>();
             get_statement->model_name = model_name;
             statement = std::move(get_statement);
         } else {
