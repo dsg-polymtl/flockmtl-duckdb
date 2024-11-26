@@ -1,8 +1,9 @@
+add_subdirectory(llm_complete)
+add_subdirectory(llm_complete_json)
+add_subdirectory(llm_filter)
+add_subdirectory(fusion_relative)
+add_subdirectory(llm_embedding)
+
 set(EXTENSION_SOURCES
-    ${EXTENSION_SOURCES}
-    ${CMAKE_CURRENT_SOURCE_DIR}/llm_complete_json.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/llm_complete.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/llm_embedding.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/llm_filter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/fusion_relative.cpp
+    ${EXTENSION_SOURCES} ${CMAKE_CURRENT_SOURCE_DIR}/scalar.cpp
     PARENT_SCOPE)
