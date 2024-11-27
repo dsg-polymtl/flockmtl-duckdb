@@ -21,8 +21,9 @@ public:
 
     static nlohmann::json Complete(const nlohmann::json& tuples, const std::string& user_prompt,
                                    ScalarFunctionType function_type, Model& model);
-    static nlohmann::json BatchAndComplete(std::vector<nlohmann::json>& tuples, std::string user_prompt_name,
-                                           ScalarFunctionType function_type, Model& model);
+    static nlohmann::json BatchAndComplete(const std::vector<nlohmann::json>& tuples,
+                                           const std::string& user_prompt_name, ScalarFunctionType function_type,
+                                           Model& model);
 };
 
 } // namespace flockmtl

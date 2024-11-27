@@ -44,7 +44,7 @@ std::string PromptManager::ConstructMarkdownHeader(const nlohmann::json& tuple) 
         header_markdown += key.key() + " | ";
     }
     header_markdown += "\n";
-    for (const auto& key : tuple.items()) {
+    for (auto i = 0; i < tuple.size(); i++) {
         header_markdown += "|---";
     }
     header_markdown += "|\n";
@@ -69,7 +69,7 @@ std::string PromptManager::ConstructMarkdownArrayTuples(const nlohmann::json& tu
     return tuples_markdown;
 }
 
-PromptDetails PromptManager::CreatePromptDetails(const nlohmann::json prompt_details_json) {
+PromptDetails PromptManager::CreatePromptDetails(const nlohmann::json& prompt_details_json) {
     PromptDetails prompt_details;
 
     if (prompt_details_json.contains("prompt_name")) {

@@ -17,14 +17,14 @@ int LlmReduce::GetAvailableTokens() {
     return available_tokens;
 }
 
-nlohmann::json LlmReduce::ReduceBatch(nlohmann::json& tuples) {
+nlohmann::json LlmReduce::ReduceBatch(const nlohmann::json& tuples) {
     nlohmann::json data;
     auto prompt = PromptManager::Render(user_query, tuples, AggregateFunctionType::REDUCE);
     auto response = model.CallComplete(prompt);
     return response["output"];
 };
 
-nlohmann::json LlmReduce::ReduceLoop(std::vector<nlohmann::json>& tuples) {
+nlohmann::json LlmReduce::ReduceLoop(const std::vector<nlohmann::json>& tuples) {
     auto available_tokens = GetAvailableTokens();
     auto accumulated_tuples_tokens = 0u;
     auto batch_tuples = nlohmann::json::array();
@@ -46,7 +46,7 @@ nlohmann::json LlmReduce::ReduceLoop(std::vector<nlohmann::json>& tuples) {
         auto response = ReduceBatch(batch_tuples);
         batch_tuples.clear();
         batch_tuples.push_back(response);
-        accumulated_tuples_tokens = 0;
+        accumulated_tuples_tokens = 0u;
     } while (start_index < tuples.size());
 
     return batch_tuples[0];

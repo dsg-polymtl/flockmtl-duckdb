@@ -5,19 +5,20 @@ namespace flockmtl {
 nlohmann::json ScalarFunctionBase::Complete(const nlohmann::json& tuples, const std::string& user_prompt,
                                             ScalarFunctionType function_type, Model& model) {
     nlohmann::json data;
-    auto prompt = PromptManager::Render(user_prompt, tuples, function_type);
+    const auto prompt = PromptManager::Render(user_prompt, tuples, function_type);
     auto response = model.CallComplete(prompt);
     return response["tuples"];
 };
 
-nlohmann::json ScalarFunctionBase::BatchAndComplete(std::vector<nlohmann::json>& tuples, std::string user_prompt,
-                                                    ScalarFunctionType function_type, Model& model) {
-    auto llm_template = PromptManager::GetTemplate(function_type);
+nlohmann::json ScalarFunctionBase::BatchAndComplete(const std::vector<nlohmann::json>& tuples,
+                                                    const std::string& user_prompt,
+                                                    const ScalarFunctionType function_type, Model& model) {
+    const auto llm_template = PromptManager::GetTemplate(function_type);
 
-    int num_tokens_meta_and_user_pormpt = 0;
-    num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(user_prompt);
-    num_tokens_meta_and_user_pormpt += Tiktoken::GetNumTokens(llm_template);
-    int available_tokens = model.GetModelDetails().context_window - num_tokens_meta_and_user_pormpt;
+    int num_tokens_meta_and_user_prompt = 0;
+    num_tokens_meta_and_user_prompt += Tiktoken::GetNumTokens(user_prompt);
+    num_tokens_meta_and_user_prompt += Tiktoken::GetNumTokens(llm_template);
+    const int available_tokens = model.GetModelDetails().context_window - num_tokens_meta_and_user_prompt;
 
     auto responses = nlohmann::json::array();
 
@@ -48,11 +49,10 @@ nlohmann::json ScalarFunctionBase::BatchAndComplete(std::vector<nlohmann::json>&
             nlohmann::json response;
             try {
                 response = Complete(batch_tuples, user_prompt, function_type, model);
-            } catch (const ExceededMaxOutputTokensError& e) {
+            } catch (const ExceededMaxOutputTokensError&) {
                 batch_tuples.clear();
-                accumulated_tuples_tokens = 0;
-                auto new_batch_size = int(batch_size * 0.1);
-                batch_size = 1 ? new_batch_size == 0 : new_batch_size;
+                const auto new_batch_size = static_cast<int>(batch_size * 0.1);
+                batch_size = batch_size == 1 ? new_batch_size == 0 : new_batch_size;
                 accumulated_tuples_tokens = 0;
                 start_index = 0;
                 continue;

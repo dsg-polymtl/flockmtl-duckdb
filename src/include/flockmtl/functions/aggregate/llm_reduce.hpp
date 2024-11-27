@@ -9,8 +9,8 @@ public:
     explicit LlmReduce() = default;
 
     int GetAvailableTokens();
-    nlohmann::json ReduceBatch(nlohmann::json& tuples);
-    nlohmann::json ReduceLoop(std::vector<nlohmann::json>& tuples);
+    nlohmann::json ReduceBatch(const nlohmann::json& tuples);
+    nlohmann::json ReduceLoop(const std::vector<nlohmann::json>& tuples);
 
 public:
     static void Initialize(const duckdb::AggregateFunction& function, duckdb::data_ptr_t state_p) {

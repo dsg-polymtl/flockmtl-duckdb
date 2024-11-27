@@ -62,9 +62,9 @@ void LlmFirstOrLast::FinalizeResults(duckdb::Vector& states, duckdb::AggregateIn
         auto state_ptr = states_vector[idx];
         auto state = function_instance->state_map[state_ptr];
         auto tuples_with_ids = nlohmann::json::array();
-        for (auto i = 0; i < state->value.size(); i++) {
-            auto tuple_with_id = state->value[i];
-            tuple_with_id["flockmtl_tuple_id"] = i;
+        for (auto j = 0; j < state->value.size(); j++) {
+            auto tuple_with_id = state->value[j];
+            tuple_with_id["flockmtl_tuple_id"] = j;
             tuples_with_ids.push_back(tuple_with_id);
         }
         auto response = function_instance->Evaluate(tuples_with_ids);

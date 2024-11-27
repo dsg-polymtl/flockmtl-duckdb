@@ -81,8 +81,8 @@ void LlmRerank::Finalize(duckdb::Vector& states, duckdb::AggregateInputData& agg
         auto state = function_instance->state_map[state_ptr];
 
         auto tuples_with_ids = nlohmann::json::array();
-        for (auto i = 0; i < state->value.size(); i++) {
-            tuples_with_ids.push_back(state->value[i]);
+        for (auto j = 0; j < state->value.size(); j++) {
+            tuples_with_ids.push_back(state->value[j]);
         }
         auto reranked_tuples = function_instance->SlidingWindow(tuples_with_ids);
         result.SetValue(idx, reranked_tuples.dump());

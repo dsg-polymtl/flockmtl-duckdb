@@ -39,8 +39,7 @@ ParserExtensionParseResult duck_parse(ParserExtensionInfo*, const std::string& q
 
 ParserExtensionPlanResult duck_plan(ParserExtensionInfo*, ClientContext& context,
                                     unique_ptr<ParserExtensionParseData> parse_data) {
-    auto state = context.registered_state->Get<DuckState>("duck");
-    if (state) {
+    if (auto state = context.registered_state->Get<DuckState>("duck")) {
         context.registered_state->Remove("duck");
     }
     context.registered_state->GetOrCreate<DuckState>("duck", std::move(parse_data));
@@ -52,13 +51,12 @@ BoundStatement duck_bind(ClientContext& context, Binder& binder, OperatorExtensi
     case StatementType::EXTENSION_STATEMENT: {
         auto& extension_statement = dynamic_cast<ExtensionStatement&>(statement);
         if (extension_statement.extension.parse_function == duck_parse) {
-            auto duck_state = context.registered_state->Get<DuckState>("duck");
-            if (duck_state) {
-                auto duck_binder = Binder::CreateBinder(context, &binder);
-                auto duck_parse_data = dynamic_cast<DuckParseData*>(duck_state->parse_data.get());
-                auto statement = duck_binder->Bind(*(duck_parse_data->statement));
+            if (const auto duck_state = context.registered_state->Get<DuckState>("duck")) {
+                const auto duck_binder = Binder::CreateBinder(context, &binder);
+                const auto duck_parse_data = dynamic_cast<DuckParseData*>(duck_state->parse_data.get());
+                auto bound_statement = duck_binder->Bind(*(duck_parse_data->statement));
                 BoundStatement result;
-                return statement;
+                return bound_statement;
             }
             throw BinderException("Registered state not found");
         }

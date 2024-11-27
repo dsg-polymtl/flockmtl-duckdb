@@ -12,7 +12,6 @@ public:
     nlohmann::json SlidingWindow(nlohmann::json& tuples);
     std::vector<int> RerankBatch(const nlohmann::json& tuples);
 
-public:
     static void Initialize(const duckdb::AggregateFunction& function, duckdb::data_ptr_t state_p) {
         AggregateFunctionBase::Initialize<LlmRerank>(function, state_p);
     }

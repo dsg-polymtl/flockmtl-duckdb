@@ -31,7 +31,7 @@ public:
         return prompt_template;
     };
 
-    static PromptDetails CreatePromptDetails(const nlohmann::json prompt_details_json);
+    static PromptDetails CreatePromptDetails(const nlohmann::json& prompt_details_json);
 
     static std::string ConstructMarkdownHeader(const nlohmann::json& tuple);
 
