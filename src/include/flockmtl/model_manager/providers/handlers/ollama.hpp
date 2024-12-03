@@ -13,14 +13,14 @@ namespace flockmtl {
 class OllamaModelManager {
 public:
     OllamaModelManager(bool throw_exception) : _session("Ollama", throw_exception), _throw_exception(throw_exception) {}
-    OllamaModelManager(const OllamaModelManager &) = delete;
-    OllamaModelManager &operator=(const OllamaModelManager &) = delete;
-    OllamaModelManager(OllamaModelManager &&) = delete;
-    OllamaModelManager &operator=(OllamaModelManager &&) = delete;
+    OllamaModelManager(const OllamaModelManager&) = delete;
+    OllamaModelManager& operator=(const OllamaModelManager&) = delete;
+    OllamaModelManager(OllamaModelManager&&) = delete;
+    OllamaModelManager& operator=(OllamaModelManager&&) = delete;
 
     std::string GetChatUrl() {
         static int check_done = -1;
-        static const char *chat_url = nullptr;
+        static const char* chat_url = nullptr;
 
         if (check_done == -1) {
             chat_url = std::getenv("OLLAMA_CHAT_URL");
@@ -28,7 +28,7 @@ public:
         }
 
         if (!chat_url) {
-            throw std::runtime_error("OLLAMA_CHAT_URL environment variable is not set.");
+            chat_url = "127.0.0.1:11434/api/generate";
         }
 
         return chat_url;
@@ -36,7 +36,7 @@ public:
 
     std::string GetEmbedUrl() {
         static int check_done = -1;
-        static const char *embed_url = nullptr;
+        static const char* embed_url = nullptr;
 
         if (check_done == -1) {
             embed_url = std::getenv("OLLAMA_EMBED_URL");
@@ -44,7 +44,7 @@ public:
         }
 
         if (!embed_url) {
-            throw std::runtime_error("OLLAMA_EMBED_URL environment variable is not set.");
+            embed_url = "127.0.0.1:11434/api/embeddings";
         }
 
         return embed_url;
@@ -52,7 +52,7 @@ public:
 
     std::string GetAvailableOllamaModelsUrl() {
         static int check_done = -1;
-        static const char *url = nullptr;
+        static const char* url = nullptr;
 
         if (check_done == -1) {
             url = std::getenv("OLLAMA_AVAILABLE_MODELS_URL");
@@ -66,26 +66,26 @@ public:
         return url;
     }
 
-    nlohmann::json CallComplete(const nlohmann::json &json, const std::string &contentType = "application/json") {
+    nlohmann::json CallComplete(const nlohmann::json& json, const std::string& contentType = "application/json") {
         std::string url = GetChatUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
 
-    nlohmann::json CallEmbedding(const nlohmann::json &json, const std::string &contentType = "application/json") {
+    nlohmann::json CallEmbedding(const nlohmann::json& json, const std::string& contentType = "application/json") {
         std::string url = GetEmbedUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
 
-    bool validModel(const std::string &user_model_name) {
+    bool validModel(const std::string& user_model_name) {
         std::string url = GetAvailableOllamaModelsUrl();
         auto response = _session.validOllamaModelsJson(url);
         auto json = nlohmann::json::parse(response.text);
         bool res = false;
-        for (const auto &model : json["models"]) {
+        for (const auto& model : json["models"]) {
             if (model.contains("name")) {
-                const auto &available_model = model["name"].get<std::string>();
+                const auto& available_model = model["name"].get<std::string>();
                 res |= available_model.find(user_model_name) != std::string::npos;
             }
         }
@@ -96,7 +96,7 @@ private:
     Session _session;
     bool _throw_exception;
 
-    nlohmann::json execute_post(const std::string &data, const std::string &contentType) {
+    nlohmann::json execute_post(const std::string& data, const std::string& contentType) {
         setParameters(data, contentType);
         auto response = _session.postPrepareOllama(contentType);
         if (response.is_error) {
@@ -115,7 +115,7 @@ private:
         return json;
     }
 
-    void trigger_error(const std::string &msg) {
+    void trigger_error(const std::string& msg) {
         if (_throw_exception) {
             throw std::runtime_error(msg);
         } else {
@@ -123,7 +123,7 @@ private:
         }
     }
 
-    void checkResponse(const nlohmann::json &json) {
+    void checkResponse(const nlohmann::json& json) {
         if (json.count("error")) {
             auto reason = json["error"].dump();
             trigger_error(reason);
@@ -131,17 +131,17 @@ private:
         }
     }
 
-    bool isJson(const std::string &data) {
+    bool isJson(const std::string& data) {
         bool rc = true;
         try {
             auto json = nlohmann::json::parse(data); // throws if no json
-        } catch (std::exception &) {
+        } catch (std::exception&) {
             rc = false;
         }
         return (rc);
     }
 
-    void setParameters(const std::string &data, const std::string &contentType = "") {
+    void setParameters(const std::string& data, const std::string& contentType = "") {
         if (contentType != "multipart/form-data") {
             _session.setBody(data);
         }
