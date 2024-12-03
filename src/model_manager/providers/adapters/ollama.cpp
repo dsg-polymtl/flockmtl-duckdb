@@ -7,7 +7,7 @@ nlohmann::json OllamaProvider::CallComplete(const std::string& prompt, const boo
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details_.model},
-                                      {"messages", {{{"role", "user"}, {"content", prompt}}}},
+                                      {"prompt", prompt},
                                       {"stream", false},
                                       {"options",
                                        {
@@ -35,7 +35,7 @@ nlohmann::json OllamaProvider::CallComplete(const std::string& prompt, const boo
         throw std::runtime_error("The request was refused due to some internal error with Ollama API");
     }
 
-    std::string content_str = completion["message"]["content"];
+    std::string content_str = completion["response"];
 
     if (json_response) {
         return nlohmann::json::parse(content_str);
