@@ -3,7 +3,7 @@
 namespace flockmtl {
 
 nlohmann::json OpenAIProvider::CallComplete(const std::string& prompt, bool json_response) {
-    openai::start(model_details_.secrets["OPENAI_API_KEY"]);
+    openai::start(model_details_.secret["api_key"]);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details_.model},
@@ -53,7 +53,7 @@ nlohmann::json OpenAIProvider::CallComplete(const std::string& prompt, bool json
 }
 
 nlohmann::json OpenAIProvider::CallEmbedding(const std::vector<std::string>& inputs) {
-    openai::start(model_details_.secrets["OPENAI_API_KEY"]);
+    openai::start(model_details_.secret["api_key"]);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {

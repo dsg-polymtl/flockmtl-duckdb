@@ -1,4 +1,5 @@
 #include "flockmtl/model_manager/model.hpp"
+#include <flockmtl/secret_manager/secret_manager.hpp>
 
 namespace flockmtl {
 
@@ -20,51 +21,17 @@ void Model::LoadModelDetails(const nlohmann::json& model_json) {
         model_json.contains("model") ? model_json.at("model").get<std::string>() : std::get<0>(query_result);
     model_details_.provider_name =
         model_json.contains("provider") ? model_json.at("provider").get<std::string>() : std::get<1>(query_result);
-    model_details_.secrets = LoadSecret(model_details_.provider_name);
+    auto secret_name = "__default_" + model_details_.provider_name;
+    if (model_json.contains("secret_name")) {
+        secret_name = model_json["secret_name"].get<std::string>();
+    }
+    model_details_.secret = SecretManager::GetSecret(secret_name);
     model_details_.context_window =
         model_json.contains("context_window") ? model_json.at("context_window").get<int>() : std::get<2>(query_result);
     model_details_.max_output_tokens = model_json.contains("max_output_tokens")
                                            ? model_json.at("max_output_tokens").get<int>()
                                            : std::get<3>(query_result);
     model_details_.temperature = model_json.contains("temperature") ? model_json.at("temperature").get<float>() : 0.5;
-}
-
-std::string Model::GetSecret(const std::string& secret_name) {
-    auto secret_query = " SELECT secret "
-                        "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                        "  WHERE secret_name = '{}' ";
-    auto con = Config::GetConnection();
-
-    auto response = con.Query(duckdb_fmt::format(secret_query, secret_name));
-    if (response->RowCount() == 0) {
-        return "";
-    }
-    return response->GetValue(0, 0).ToString();
-}
-
-nlohmann::json Model::LoadSecret(const std::string& provider_name) {
-
-    switch (GetProviderType(provider_name)) {
-    case FLOCKMTL_OPENAI: {
-        auto secrets = nlohmann::json {};
-        secrets["OPENAI_API_KEY"] = GetSecret("OPENAI_API_KEY");
-        return secrets;
-    }
-    case FLOCKMTL_AZURE: {
-        auto secrets = nlohmann::json {};
-        secrets["AZURE_API_KEY"] = GetSecret("AZURE_API_KEY");
-        secrets["AZURE_RESOURCE_NAME"] = GetSecret("AZURE_RESOURCE_NAME");
-        secrets["AZURE_API_VERSION"] = GetSecret("AZURE_API_VERSION");
-        return secrets;
-    }
-    case FLOCKMTL_OLLAMA: {
-        auto secrets = nlohmann::json {};
-        secrets["OLLAMA_API_URL"] = GetSecret("OLLAMA_API_URL");
-        return secrets;
-    }
-    default:
-        return nlohmann::json {};
-    }
 }
 
 std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string& model_name) {

@@ -1,5 +1,4 @@
 set(EXTENSION_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/model_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/prompt_parser.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/secret_parser.cpp ${EXTENSION_SOURCES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/prompt_parser.cpp ${EXTENSION_SOURCES}
     PARENT_SCOPE)

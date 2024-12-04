@@ -3,7 +3,6 @@
 #include "flockmtl/core/common.hpp"
 #include "flockmtl/custom_parser/query/model_parser.hpp"
 #include "flockmtl/custom_parser/query/prompt_parser.hpp"
-#include "flockmtl/custom_parser/query/secret_parser.hpp"
 #include "flockmtl/custom_parser/query_statements.hpp"
 #include "flockmtl/custom_parser/tokenizer.hpp"
 

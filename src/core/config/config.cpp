@@ -1,5 +1,7 @@
 #include "flockmtl/core/config.hpp"
 
+#include "flockmtl/secret_manager/secret_manager.hpp"
+
 namespace flockmtl {
 
 duckdb::DatabaseInstance* Config::db;
@@ -27,6 +29,8 @@ void Config::ConfigSchema(duckdb::Connection& con, std::string& schema_name) {
 }
 
 void Config::Configure(duckdb::DatabaseInstance& db) {
+    SecretManager::Register(db);
+
     auto con = Config::GetConnection(&db);
     Registry::Register(db);
 
