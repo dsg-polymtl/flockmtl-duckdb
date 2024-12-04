@@ -19,29 +19,9 @@ public:
     OllamaModelManager(OllamaModelManager&&) = delete;
     OllamaModelManager& operator=(OllamaModelManager&&) = delete;
 
-    std::string GetChatUrl() {
-        static int check_done = -1;
-        static std::string chat_url = "";
+    std::string GetChatUrl() { return _url + "/api/generate"; }
 
-        if (check_done == -1) {
-            chat_url = (_url + "/api/generate").c_str();
-            check_done = 1;
-        }
-
-        return chat_url;
-    }
-
-    std::string GetEmbedUrl() {
-        static int check_done = -1;
-        static std::string embed_url = "";
-
-        if (check_done == -1) {
-            embed_url = (_url + "/api/embeddings").c_str();
-            check_done = 1;
-        }
-
-        return embed_url;
-    }
+    std::string GetEmbedUrl() { return _url + "/api/embeddings"; }
 
     std::string GetAvailableOllamaModelsUrl() {
         static int check_done = -1;
