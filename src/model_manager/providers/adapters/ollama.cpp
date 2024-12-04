@@ -3,7 +3,8 @@
 namespace flockmtl {
 
 nlohmann::json OllamaProvider::CallComplete(const std::string& prompt, const bool json_response) {
-    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(true);
+    auto ollama_model_manager_uptr =
+        std::make_unique<OllamaModelManager>(model_details_.secrets["OLLAMA_API_URL"], true);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details_.model},
@@ -45,7 +46,8 @@ nlohmann::json OllamaProvider::CallComplete(const std::string& prompt, const boo
 }
 
 nlohmann::json OllamaProvider::CallEmbedding(const std::vector<std::string>& inputs) {
-    auto ollama_model_manager_uptr = std::make_unique<OllamaModelManager>(true);
+    auto ollama_model_manager_uptr =
+        std::make_unique<OllamaModelManager>(model_details_.secrets["OLLAMA_API_URL"], true);
 
     auto embeddings = nlohmann::json::array();
     for (const auto& input : inputs) {

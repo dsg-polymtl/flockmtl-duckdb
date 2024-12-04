@@ -2,6 +2,7 @@
 
 #include <string>
 #include <algorithm>
+#include <nlohmann/json.hpp>
 
 namespace flockmtl {
 
@@ -12,7 +13,7 @@ struct ModelDetails {
     int32_t context_window;
     int32_t max_output_tokens;
     float temperature;
-    std::string secret;
+    nlohmann::json secrets;
 };
 
 const std::string OLLAMA = "ollama";

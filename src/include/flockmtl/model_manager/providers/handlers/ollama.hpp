@@ -12,7 +12,8 @@ namespace flockmtl {
 
 class OllamaModelManager {
 public:
-    OllamaModelManager(bool throw_exception) : _session("Ollama", throw_exception), _throw_exception(throw_exception) {}
+    OllamaModelManager(const std::string& url, bool throw_exception)
+        : _session("Ollama", throw_exception), _url(url), _throw_exception(throw_exception) {}
     OllamaModelManager(const OllamaModelManager&) = delete;
     OllamaModelManager& operator=(const OllamaModelManager&) = delete;
     OllamaModelManager(OllamaModelManager&&) = delete;
@@ -20,15 +21,11 @@ public:
 
     std::string GetChatUrl() {
         static int check_done = -1;
-        static const char* chat_url = nullptr;
+        static std::string chat_url = "";
 
         if (check_done == -1) {
-            chat_url = std::getenv("OLLAMA_CHAT_URL");
+            chat_url = (_url + "/api/generate").c_str();
             check_done = 1;
-        }
-
-        if (!chat_url) {
-            chat_url = "127.0.0.1:11434/api/generate";
         }
 
         return chat_url;
@@ -36,15 +33,11 @@ public:
 
     std::string GetEmbedUrl() {
         static int check_done = -1;
-        static const char* embed_url = nullptr;
+        static std::string embed_url = "";
 
         if (check_done == -1) {
-            embed_url = std::getenv("OLLAMA_EMBED_URL");
+            embed_url = (_url + "/api/embeddings").c_str();
             check_done = 1;
-        }
-
-        if (!embed_url) {
-            embed_url = "127.0.0.1:11434/api/embeddings";
         }
 
         return embed_url;
@@ -95,6 +88,7 @@ public:
 private:
     Session _session;
     bool _throw_exception;
+    std::string _url;
 
     nlohmann::json execute_post(const std::string& data, const std::string& contentType) {
         setParameters(data, contentType);

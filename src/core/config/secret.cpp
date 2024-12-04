@@ -14,7 +14,7 @@ void Config::ConfigSecretTable(duckdb::Connection& con, std::string& schema_name
                                                schema_name, table_name));
     if (result->RowCount() == 0) {
         con.Query(duckdb_fmt::format(" CREATE TABLE {}.{} ( "
-                                     " provider VARCHAR NOT NULL PRIMARY KEY, "
+                                     " secret_name VARCHAR NOT NULL PRIMARY KEY, "
                                      " secret VARCHAR NOT NULL "
                                      " ); ",
                                      schema_name, table_name));

@@ -40,15 +40,17 @@ void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
     // the create secret format is as next CREATE SECRET OPENAI='key';
     token = tokenizer.NextToken();
     value = duckdb::StringUtil::Upper(token.value);
-    if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
-        throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
+    if (token.type != TokenType::KEYWORD ||
+        (value != "OPENAI_API_KEY" && value != "AZURE_API_KEY" && value != "AZURE_RESOURCE_NAME" &&
+         value != "AZURE_API_VERSION" && value != "OLLAMA_API_URL")) {
+        throw std::runtime_error("Unknown SECRET key: " + token.value);
     }
 
-    auto provider = duckdb::StringUtil::Lower(value);
+    auto secret_name = value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
-        throw std::runtime_error("Expected '=' after 'OPENAI'.");
+        throw std::runtime_error("Expected '=' after your SECRET name.");
     }
 
     token = tokenizer.NextToken();
@@ -60,7 +62,7 @@ void SecretParser::ParseCreateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
         auto create_statement = std::make_unique<CreateSecretStatement>();
-        create_statement->provider = provider;
+        create_statement->secret_name = secret_name;
         create_statement->secret = secret;
         statement = std::move(create_statement);
     } else {
@@ -77,16 +79,18 @@ void SecretParser::ParseDeleteSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     value = duckdb::StringUtil::Upper(token.value);
-    if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
-        throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
+    if (token.type != TokenType::KEYWORD ||
+        (value != "OPENAI_API_KEY" && value != "AZURE_API_KEY" && value != "AZURE_RESOURCE_NAME" &&
+         value != "AZURE_API_VERSION" && value != "OLLAMA_API_URL")) {
+        throw std::runtime_error("Unknown SECRET key: " + token.value);
     }
 
-    auto provider = duckdb::StringUtil::Lower(value);
+    auto secret_name = value;
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
         auto delete_statement = std::make_unique<DeleteSecretStatement>();
-        delete_statement->provider = provider;
+        delete_statement->secret_name = secret_name;
         statement = std::move(delete_statement);
     } else {
         throw std::runtime_error("Unexpected characters after the secret. Only a semicolon is allowed.");
@@ -101,15 +105,17 @@ void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
 
     token = tokenizer.NextToken();
     auto value = duckdb::StringUtil::Upper(token.value);
-    if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
-        throw std::runtime_error("Expected 'OPENAI' keyword after 'SECRET'.");
+    if (token.type != TokenType::KEYWORD ||
+        (value != "OPENAI_API_KEY" && value != "AZURE_API_KEY" && value != "AZURE_RESOURCE_NAME" &&
+         value != "AZURE_API_VERSION" && value != "OLLAMA_API_URL")) {
+        throw std::runtime_error("Unknown SECRET key: " + token.value);
     }
 
-    auto provider = duckdb::StringUtil::Lower(value);
+    auto secret_name = value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != "=") {
-        throw std::runtime_error("Expected '=' after 'OPENAI'.");
+        throw std::runtime_error("Expected '=' after SECRET key.");
     }
 
     token = tokenizer.NextToken();
@@ -121,7 +127,7 @@ void SecretParser::ParseUpdateSecret(Tokenizer& tokenizer, std::unique_ptr<Query
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
         auto update_statement = std::make_unique<UpdateSecretStatement>();
-        update_statement->provider = provider;
+        update_statement->secret_name = secret_name;
         update_statement->secret = secret;
         statement = std::move(update_statement);
     } else {
@@ -142,15 +148,17 @@ void SecretParser::ParseGetSecret(Tokenizer& tokenizer, std::unique_ptr<QuerySta
         statement = std::move(get_all_statement);
     } else {
         value = duckdb::StringUtil::Upper(token.value);
-        if (token.type != TokenType::KEYWORD || (value != "OPENAI" && value != "AZURE")) {
-            throw std::runtime_error("Expected 'OPENAI' or 'AZURE' keyword after 'SECRET'.");
+        if (token.type != TokenType::KEYWORD ||
+            (value != "OPENAI_API_KEY" && value != "AZURE_API_KEY" && value != "AZURE_RESOURCE_NAME" &&
+             value != "AZURE_API_VERSION" && value != "OLLAMA_API_URL")) {
+            throw std::runtime_error("Unknown SECRET key: " + token.value);
         }
-        auto provider = duckdb::StringUtil::Lower(value);
+        auto secret_name = value;
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
             auto get_statement = std::make_unique<GetSecretStatement>();
-            get_statement->provider = provider;
+            get_statement->secret_name = secret_name;
             statement = std::move(get_statement);
         } else {
             throw std::runtime_error("Unexpected characters after the secret. Only a semicolon is allowed.");
@@ -167,22 +175,22 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
         auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                                   "  WHERE provider = '{}'; ",
-                                                   create_stmt.provider));
+                                                   "  WHERE secret_name = '{}'; ",
+                                                   create_stmt.secret_name));
         if (result->RowCount() > 0) {
-            throw std::runtime_error(create_stmt.provider + " secret already exists.");
+            throw std::runtime_error(create_stmt.secret_name + " already exists.");
         }
         query = duckdb_fmt::format(" INSERT INTO flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                   " (provider, secret) "
+                                   " (secret_name, secret) "
                                    " VALUES ('{}', '{}'); ",
-                                   create_stmt.provider, create_stmt.secret);
+                                   create_stmt.secret_name, create_stmt.secret);
         break;
     }
     case StatementType::DELETE_SECRET: {
         const auto& delete_stmt = static_cast<const DeleteSecretStatement&>(statement);
         query = duckdb_fmt::format(" DELETE FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                   "  WHERE provider = '{}'; ",
-                                   delete_stmt.provider);
+                                   "  WHERE secret_name = '{}'; ",
+                                   delete_stmt.secret_name);
         break;
     }
     case StatementType::UPDATE_SECRET: {
@@ -190,23 +198,23 @@ std::string SecretParser::ToSQL(const QueryStatement& statement) const {
         auto con = Config::GetConnection();
         auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                                   "  WHERE provider = '{}'; ",
-                                                   update_stmt.provider));
+                                                   "  WHERE secret_name = '{}'; ",
+                                                   update_stmt.secret_name));
         if (result->RowCount() == 0) {
-            throw std::runtime_error(duckdb_fmt::format("Provider '{}' secret does not exist.", update_stmt.provider));
+            throw std::runtime_error(duckdb_fmt::format("Secret key '{}' does not exist.", update_stmt.secret_name));
         }
         query = duckdb_fmt::format(" UPDATE flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
                                    "    SET secret = '{}' "
-                                   " WHERE provider = '{}'; ",
-                                   update_stmt.secret, update_stmt.provider);
+                                   " WHERE secret_name = '{}'; ",
+                                   update_stmt.secret, update_stmt.secret_name);
         break;
     }
     case StatementType::GET_SECRET: {
         const auto& get_stmt = static_cast<const GetSecretStatement&>(statement);
         query = duckdb_fmt::format(" SELECT * "
                                    "   FROM flockmtl_config.FLOCKMTL_SECRET_INTERNAL_TABLE "
-                                   "  WHERE provider = '{}'; ",
-                                   get_stmt.provider);
+                                   "  WHERE secret_name = '{}'; ",
+                                   get_stmt.secret_name);
         break;
     }
     case StatementType::GET_ALL_SECRET: {

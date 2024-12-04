@@ -7,7 +7,7 @@
 namespace flockmtl {
 
 // Constructor
-Tokenizer::Tokenizer(const std::string &query) : query_(query), position_(0) {}
+Tokenizer::Tokenizer(const std::string& query) : query_(query), position_(0) {}
 
 // Skip whitespace
 void Tokenizer::SkipWhitespace() {
@@ -60,7 +60,7 @@ Token Tokenizer::ParseJson() {
 // Parse a keyword (word made of letters)
 Token Tokenizer::ParseKeyword() {
     int start = position_;
-    while (position_ < query_.size() && std::isalpha(query_[position_])) {
+    while (position_ < query_.size() && (std::isalpha(query_[position_]) || query_[position_] == '_')) {
         ++position_;
     }
     std::string value = query_.substr(start, position_ - start);

@@ -30,8 +30,9 @@ private:
     ModelDetails model_details_;
     void ConstructProvider();
     void LoadModelDetails(const nlohmann::json& model_json);
-    std::string LoadSecret(const std::string& provider);
+    nlohmann::json LoadSecret(const std::string& provider);
     std::tuple<std::string, std::string, int32_t, int32_t> GetQueriedModel(const std::string& model_name);
+    std::string GetSecret(const std::string& secret_name);
 };
 
 } // namespace flockmtl

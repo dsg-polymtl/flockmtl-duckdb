@@ -18,19 +18,19 @@ public:
         _session.setToken(token, "");
     }
 
-    AzureModelManager(const AzureModelManager &) = delete;
-    AzureModelManager &operator=(const AzureModelManager &) = delete;
-    AzureModelManager(AzureModelManager &&) = delete;
-    AzureModelManager &operator=(AzureModelManager &&) = delete;
+    AzureModelManager(const AzureModelManager&) = delete;
+    AzureModelManager& operator=(const AzureModelManager&) = delete;
+    AzureModelManager(AzureModelManager&&) = delete;
+    AzureModelManager& operator=(AzureModelManager&&) = delete;
 
-    nlohmann::json CallComplete(const nlohmann::json &json, const std::string &contentType = "application/json") {
+    nlohmann::json CallComplete(const nlohmann::json& json, const std::string& contentType = "application/json") {
         std::string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" +
                           _deployment_model_name + "/chat/completions?api-version=" + _api_version;
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
 
-    nlohmann::json CallEmbedding(const nlohmann::json &json, const std::string &contentType = "application/json") {
+    nlohmann::json CallEmbedding(const nlohmann::json& json, const std::string& contentType = "application/json") {
         std::string url = "https://" + _resource_name + ".openai.azure.com/openai/deployments/" +
                           _deployment_model_name + "/embeddings?api-version=" + _api_version;
         _session.setUrl(url);
@@ -39,9 +39,9 @@ public:
 
     // I am adding it here since I want to keep provider specific calls
     // inside same file
-    static const char *get_azure_api_key() {
+    static const char* get_azure_api_key() {
         static int check_done = -1;
-        static const char *api_key = nullptr;
+        static const char* api_key = nullptr;
 
         if (check_done == -1) {
             api_key = std::getenv("AZURE_API_KEY");
@@ -55,9 +55,9 @@ public:
         return api_key;
     }
 
-    static const char *get_azure_resource_name() {
+    static const char* get_azure_resource_name() {
         static int check_done = -1;
-        static const char *rname = nullptr;
+        static const char* rname = nullptr;
 
         if (check_done == -1) {
             rname = std::getenv("AZURE_RESOURCE_NAME");
@@ -71,9 +71,9 @@ public:
         return rname;
     }
 
-    static const char *get_azure_api_version() {
+    static const char* get_azure_api_version() {
         static int check_done = -1;
-        static const char *api_version = nullptr;
+        static const char* api_version = nullptr;
 
         if (check_done == -1) {
             api_version = std::getenv("AZURE_API_VERSION");
@@ -95,16 +95,16 @@ private:
     Session _session;
     bool _throw_exception;
 
-    nlohmann::json execute_post(const std::string &data, const std::string &contentType) {
+    nlohmann::json execute_post(const std::string& data, const std::string& contentType) {
         setParameters(data, contentType);
         auto response = _session.postPrepare(contentType);
         if (response.is_error) {
+            std::cout << ">> response error :\n" << response.text << "\n";
             trigger_error(response.error_message);
         }
 
         nlohmann::json json {};
         if (isJson(response.text)) {
-
             json = nlohmann::json::parse(response.text);
             checkResponse(json);
         } else {
@@ -114,33 +114,33 @@ private:
         return json;
     }
 
-    void trigger_error(const std::string &msg) {
+    void trigger_error(const std::string& msg) {
         if (_throw_exception) {
-            throw std::runtime_error(msg);
+            throw std::runtime_error("[Azure] error. Reason: " + msg);
         } else {
             std::cerr << "[Azure] error. Reason: " << msg << '\n';
         }
     }
 
-    void checkResponse(const nlohmann::json &json) {
-        if (json.count("error")) {
+    void checkResponse(const nlohmann::json& json) {
+        if (json.contains("error")) {
             auto reason = json["error"].dump();
             trigger_error(reason);
             std::cerr << ">> response error :\n" << json.dump(2) << "\n";
         }
     }
 
-    bool isJson(const std::string &data) {
+    bool isJson(const std::string& data) {
         bool rc = true;
         try {
             auto json = nlohmann::json::parse(data); // throws if no json
-        } catch (std::exception &) {
+        } catch (std::exception&) {
             rc = false;
         }
         return (rc);
     }
 
-    void setParameters(const std::string &data, const std::string &contentType = "") {
+    void setParameters(const std::string& data, const std::string& contentType = "") {
         if (contentType != "multipart/form-data") {
             _session.setBody(data);
         }

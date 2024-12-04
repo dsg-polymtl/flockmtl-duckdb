@@ -3,12 +3,9 @@
 namespace flockmtl {
 
 nlohmann::json AzureProvider::CallComplete(const std::string& prompt, const bool json_response) {
-
-    auto resource_name = AzureModelManager::get_azure_resource_name();
-    auto api_version = AzureModelManager::get_azure_api_version();
-
-    auto azure_model_manager_uptr = std::make_unique<AzureModelManager>(model_details_.secret, resource_name,
-                                                                        model_details_.model, api_version, false);
+    auto azure_model_manager_uptr = std::make_unique<AzureModelManager>(
+        model_details_.secrets["AZURE_API_KEY"], model_details_.secrets["AZURE_RESOURCE_NAME"], model_details_.model,
+        model_details_.secrets["AZURE_API_VERSION"], true);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {{"model", model_details_.model},
@@ -54,15 +51,9 @@ nlohmann::json AzureProvider::CallComplete(const std::string& prompt, const bool
 }
 
 nlohmann::json AzureProvider::CallEmbedding(const std::vector<std::string>& inputs) {
-    auto api_key = model_details_.secret;
-    if (api_key.empty()) {
-        api_key = AzureModelManager::get_azure_api_key();
-    }
-    auto resource_name = AzureModelManager::get_azure_resource_name();
-    auto api_version = AzureModelManager::get_azure_api_version();
-
-    auto azure_model_manager_uptr =
-        std::make_unique<AzureModelManager>(api_key, resource_name, model_details_.model, api_version, false);
+    auto azure_model_manager_uptr = std::make_unique<AzureModelManager>(
+        model_details_.secrets["AZURE_API_KEY"], model_details_.secrets["AZURE_RESOURCE_NAME"], model_details_.model,
+        model_details_.secrets["AZURE_API_VERSION"], true);
 
     // Create a JSON request payload with the provided parameters
     nlohmann::json request_payload = {

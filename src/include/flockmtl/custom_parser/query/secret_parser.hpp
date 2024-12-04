@@ -15,33 +15,33 @@ namespace flockmtl {
 class CreateSecretStatement : public QueryStatement {
 public:
     CreateSecretStatement() { type = StatementType::CREATE_SECRET; }
-    std::string provider;
+    std::string secret_name;
     std::string secret;
 };
 
 class DeleteSecretStatement : public QueryStatement {
 public:
     DeleteSecretStatement() { type = StatementType::DELETE_SECRET; }
-    std::string provider;
+    std::string secret_name;
 };
 
 class UpdateSecretStatement : public QueryStatement {
 public:
     UpdateSecretStatement() { type = StatementType::UPDATE_SECRET; }
-    std::string provider;
+    std::string secret_name;
     std::string secret;
 };
 
 class GetSecretStatement : public QueryStatement {
 public:
     GetSecretStatement() { type = StatementType::GET_SECRET; }
-    std::string provider;
+    std::string secret_name;
 };
 
 class GetAllSecretStatement : public QueryStatement {
 public:
     GetAllSecretStatement() { type = StatementType::GET_ALL_SECRET; }
-    std::string provider;
+    std::string secret_name;
 };
 
 class SecretParser {
