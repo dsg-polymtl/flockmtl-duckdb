@@ -1,5 +1,5 @@
 #include "flockmtl/model_manager/model.hpp"
-#include <flockmtl/secret_manager/secret_manager.hpp>
+#include "flockmtl/secret_manager/secret_manager.hpp"
 
 namespace flockmtl {
 
