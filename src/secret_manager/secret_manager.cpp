@@ -17,9 +17,7 @@ const SecretDetails ollama_secret_details = {"ollama", "flockmtl", "ollama://", 
 const std::vector<const SecretDetails*> secret_details_list = {&openai_secret_details, &azure_secret_details,
                                                                &ollama_secret_details};
 
-enum SupportedProviders { OPENAI, AZURE, OLLAMA };
-
-SupportedProviders GetProviderType(std::string provider) {
+SecretManager::SupportedProviders SecretManager::GetProviderType(std::string provider) {
     if (provider == "openai") {
         return OPENAI;
     } else if (provider == "azure") {
@@ -113,7 +111,7 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(std::strin
     const auto kv_secret = dynamic_cast<const duckdb::KeyValueSecret&>(*secret->secret);
 
     auto provider = secret->secret->GetType();
-    auto providerType = GetProviderType(provider);
+    auto providerType = SecretManager::GetProviderType(provider);
     SecretDetails secret_details;
     switch (providerType) {
     case SupportedProviders::OPENAI:
