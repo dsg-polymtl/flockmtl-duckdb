@@ -17,7 +17,7 @@ const Hero: React.FC = () => {
             <span className="md:text-8xl text-6xl">FlockMTL</span> <span className="text-black dark:text-white">
               <Typewriter
                 options={{
-                  strings: ["INTELLIGENT REPORTING", "TABULAR UNDERSTANDING", "LLMs & RAG WHITIN SQL"],
+                  strings: ["INTELLIGENT REPORTING", "TABULAR UNDERSTANDING", "LLMs & RAG WITHIN SQL"],
                   deleteSpeed: .2,
                   autoStart: true,
                   loop: true,
