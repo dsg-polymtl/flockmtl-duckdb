@@ -1,0 +1,62 @@
+# **FlockMTL** a DBMS extension that deeply integrates LLM and RAG capabilities directly into OLAP systems
+
+> **FlockMTL** is a DBMS extension developed within the Data Systems Group (DSG) at Polytechnique Montreal. It is designed to bring analytics & semantic analysis capabilities directly into your SQL queries, deeply integrating the capabilities of language models and retrieval-augmented generation through a set of map and reduce functions.
+
+**FlockMTL** allows users to perform tasks such as text generation, summarization, classification, filtering, fusion, and embedding generation and even end-to-end RAG pipelines within DuckDB.
+
+We believe that relational DBMSs and LLMs are a match made in heaven. We are leaning on the tradition of declarative interfaces to unburden users from lower-level implementation details. Users can query both structured and unstructred datasets while combining analytics and semantic analysis directly within SQL.
+
+## Home
+
+- [FlockMTL Homepage](https://dorbanianas.github.io/flockmtl-website/): Visit the homepage for an overview and additional resources.
+
+## Getting Started
+
+The Getting Started section provides a foundation for understanding and setting up FlockMTL.
+
+- [Installation Guide](https://dorbanianas.github.io/flockmtl-website/docs/installation-guide): Step-by-step instructions to set up FlockMTL, from downloading to configuration.
+- [System Requirements](https://dorbanianas.github.io/flockmtl-website/docs/system-requirements): Check the hardware and software prerequisites to ensure smooth operation of FlockMTL.
+- [What is FlockMTL?](https://dorbanianas.github.io/flockmtl-website/docs/what-is-flockmtl): Learn more about the purpose, features, and capabilities of FlockMTL, and how it can benefit your workflows.
+
+## Resource Management
+
+Efficiently manage resources, models, prompts, and secrets to optimize the performance and security of your FlockMTL setup.
+
+- [Resource Management](https://dorbanianas.github.io/flockmtl-website/docs/resource-management/resource-management): Learn about tools and techniques for managing resources within FlockMTL.
+- [Model Management](https://dorbanianas.github.io/flockmtl-website/docs/resource-management/model-management): Handle and configure models to suit your project needs.
+- [Prompt Management](https://dorbanianas.github.io/flockmtl-website/docs/resource-management/prompt-management): Create, edit, and optimize prompts for various tasks.
+- [Secret Management](https://dorbanianas.github.io/flockmtl-website/docs/resource-management/secret-management): Safeguard sensitive data like API keys and credentials with FlockMTL's secure secret management.
+
+## Supported Providers
+
+Integrate with supported providers to unlock the full potential of FlockMTL. Learn about available services and how to configure them.
+
+- [Supported Providers](https://dorbanianas.github.io/flockmtl-website/docs/supported-providers/supported-providers): Overview of providers supported by FlockMTL.
+- [Azure](https://dorbanianas.github.io/flockmtl-website/docs/supported-providers/azure): Set up and use FlockMTL with Microsoft Azure services.
+- [OpenAI](https://dorbanianas.github.io/flockmtl-website/docs/supported-providers/openai): Connect FlockMTL to OpenAI for advanced AI capabilities.
+- [Ollama](https://dorbanianas.github.io/flockmtl-website/docs/supported-providers/ollama): Configure and utilize Ollama as a provider within FlockMTL.
+
+## Scalar Map Functions
+
+Scalar map functions transform individual rows of data with advanced AI operations. These functions are essential for processing text, generating embeddings, and applying filters.
+
+- [Scalar Map Functions](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/scalar-map-functions): Overview of scalar map functions and their use cases.
+- [LLM Complete](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/llm-complete): Generate text completions for prompts.
+- [LLM Complete JSON](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/llm-complete-json): Output text completions in JSON format for structured applications.
+- [LLM Embedding](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/llm-embedding): Generate vector embeddings for semantic search and similarity.
+- [LLM Filter](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/llm-filter): Filter data based on relevance to queries.
+- [Fusion Relative](https://dorbanianas.github.io/flockmtl-website/docs/scalar-map-functions/fusion-relative): Apply relative transformations using fusion models.
+
+## Aggregate Reduce Functions
+
+Aggregate reduce functions summarize or rearrange data based on AI-powered insights, enabling you to derive key insights efficiently.
+
+- [Aggregate Reduce Functions](https://dorbanianas.github.io/flockmtl-website/docs/aggregate-reduce-functions/aggregate-reduce-functions): Introduction to aggregate reduce functions.
+- [LLM First](https://dorbanianas.github.io/flockmtl-website/docs/aggregate-reduce-functions/llm-first): Retrieve the most relevant value based on a user query.
+- [LLM Last](https://dorbanianas.github.io/flockmtl-website/docs/aggregate-reduce-functions/llm-last): Extract the least relevant value in a dataset based on a user query.
+- [LLM Reduce](https://dorbanianas.github.io/flockmtl-website/docs/aggregate-reduce-functions/llm-reduce): Condense datasets using AI-powered reduction.
+- [LLM Rerank](https://dorbanianas.github.io/flockmtl-website/docs/aggregate-reduce-functions/llm-rerank): Rank elements based on their relevance to a search query.
+
+## FAQ
+
+- [FAQ](https://dorbanianas.github.io/flockmtl-website/docs/faq): Browse frequently asked questions and find solutions to common issues.

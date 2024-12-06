@@ -13,3 +13,4 @@ vcpkg_installed/
 *.csv/
 tags/
 *.swp/
+!./docs/.gitignore
