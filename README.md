@@ -37,7 +37,7 @@
     </li>
     <li><a href="#-usage">Usage</a></li>
     <li><a href="#-roadmap">Roadmap</a></li>
-    <li><a href="#-contributing">Contributing</a></li>
+    <li><a href="#-feedback-and-issues">Feedback and Issues</a></li>
     <li><a href="#-license">License</a></li>
     <li><a href="#-acknowledgments">Acknowledgments</a></li>
   </ol>
@@ -110,21 +110,18 @@ Explore more usage examples in the [documentation](https://dsg-polymtl.github.io
 
 ## 🛣️ Roadmap
 
-- [ ] Support for additional providers.  
-- [ ] Enhanced RAG workflows.  
-- [ ] New aggregation and fusion functions.  
+Our roadmap outlines upcoming features and improvements. Stay updated by checking out our [detailed plan](https://github.com/dsg-polymtl/flockmtl/issues/39).
 
 <p align="right"><a href="#readme-top">🔝 back to top</a></p>
 
-## 🤝 Contributing
+## 🛠️  Feedback and Issues
 
-Contributions are welcome! To contribute:  
+We value your feedback! If you’d like to report an issue or suggest a new feature, please use the links below:  
 
-1. Fork the repository.  
-2. Create a new branch for your feature (`git checkout -b feature/AmazingFeature`).  
-3. Commit your changes (`git commit -m 'Add AmazingFeature'`).  
-4. Push to the branch (`git push origin feature/AmazingFeature`).  
-5. Open a Pull Request.  
+- <a href="https://github.com/dsg-polymtl/flockmtl/issues/new?labels=bug&template=bug-report.md">Report a Bug</a>  
+- <a href="https://github.com/dsg-polymtl/flockmtl/issues/new?labels=enhancement&template=feature-request.md">Request a Feature</a>  
+
+For contributing code or other contributions, please refer to our dedicated [Contribution Guidelines](#).
 
 <p align="right"><a href="#readme-top">🔝 back to top</a></p>
 
