@@ -21,10 +21,10 @@
   </p>
 </div>
 
-## 📑 Table of Contents
-
 <details>
-  <summary>Expand</summary>
+  <summary>
+    <h2>📑 Table of Contents</h2>
+  </summary>
   <ol>
     <li><a href="#📜-about-the-project">About The Project</a></li>
     <li><a href="#🔥-features">Features</a></li>
