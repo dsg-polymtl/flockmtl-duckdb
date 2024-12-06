@@ -2,12 +2,10 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    # branches:
+    #   - main
     paths:
-      - docs/**
-    # Review gh actions docs if you want to further define triggers, paths, etc
-    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#on
+      - docs/**  # Trigger action on changes inside docs/
 
 jobs:
   build:
@@ -16,35 +14,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Ensure full history for GitHub Pages
+
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
+          cache: npm  # Enable npm caching
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          cd docs  # Navigate to docs folder
+          npm ci   # Clean install dependencies
+
       - name: Build website
-        run: npm run build
+        run: |
+          cd docs  # Navigate to docs folder
+          npm run build  # Build the Docusaurus website
 
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: build
+          path: docs/build  # Specify the build folder inside docs
 
   deploy:
     name: Deploy to GitHub Pages
-    needs: build
+    needs: build  # Ensure deployment happens after build
 
-    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
-      pages: write # to deploy to Pages
-      id-token: write # to verify the deployment originates from an appropriate source
+      pages: write      # Required permissions to deploy
+      id-token: write   # Verify the deployment source
 
-    # Deploy to the github-pages environment
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}  # URL of the deployed site
 
     runs-on: ubuntu-latest
     steps:
