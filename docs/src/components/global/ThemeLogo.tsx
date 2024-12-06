@@ -3,7 +3,7 @@ import { FlockMTLHorizontal, FlockMTLHorizontalDark } from '@site/static';
 
 const ThemeLogo = () => {
     return (
-        <a href='/flockmtl-website/' className={styles.animate}>
+        <a href='/flockmtl/' className={styles.animate}>
             <FlockMTLHorizontalDark
                 width={150}
                 height={50}
