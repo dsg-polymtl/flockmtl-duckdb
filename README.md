@@ -43,8 +43,6 @@
   </ol>
 </details>
 
-<p align="right"><a href="#readme-top">🔝 back to top</a></p>
-
 ## 📜 About The Project
 
 FlockMTL is an advanced **DuckDB** extension that seamlessly integrates analytics with semantic analysis through declarative SQL queries. Designed for modern data analysis needs, FlockMTL empowers users to work with structured and unstructured data, combining OLAP workflows with the capabilities of **LLMs** (Large Language Models) and **RAG** (Retrieval-Augmented Generation) pipelines.
