@@ -18,7 +18,7 @@ Specify the Ollama URL using the DuckDB secret manager. Use the following query:
 
 ```sql
 CREATE SECRET (
-    TYPE OLLAMA
+    TYPE OLLAMA,
     API_URL '127.0.0.1:11434'
 );
 ```

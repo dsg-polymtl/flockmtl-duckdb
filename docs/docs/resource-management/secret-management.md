@@ -23,7 +23,7 @@ Secrets can be created with the `CREATE SECRET` SQL command. Temporary secrets a
 
 ```sql
 CREATE SECRET (
-    TYPE OPENAI
+    TYPE OPENAI,
     API_KEY 'your-api-key'
 );
 ```
@@ -34,7 +34,7 @@ This creates a secret named `__default_openai`.
 
 ```sql
 CREATE SECRET (
-    TYPE OLLAMA
+    TYPE OLLAMA,
     API_URL '127.0.0.1:11434'
 );
 ```
@@ -45,9 +45,9 @@ This creates a secret named `__default_ollama`.
 
 ```sql
 CREATE SECRET (
-    TYPE AZURE
-    API_KEY 'your-key-here'
-    RESOURCE_NAME 'resource-name'
+    TYPE AZURE,
+    API_KEY 'your-key-here',
+    RESOURCE_NAME 'resource-name',
     API_VERSION 'api-version'
 );
 ```
@@ -62,7 +62,7 @@ To persist secrets across DuckDB sessions, use `CREATE PERSISTENT SECRET`:
 
 ```sql
 CREATE PERSISTENT SECRET (
-    TYPE OPENAI
+    TYPE OPENAI,
     API_KEY 'your-api-key'
 );
 ```
@@ -71,7 +71,7 @@ CREATE PERSISTENT SECRET (
 
 ```sql
 CREATE PERSISTENT SECRET (
-    TYPE OLLAMA
+    TYPE OLLAMA,
     API_URL '127.0.0.1:11434'
 );
 ```
@@ -80,9 +80,9 @@ CREATE PERSISTENT SECRET (
 
 ```sql
 CREATE PERSISTENT SECRET (
-    TYPE AZURE
-    API_KEY 'your-key-here'
-    RESOURCE_NAME 'resource-name'
+    TYPE AZURE,
+    API_KEY 'your-key-here',
+    RESOURCE_NAME 'resource-name',
     API_VERSION 'api-version'
 );
 ```

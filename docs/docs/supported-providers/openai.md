@@ -11,7 +11,7 @@ Configure your OpenAI API key securely using the DuckDB secret manager with this
 
 ```sql
 CREATE SECRET (
-    TYPE OPENAI
+    TYPE OPENAI,
     API_KEY 'your-api-key'
 );
 ```
