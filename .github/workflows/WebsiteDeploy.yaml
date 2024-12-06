@@ -4,8 +4,8 @@ on:
   push:
     # branches:
     #   - main
-    paths:
-      - docs/**  # Trigger action on changes inside docs/
+    # paths:
+    #   - docs/**  # Trigger action on changes inside docs/
 
 jobs:
   build:
