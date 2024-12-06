@@ -5,7 +5,7 @@ on:
     # branches:
     #   - main
     # paths:
-    #   - docs/**  # Trigger action on changes inside docs/
+    #   - docs/**
 
 jobs:
   build:
@@ -14,39 +14,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Ensure full history for GitHub Pages
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm  # Enable npm caching
+          cache: npm
 
       - name: Install dependencies
-        run: |
-          cd docs  # Navigate to docs folder
-          npm ci   # Clean install dependencies
+        run: npm ci  # Install dependencies in the docs directory
+        working-directory: docs  # Set working directory to docs
 
       - name: Build website
-        run: |
-          cd docs  # Navigate to docs folder
-          npm run build  # Build the Docusaurus website
+        run: npm run build  # Build the Docusaurus site
+        working-directory: docs  # Set working directory to docs
 
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/build  # Specify the build folder inside docs
+          path: docs/build  # Specify the build folder in docs
 
   deploy:
     name: Deploy to GitHub Pages
-    needs: build  # Ensure deployment happens after build
+    needs: build
 
     permissions:
-      pages: write      # Required permissions to deploy
-      id-token: write   # Verify the deployment source
+      pages: write
+      id-token: write
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}  # URL of the deployed site
+      url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ubuntu-latest
     steps:
