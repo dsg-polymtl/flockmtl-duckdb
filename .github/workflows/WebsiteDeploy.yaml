@@ -23,17 +23,17 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        run: npm ci  # Install dependencies in the docs directory
-        working-directory: docs  # Set working directory to docs
+        run: npm ci
+        working-directory: docs
 
       - name: Build website
-        run: npm run build  # Build the Docusaurus site
-        working-directory: docs  # Set working directory to docs
+        run: npm run build
+        working-directory: docs
 
       - name: Upload Build Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/build  # Specify the build folder in docs
+          path: docs/build
 
   deploy:
     name: Deploy to GitHub Pages
