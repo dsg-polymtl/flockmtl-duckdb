@@ -8,9 +8,9 @@ namespace flockmtl {
 
 const SecretDetails openai_secret_details = {"openai", "flockmtl", "openai://", {"api_key"}, {"api_key"}, {"api_key"}};
 
-const SecretDetails azure_secret_details = {"azure",     "flockmtl",
-                                            "azure://",  {"api_key", "resource_name", "api_version"},
-                                            {"api_key"}, {"api_key", "resource_name", "api_version"}};
+const SecretDetails azure_secret_details = {"azure_llm",    "flockmtl",
+                                            "azure_llm://", {"api_key", "resource_name", "api_version"},
+                                            {"api_key"},    {"api_key", "resource_name", "api_version"}};
 
 const SecretDetails ollama_secret_details = {"ollama", "flockmtl", "ollama://", {"api_url"}, {"api_url"}, {"api_url"}};
 
@@ -20,7 +20,7 @@ const std::vector<const SecretDetails*> secret_details_list = {&openai_secret_de
 SecretManager::SupportedProviders SecretManager::GetProviderType(std::string provider) {
     if (provider == "openai") {
         return OPENAI;
-    } else if (provider == "azure") {
+    } else if (provider == "azure_llm") {
         return AZURE;
     } else if (provider == "ollama") {
         return OLLAMA;
