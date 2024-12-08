@@ -17,16 +17,11 @@ const SecretDetails ollama_secret_details = {"ollama", "flockmtl", "ollama://", 
 const std::vector<const SecretDetails*> secret_details_list = {&openai_secret_details, &azure_secret_details,
                                                                &ollama_secret_details};
 
+std::unordered_map<std::string, SecretManager::SupportedProviders> SecretManager::providerNames = {
+    {"openai", OPENAI}, {"azure", AZURE}, {"ollama", OLLAMA}};
+
 SecretManager::SupportedProviders SecretManager::GetProviderType(std::string provider) {
-    if (provider == "openai") {
-        return OPENAI;
-    } else if (provider == "azure_llm") {
-        return AZURE;
-    } else if (provider == "ollama") {
-        return OLLAMA;
-    } else {
-        throw duckdb::InvalidInputException("Unsupported secret type: %s", provider.c_str());
-    }
+    return providerNames[provider];
 }
 
 void SecretManager::Register(duckdb::DatabaseInstance& instance) {

@@ -22,7 +22,7 @@ void Model::LoadModelDetails(const nlohmann::json& model_json) {
     model_details_.provider_name =
         model_json.contains("provider") ? model_json.at("provider").get<std::string>() : std::get<1>(query_result);
     auto secret_name = "__default_" + model_details_.provider_name;
-    if (model_details_.provider_name == "azure")
+    if (model_details_.provider_name == AZURE)
         secret_name += "_llm";
     if (model_json.contains("secret_name")) {
         secret_name = model_json["secret_name"].get<std::string>();

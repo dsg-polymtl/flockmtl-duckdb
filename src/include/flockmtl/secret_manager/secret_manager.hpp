@@ -22,6 +22,7 @@ extern const SecretDetails ollama_secret_details;
 class SecretManager {
 public:
     enum SupportedProviders { OPENAI, AZURE, OLLAMA };
+    static std::unordered_map<std::string, SupportedProviders> providerNames;
 
     static void Register(duckdb::DatabaseInstance& instance);
     static std::unordered_map<std::string, std::string> GetSecret(std::string provider);
