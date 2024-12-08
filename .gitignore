@@ -14,3 +14,5 @@ vcpkg_installed/
 tags/
 *.swp/
 !./docs/.gitignore
+notebooks/data
+notebooks/*.ipynb
