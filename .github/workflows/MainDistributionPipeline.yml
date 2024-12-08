@@ -2,14 +2,18 @@
 # This workflow calls the main distribution pipeline from DuckDB to build, test and (optionally) release the extension
 #
 name: Main Extension Distribution Pipeline
-on:
-  push:
+push:
     branches:
       - main
     paths-ignore:
-      - .github/**
-      - docs/**
-      - scripts/**
+      - '**/*'
+    paths:
+      - 'duckdb/**'
+      - 'extension-ci-tools/**'
+      - 'src/**'
+      - 'CMakelists.txt'
+      - 'extension_config.cmake'
+
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-${{ github.head_ref || '' }}-${{ github.base_ref || '' }}-${{ github.ref != 'refs/heads/main' || github.sha }}
