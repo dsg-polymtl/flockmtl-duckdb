@@ -133,6 +133,6 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## ✨ Team
 
-This project was developed by the [**Data Systems Group (DSG)**](https://github.com/dsg-polymtl) at [**Polytechnique Montréal**](https://www.polymtl.ca/).
+This project is under active development by the [**Data Systems Group (DSG)**](https://github.com/dsg-polymtl) at [**Polytechnique Montréal**](https://www.polymtl.ca/).
 
 <p align="right"><a href="#readme-top">🔝 back to top</a></p>
