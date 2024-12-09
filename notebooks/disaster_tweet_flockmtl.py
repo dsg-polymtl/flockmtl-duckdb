@@ -3,8 +3,6 @@
 # 
 # This notebook demonstrates advanced text processing of disaster-related tweets using the **FlockMTL** extension for DuckDB. The pipeline includes cleaning, feature extraction, and data visualization.
 
----
-
 # %% [markdown]
 # ## Step 1: Install and Import Libraries
 # 

@@ -59,8 +59,8 @@ con = duckdb.connect(':memory:', config={'allow_unsigned_extensions': 'true'})
 # The FlockMTL extension enables advanced natural language processing with LLMs.
 
 # %%
-con.sql("LOAD '/path/to/flockmtl.duckdb_extension';")
-print("FlockMTL extension loaded successfully.")
+con.sql("LOAD flockmtl FROM community")
+con.sql("INSTALL flockmtl")
 
 # %% [markdown]
 # ## Step 5: Configure OpenAI Secret
