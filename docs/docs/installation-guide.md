@@ -33,7 +33,7 @@ Additionally, make sure that you have access to an OpenAI API key to use text ge
 
    ```sql
    CREATE SECRET (
-       TYPE OPENAI
+       TYPE OPENAI,
        API_KEY 'your-api-key'
    );
    ```
@@ -44,7 +44,7 @@ Additionally, make sure that you have access to an OpenAI API key to use text ge
 
    ```sql
    CREATE PERSISTENT SECRET (
-       TYPE OPENAI
+       TYPE OPENAI,
        API_KEY 'your-api-key'
    );
    ```
