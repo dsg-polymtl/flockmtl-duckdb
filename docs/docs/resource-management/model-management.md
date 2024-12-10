@@ -35,13 +35,13 @@ GET MODEL 'model_name';
 - Create a new user-defined model
 
 ```sql
-CREATE MODEL('model_name', 'model', 'provider', {model_args});
+CREATE MODEL('model_name', 'model', 'provider', {'context_window': 128000, 'max_output_tokens': 8000})
 ```
 
 - Modify an existing user-defined model
 
 ```sql
-UPDATE MODEL('model_name', 'model', 'provider', {model_args});
+UPDATE MODEL('model_name', 'model', 'provider', {'context_window': 128000, 'max_output_tokens': 8000});
 ```
 
 - Remove a user-defined model
