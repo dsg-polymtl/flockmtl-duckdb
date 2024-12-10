@@ -27,7 +27,7 @@ const Hero: React.FC = () => {
           </div>
         </Reveal>
         <Reveal><p className={`${styles.paragraph} max-w-[600px] mt-5`}>
-          DBMS extension that deeply integrates LLM and RAG capabilities directly into OLAP systems to seamlessly mix analytics with semantic analysis. It enables tasks like text generation, semantic analysis, classification, and embeddings, all within SQL using novel map and reduce functions. <span className="italic font-medium">FlockMTL redefines how to tackle complex workflows using RDBMSs</span>
+          A DBMS extension that deeply integrates LLM and RAG capabilities directly into OLAP systems to seamlessly mix analytics with semantic analysis. It enables tasks like text generation, semantic analysis, classification, and embeddings, all within SQL using novel map and reduce functions. <span className="italic font-medium">FlockMTL redefines how to tackle complex workflows using RDBMSs</span>
         </p></Reveal>
       </div>
       <div className="grid md:grid-rows-1 grid-rows-2 grid-flow-col md:gap-8 gap-2 py-8 place-items-center">

@@ -8,7 +8,7 @@
   </a>
   <br /><br />
   <p align="center">
-    DBMS extension that deeply integrates LLM and RAG capabilities directly into OLAP systems to seamlessly mix analytics with semantic analysis.
+    A DBMS extension that deeply integrates LLM and RAG capabilities directly into OLAP systems to seamlessly mix analytics with semantic analysis.
     <br />
     <a href="https://dsg-polymtl.github.io/flockmtl/docs/what-is-flockmtl"><strong>Explore the docs »</strong></a>
     <br />
