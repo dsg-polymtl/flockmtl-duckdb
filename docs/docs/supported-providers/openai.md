@@ -76,9 +76,9 @@ For more information on managing models, refer to the [model management](/docs/r
 
 ## 3. Practical Examples  
 
-### 3.1. Using OpenAI Directly  
+### 3.1. Using OpenAI Services
 
-Generate product descriptions using the `description-model` with OpenAI directly:  
+Generate product descriptions using the `description-model` with OpenAI services:  
 
 ```sql  
 SELECT llm_complete(
