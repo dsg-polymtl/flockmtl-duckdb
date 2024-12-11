@@ -41,11 +41,11 @@ api.dataset_download_files(
 
 # %%
 # Initialize DuckDB
-con = duckdb.connect(':memory:', config={'allow_unsigned_extensions': 'true'})
+con = duckdb.connect(':memory:')
 
 # Load FlockMTL extension
-con.sql("LOAD flockmtl FROM community")
-con.sql("INSTALL flockmtl")
+con.sql("INSTALL flockmtl FROM community")
+con.sql("LOAD flockmtl")
 
 # %% [markdown]
 # ## Step 4: Load and Preview Dataset

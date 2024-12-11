@@ -52,15 +52,15 @@ api.dataset_download_files(
 # We create an in-memory DuckDB database for this analysis.
 
 # %%
-con = duckdb.connect(':memory:', config={'allow_unsigned_extensions': 'true'})
+con = duckdb.connect(':memory:')
 
 # %% [markdown]
 # ## Step 4: Load and Install FlockMTL Extension
 # The FlockMTL extension enables advanced natural language processing with LLMs.
 
 # %%
-con.sql("LOAD flockmtl FROM community")
-con.sql("INSTALL flockmtl")
+con.sql("INSTALL flockmtl FROM community")
+con.sql("LOAD flockmtl")
 
 # %% [markdown]
 # ## Step 5: Configure OpenAI Secret
