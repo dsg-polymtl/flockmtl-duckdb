@@ -3,7 +3,7 @@
 FlockMTL supports the following providers for semantic analytics tasks such as text generation, embedding creation, and ranking:
 
 - [**Ollama**](/docs/supported-providers/ollama)
-- [**OpenAI & OpenAI Compatible Providers**](/docs/supported-providers/openai)
+- [**OpenAI & OpenAI-Compatible Providers**](/docs/supported-providers/openai)
 - [**Azure**](/docs/supported-providers/azure)
 
 ## Manage Provider's Secrets
