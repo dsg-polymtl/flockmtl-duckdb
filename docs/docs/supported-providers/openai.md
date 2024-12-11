@@ -13,6 +13,7 @@ Configure your OpenAI API key securely using the DuckDB secret manager with one 
 
 ```sql  
 CREATE SECRET (
+    TYPE OPENAI,
     API_KEY 'your-api-key'
 );  
 ```  
@@ -23,6 +24,7 @@ For providers with OpenAI-compatible APIs, specify the `BASE_URL` along with you
 
 ```sql  
 CREATE SECRET (
+    TYPE OPENAI,
     BASE_URL 'your-provider-url',
     API_KEY 'your-api-key'
 );  
@@ -34,6 +36,7 @@ To configure the GROQ provider using the base URL `https://api.groq.com/openai/v
 
 ```sql  
 CREATE SECRET groq (
+    TYPE OPENAI,
     BASE_URL 'https://api.groq.com/openai/v1/',
     API_KEY 'your-api-key'
 );  
