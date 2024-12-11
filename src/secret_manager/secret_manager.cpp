@@ -6,7 +6,8 @@
 
 namespace flockmtl {
 
-const SecretDetails openai_secret_details = {"openai", "flockmtl", "openai://", {"api_key"}, {"api_key"}, {"api_key"}};
+const SecretDetails openai_secret_details = {"openai",    "flockmtl", "openai://", {"base_url", "api_key"},
+                                             {"api_key"}, {"api_key"}};
 
 const SecretDetails azure_secret_details = {"azure_llm",    "flockmtl",
                                             "azure_llm://", {"api_key", "resource_name", "api_version"},
@@ -123,7 +124,10 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(std::strin
     }
 
     for (auto field : secret_details.fields) {
-        secret_map[field] = kv_secret.TryGetValue(field).ToString();
+        auto value = kv_secret.TryGetValue(field);
+        if (!value.IsNull()) {
+            secret_map[field] = value.ToString();
+        }
     }
 
     return secret_map;
