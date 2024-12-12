@@ -1,9 +1,25 @@
 #include "flockmtl/core/config.hpp"
 #include "flockmtl/secret_manager/secret_manager.hpp"
+#include <filesystem>
+#include <fmt/format.h>
 
 namespace flockmtl {
 
 duckdb::DatabaseInstance* Config::db;
+
+std::string Config::get_schema_name() { return "flockmtl_config"; }
+
+std::filesystem::path Config::get_global_storage_path() {
+#ifdef _WIN32
+    const char* homeDir = getenv("USERPROFILE");
+#else
+    const char* homeDir = getenv("HOME");
+#endif
+    if (homeDir == nullptr) {
+        throw std::runtime_error("Could not find home directory");
+    }
+    return std::filesystem::path(homeDir) / ".duckdb" / "flockmtl_storage" / "flockmtl.db";
+}
 
 duckdb::Connection Config::GetConnection(duckdb::DatabaseInstance* db) {
     if (db) {
@@ -13,11 +29,25 @@ duckdb::Connection Config::GetConnection(duckdb::DatabaseInstance* db) {
     return con;
 }
 
-std::string Config::get_schema_name() { return "flockmtl_config"; }
+duckdb::Connection Config::GetGlobalConnection() {
+    const duckdb::DuckDB db(Config::get_global_storage_path().string());
+    duckdb::Connection con(*db.instance);
+    return con;
+}
+
+void Config::SetupGlobalStorageLocation() {
+    const auto flockmtl_global_path = get_global_storage_path();
+    const auto flockmtlDir = flockmtl_global_path.parent_path();
+    if (!std::filesystem::exists(flockmtlDir)) {
+        try {
+            std::filesystem::create_directories(flockmtlDir);
+        } catch (const std::filesystem::filesystem_error& e) {
+            std::cerr << "Error creating directories: " << e.what() << std::endl;
+        }
+    }
+}
 
 void Config::ConfigSchema(duckdb::Connection& con, std::string& schema_name) {
-
-    // Check if schema exists using fmt
     auto result = con.Query(duckdb_fmt::format(" SELECT * "
                                                "   FROM information_schema.schemata "
                                                "  WHERE schema_name = '{}'; ",
@@ -27,19 +57,35 @@ void Config::ConfigSchema(duckdb::Connection& con, std::string& schema_name) {
     }
 }
 
-void Config::Configure(duckdb::DatabaseInstance& db) {
+void Config::ConfigureGlobal() {
+    auto con = Config::GetGlobalConnection();
+    ConfigureTables(con, ConfigType::GLOBAL);
+}
+
+void Config::ConfigureLocal(duckdb::DatabaseInstance& db) {
     auto con = Config::GetConnection(&db);
-    Registry::Register(db);
-    SecretManager::Register(db);
+    ConfigureTables(con, ConfigType::LOCAL);
+}
 
+void Config::ConfigureTables(duckdb::Connection& con, const ConfigType type) {
     con.BeginTransaction();
-
     std::string schema = Config::get_schema_name();
     ConfigSchema(con, schema);
-    ConfigModelTable(con, schema);
-    ConfigPromptTable(con, schema);
-
+    ConfigModelTable(con, schema, type);
+    ConfigPromptTable(con, schema, type);
+    con.Query(
+        duckdb_fmt::format("ATTACH DATABASE '{}' AS flockmtl_storage;", Config::get_global_storage_path().string()));
     con.Commit();
+}
+
+void Config::Configure(duckdb::DatabaseInstance& db) {
+    Registry::Register(db);
+    SecretManager::Register(db);
+    if (const auto db_path = db.config.options.database_path; db_path != get_global_storage_path().string()) {
+        ConfigureLocal(db);
+        SetupGlobalStorageLocation();
+        ConfigureGlobal();
+    }
 }
 
 } // namespace flockmtl

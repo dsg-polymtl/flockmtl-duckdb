@@ -37,19 +37,25 @@ void Model::LoadModelDetails(const nlohmann::json& model_json) {
 }
 
 std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(const std::string& model_name) {
-    std::string query = duckdb_fmt::format(" SELECT model, provider_name, model_args "
-                                           "   FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE "
-                                           "  WHERE model_name = '{}' ",
-                                           model_name);
+    const std::string query =
+        duckdb_fmt::format(" SELECT model, provider_name, model_args "
+                           " FROM flockmtl_storage.flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"
+                           " WHERE model_name = '{}'"
+                           " UNION ALL "
+                           " SELECT model, provider_name, model_args "
+                           " FROM flockmtl_config.FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"
+                           " WHERE model_name = '{}';",
+                           model_name, model_name);
 
     auto con = Config::GetConnection();
     auto query_result = con.Query(query);
 
     if (query_result->RowCount() == 0) {
-        query_result = con.Query(duckdb_fmt::format(" SELECT model, provider_name, model_args "
-                                                    "   FROM flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
-                                                    "  WHERE model_name = '{}' ",
-                                                    model_name));
+        query_result = con.Query(
+            duckdb_fmt::format(" SELECT model, provider_name, model_args "
+                               "   FROM flockmtl_storage.flockmtl_config.FLOCKMTL_MODEL_DEFAULT_INTERNAL_TABLE "
+                               "  WHERE model_name = '{}' ",
+                               model_name));
 
         if (query_result->RowCount() == 0) {
             throw std::runtime_error("Model not found");

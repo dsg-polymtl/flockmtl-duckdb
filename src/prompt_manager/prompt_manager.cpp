@@ -81,21 +81,32 @@ PromptDetails PromptManager::CreatePromptDetails(const nlohmann::json& prompt_de
                                      "prompt_name with prompt version");
         }
         prompt_details.prompt_name = prompt_details_json["prompt_name"];
-        std::string prompt_details_query = duckdb_fmt::format(" SELECT prompt "
-                                                              "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
-                                                              "  WHERE prompt_name = '{}'",
-                                                              prompt_details.prompt_name);
-        std::string error_message = duckdb_fmt::format("The provided `{}` prompt ", prompt_details.prompt_name);
+        std::string error_message;
+        std::string version_where_clause;
+        std::string order_by_clause;
         if (prompt_details_json.contains("version")) {
             prompt_details.version = std::stoi(prompt_details_json["version"].get<std::string>());
-            prompt_details_query += duckdb_fmt::format(" AND version = {}", prompt_details.version);
-            error_message += duckdb_fmt::format("with version {} not found", prompt_details.version);
+            version_where_clause = duckdb_fmt::format(" AND version = {}", prompt_details.version);
+            error_message = duckdb_fmt::format("with version {} not found", prompt_details.version);
         } else {
-            prompt_details_query += " ORDER BY version DESC LIMIT 1;";
+            order_by_clause = " ORDER BY version DESC LIMIT 1 ";
             error_message += "not found";
         }
+        const auto prompt_details_query =
+            duckdb_fmt::format(" SELECT prompt, version "
+                               "   FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                               "  WHERE prompt_name = '{}'"
+                               " {} "
+                               " UNION ALL "
+                               " SELECT prompt, version "
+                               "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                               "  WHERE prompt_name = '{}'"
+                               " {} {}",
+                               prompt_details.prompt_name, version_where_clause, prompt_details.prompt_name,
+                               version_where_clause, order_by_clause);
+        error_message = duckdb_fmt::format("The provided `{}` prompt " + error_message, prompt_details.prompt_name);
         auto con = Config::GetConnection();
-        auto query_result = con.Query(prompt_details_query);
+        const auto query_result = con.Query(prompt_details_query);
         if (query_result->RowCount() == 0) {
             throw std::runtime_error(error_message);
         }

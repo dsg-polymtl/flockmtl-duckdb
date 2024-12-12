@@ -16,6 +16,7 @@ namespace flockmtl {
 class CreateModelStatement : public QueryStatement {
 public:
     CreateModelStatement() { type = StatementType::CREATE_MODEL; }
+    std::string catalog;
     std::string model_name;
     std::string model;
     std::string provider_name;
@@ -27,6 +28,13 @@ public:
     DeleteModelStatement() { type = StatementType::DELETE_MODEL; }
     std::string model_name;
     std::string provider_name;
+};
+
+class UpdateModelScopeStatement : public QueryStatement {
+public:
+    UpdateModelScopeStatement() { type = StatementType::UPDATE_MODEL_SCOPE; }
+    std::string model_name;
+    std::string catalog;
 };
 
 class UpdateModelStatement : public QueryStatement {

@@ -16,6 +16,7 @@ namespace flockmtl {
 class QueryParser {
 public:
     std::string ParseQuery(const std::string& query);
+    std::string ParsePromptOrModel(Tokenizer tokenizer, const std::string& query);
 
 private:
     std::unique_ptr<QueryStatement> statement;

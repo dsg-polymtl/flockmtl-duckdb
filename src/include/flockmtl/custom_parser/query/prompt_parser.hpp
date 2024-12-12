@@ -15,6 +15,7 @@ namespace flockmtl {
 class CreatePromptStatement : public QueryStatement {
 public:
     CreatePromptStatement() { type = StatementType::CREATE_PROMPT; }
+    std::string catalog;
     std::string prompt_name;
     std::string prompt;
 };
@@ -22,6 +23,13 @@ public:
 class DeletePromptStatement : public QueryStatement {
 public:
     DeletePromptStatement() { type = StatementType::DELETE_PROMPT; }
+    std::string prompt_name;
+};
+
+class UpdatePromptScopeStatement : public QueryStatement {
+public:
+    UpdatePromptScopeStatement() { type = StatementType::UPDATE_PROMPT_SCOPE; }
+    std::string catalog;
     std::string prompt_name;
 };
 

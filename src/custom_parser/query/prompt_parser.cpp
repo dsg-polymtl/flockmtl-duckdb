@@ -33,6 +33,16 @@ void PromptParser::Parse(const std::string& query, std::unique_ptr<QueryStatemen
 void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
     Token token = tokenizer.NextToken();
     std::string value = duckdb::StringUtil::Upper(token.value);
+
+    std::string catalog;
+    if (token.type == TokenType::KEYWORD && (value == "GLOBAL" || value == "LOCAL")) {
+        if (value == "GLOBAL") {
+            catalog = "flockmtl_storage.";
+        }
+        token = tokenizer.NextToken();
+        value = duckdb::StringUtil::Upper(token.value);
+    }
+
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -46,7 +56,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for prompt name.");
     }
-    std::string prompt_name = token.value;
+    const auto prompt_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -57,7 +67,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for prompt text.");
     }
-    std::string prompt = token.value;
+    const auto prompt = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::PARENTHESIS || token.value != ")") {
@@ -67,6 +77,7 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
     token = tokenizer.NextToken();
     if (token.type == TokenType::END_OF_FILE) {
         auto create_statement = std::make_unique<CreatePromptStatement>();
+        create_statement->catalog = catalog;
         create_statement->prompt_name = prompt_name;
         create_statement->prompt = prompt;
         statement = std::move(create_statement);
@@ -106,40 +117,68 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
     }
 
     token = tokenizer.NextToken();
-    if (token.type != TokenType::PARENTHESIS || token.value != "(") {
-        throw std::runtime_error("Expected opening parenthesis '(' after 'PROMPT'.");
-    }
+    if (token.type == TokenType::STRING_LITERAL) {
+        auto prompt_name = token.value;
+        token = tokenizer.NextToken();
+        if (token.type != TokenType::KEYWORD || duckdb::StringUtil::Upper(token.value) != "TO") {
+            throw std::runtime_error("Expected 'TO' after prompt name.");
+        }
 
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
-        throw std::runtime_error("Expected non-empty string literal for prompt name.");
-    }
-    std::string prompt_name = token.value;
+        token = tokenizer.NextToken();
+        value = duckdb::StringUtil::Upper(token.value);
+        if (token.type != TokenType::KEYWORD || (value != "GLOBAL" && value != "LOCAL")) {
+            throw std::runtime_error("Expected 'GLOBAL' or 'LOCAL' after 'TO'.");
+        }
+        auto catalog = value == "GLOBAL" ? "flockmtl_storage." : "";
 
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::SYMBOL || token.value != ",") {
-        throw std::runtime_error("Expected comma ',' after prompt name.");
-    }
+        token = tokenizer.NextToken();
+        if (token.type == TokenType::SYMBOL || token.value == ";") {
+            auto update_statement = std::make_unique<UpdatePromptScopeStatement>();
+            update_statement->prompt_name = prompt_name;
+            update_statement->catalog = catalog;
+            statement = std::move(update_statement);
+        } else {
+            throw std::runtime_error(
+                "Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
+        }
 
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
-        throw std::runtime_error("Expected non-empty string literal for new prompt text.");
-    }
-    std::string new_prompt = token.value;
-
-    token = tokenizer.NextToken();
-    if (token.type != TokenType::PARENTHESIS || token.value != ")") {
-        throw std::runtime_error("Expected closing parenthesis ')' after new prompt text.");
-    }
-
-    token = tokenizer.NextToken();
-    if (token.type == TokenType::END_OF_FILE) {
-        auto update_statement = std::make_unique<UpdatePromptStatement>();
-        update_statement->prompt_name = prompt_name;
-        update_statement->new_prompt = new_prompt;
-        statement = std::move(update_statement);
     } else {
-        throw std::runtime_error("Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
+        if (token.type != TokenType::PARENTHESIS || token.value != "(") {
+            throw std::runtime_error("Expected opening parenthesis '(' after 'PROMPT'.");
+        }
+
+        token = tokenizer.NextToken();
+        if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
+            throw std::runtime_error("Expected non-empty string literal for prompt name.");
+        }
+        std::string prompt_name = token.value;
+
+        token = tokenizer.NextToken();
+        if (token.type != TokenType::SYMBOL || token.value != ",") {
+            throw std::runtime_error("Expected comma ',' after prompt name.");
+        }
+
+        token = tokenizer.NextToken();
+        if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
+            throw std::runtime_error("Expected non-empty string literal for new prompt text.");
+        }
+        std::string new_prompt = token.value;
+
+        token = tokenizer.NextToken();
+        if (token.type != TokenType::PARENTHESIS || token.value != ")") {
+            throw std::runtime_error("Expected closing parenthesis ')' after new prompt text.");
+        }
+
+        token = tokenizer.NextToken();
+        if (token.type == TokenType::END_OF_FILE) {
+            auto update_statement = std::make_unique<UpdatePromptStatement>();
+            update_statement->prompt_name = prompt_name;
+            update_statement->new_prompt = new_prompt;
+            statement = std::move(update_statement);
+        } else {
+            throw std::runtime_error(
+                "Unexpected characters after the closing parenthesis. Only a semicolon is allowed.");
+        }
     }
 }
 
@@ -177,59 +216,110 @@ std::string PromptParser::ToSQL(const QueryStatement& statement) const {
     switch (statement.type) {
     case StatementType::CREATE_PROMPT: {
         const auto& create_stmt = static_cast<const CreatePromptStatement&>(statement);
-        // check if prompt_name already exists
         auto con = Config::GetConnection();
-        auto result = con.Query(duckdb_fmt::format(" SELECT * "
-                                                   "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
-                                                   "  WHERE prompt_name = '{}'; ",
+        auto result = con.Query(duckdb_fmt::format(" SELECT prompt_name "
+                                                   "   FROM {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
+                                                   "  WHERE prompt_name = '{}';",
+                                                   create_stmt.catalog.empty() ? "flockmtl_storage." : "",
                                                    create_stmt.prompt_name));
-        if (result->RowCount() > 0) {
-            throw std::runtime_error(duckdb_fmt::format("Prompt '{}' already exists.", create_stmt.prompt_name));
+        if (result->RowCount() != 0) {
+            throw std::runtime_error(duckdb_fmt::format("Prompt '{}' already exist.", create_stmt.prompt_name));
         }
-        query = duckdb_fmt::format(" INSERT INTO flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+        query = duckdb_fmt::format(" INSERT INTO {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                    " (prompt_name, prompt) "
                                    " VALUES ('{}', '{}'); ",
-                                   create_stmt.prompt_name, create_stmt.prompt);
+                                   create_stmt.catalog, create_stmt.prompt_name, create_stmt.prompt);
         break;
     }
     case StatementType::DELETE_PROMPT: {
         const auto& delete_stmt = static_cast<const DeletePromptStatement&>(statement);
-        query = duckdb_fmt::format(" DELETE FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+        auto con = Config::GetConnection();
+        auto result = con.Query(duckdb_fmt::format("  DELETE FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                                   "  WHERE prompt_name = '{}'; ",
+                                                   delete_stmt.prompt_name));
+
+        query = duckdb_fmt::format(" DELETE FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                    "  WHERE prompt_name = '{}'; ",
                                    delete_stmt.prompt_name);
         break;
     }
     case StatementType::UPDATE_PROMPT: {
         const auto& update_stmt = static_cast<const UpdatePromptStatement&>(statement);
-        // get the existing prompt version
         auto con = Config::GetConnection();
-        auto result = con.Query(duckdb_fmt::format(" SELECT version "
-                                                   "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
-                                                   "  WHERE prompt_name = '{}' "
-                                                   "  ORDER BY version DESC "
-                                                   "  LIMIT 1; ",
-                                                   update_stmt.prompt_name));
+        auto result =
+            con.Query(duckdb_fmt::format(" SELECT version, 'local' AS scope "
+                                         "  FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
+                                         " WHERE prompt_name = '{}'"
+                                         " UNION ALL "
+                                         " SELECT version, 'global' AS scope "
+                                         "   FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
+                                         "  WHERE prompt_name = '{}' "
+                                         " ORDER BY version DESC;",
+                                         update_stmt.prompt_name, update_stmt.prompt_name));
         if (result->RowCount() == 0) {
-            throw std::runtime_error(duckdb_fmt::format("Prompt '{}' does not exist.", update_stmt.prompt_name));
+            throw std::runtime_error(duckdb_fmt::format("Prompt '{}' doesn't exist.", update_stmt.prompt_name));
         }
+
         int version = result->GetValue<int>(0, 0) + 1;
-        query = duckdb_fmt::format(" INSERT INTO flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+        auto catalog = result->GetValue(1, 0).ToString() == "global" ? "flockmtl_storage." : "";
+        query = duckdb_fmt::format(" INSERT INTO {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
                                    " (prompt_name, prompt, version) "
                                    " VALUES ('{}', '{}', {}); ",
-                                   update_stmt.prompt_name, update_stmt.new_prompt, version);
+                                   catalog, update_stmt.prompt_name, update_stmt.new_prompt, version);
+        break;
+    }
+    case StatementType::UPDATE_PROMPT_SCOPE: {
+        const auto& update_stmt = static_cast<const UpdatePromptScopeStatement&>(statement);
+        auto con = Config::GetConnection();
+        auto result = con.Query(duckdb_fmt::format(" SELECT prompt_name "
+                                                   "   FROM {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE"
+                                                   "  WHERE prompt_name = '{}';",
+                                                   update_stmt.catalog, update_stmt.prompt_name));
+        if (result->RowCount() != 0) {
+            throw std::runtime_error(
+                duckdb_fmt::format("Model '{}' already exist in {} storage.", update_stmt.prompt_name,
+                                   update_stmt.catalog == "flockmtl_storage." ? "global" : "local"));
+        }
+
+        con.Query(duckdb_fmt::format("INSERT INTO {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                     "(prompt_name, prompt, updated_at, version) "
+                                     "SELECT prompt_name, prompt, updated_at, version "
+                                     "FROM {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                     "WHERE prompt_name = '{}';",
+                                     update_stmt.catalog,
+                                     update_stmt.catalog == "flockmtl_storage." ? "" : "flockmtl_storage.",
+                                     update_stmt.prompt_name));
+
+        query = duckdb_fmt::format("DELETE FROM {}flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                   "WHERE prompt_name = '{}'; ",
+                                   update_stmt.catalog == "flockmtl_storage." ? "" : "flockmtl_storage.",
+                                   update_stmt.prompt_name);
         break;
     }
     case StatementType::GET_PROMPT: {
         const auto& get_stmt = static_cast<const GetPromptStatement&>(statement);
-        query = duckdb_fmt::format(" SELECT * "
-                                   "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
-                                   "  WHERE prompt_name = '{}' "
-                                   "  ORDER BY version DESC; ",
-                                   get_stmt.prompt_name);
+        query = duckdb_fmt::format("SELECT 'global' AS scope, * "
+                                   "FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                   "WHERE prompt_name = '{}' "
+                                   "UNION ALL "
+                                   "SELECT 'local' AS scope, * "
+                                   "FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                                   "WHERE prompt_name = '{}' "
+                                   "ORDER BY version DESC;",
+                                   get_stmt.prompt_name, get_stmt.prompt_name);
+
         break;
     }
     case StatementType::GET_ALL_PROMPT: {
-        query = " SELECT t1.* "
+        query = " SELECT 'global' as scope, t1.* "
+                "   FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE AS t1 "
+                "   JOIN (SELECT prompt_name, MAX(version) AS max_version "
+                "   FROM flockmtl_storage.flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "
+                "  GROUP BY prompt_name) AS t2 "
+                "     ON t1.prompt_name = t2.prompt_name "
+                "    AND t1.version = t2.max_version"
+                " UNION ALL "
+                " SELECT 'local' as scope, t1.* "
                 "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE AS t1 "
                 "   JOIN (SELECT prompt_name, MAX(version) AS max_version "
                 "   FROM flockmtl_config.FLOCKMTL_PROMPT_INTERNAL_TABLE "

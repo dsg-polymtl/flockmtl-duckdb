@@ -1,4 +1,5 @@
 #include "flockmtl/core/config.hpp"
+#include <filesystem>
 
 namespace flockmtl {
 
@@ -6,7 +7,7 @@ std::string Config::get_default_models_table_name() { return "FLOCKMTL_MODEL_DEF
 
 std::string Config::get_user_defined_models_table_name() { return "FLOCKMTL_MODEL_USER_DEFINED_INTERNAL_TABLE"; }
 
-void Config::setup_default_models_config(duckdb::Connection& con, std::string& schema_name) {
+void Config::SetupDefaultModelsConfig(duckdb::Connection& con, std::string& schema_name) {
     const std::string table_name = Config::get_default_models_table_name();
     // Ensure schema exists
     auto result = con.Query(duckdb_fmt::format(" SELECT table_name "
@@ -39,7 +40,7 @@ void Config::setup_default_models_config(duckdb::Connection& con, std::string& s
     }
 }
 
-void Config::setup_user_defined_models_config(duckdb::Connection& con, std::string& schema_name) {
+void Config::SetupUserDefinedModelsConfig(duckdb::Connection& con, std::string& schema_name) {
     const std::string table_name = Config::get_user_defined_models_table_name();
     // Ensure schema exists
     auto result = con.Query(duckdb_fmt::format(" SELECT table_name "
@@ -59,9 +60,11 @@ void Config::setup_user_defined_models_config(duckdb::Connection& con, std::stri
     }
 }
 
-void Config::ConfigModelTable(duckdb::Connection& con, std::string& schema_name) {
-    setup_default_models_config(con, schema_name);
-    setup_user_defined_models_config(con, schema_name);
+void Config::ConfigModelTable(duckdb::Connection& con, std::string& schema_name, const ConfigType type) {
+    if (type == ConfigType::GLOBAL) {
+        SetupDefaultModelsConfig(con, schema_name);
+    }
+    SetupUserDefinedModelsConfig(con, schema_name);
 }
 
 } // namespace flockmtl
