@@ -16,30 +16,57 @@ The **Prompt Management** section provides guidance on how to manage and configu
 | **updated_at**  | Timestamp of the last update      |
 | **version**     | Version number of the prompt      |
 
+## 1. Introduction to Global and Local Prompts
+
+FlockMTL supports two types of prompts:
+
+*   **Global Prompts**: Created using `CREATE GLOBAL PROMPT`. These are shared across different databases.
+*   **Local Prompts**: Created using `CREATE LOCAL PROMPT` or `CREATE PROMPT` (default if no type is specified). These are limited to a single database.
+
 ## 2. Management Commands
 
-- Retrieve all available prompts
+### Create Prompts
+
+*   Create a global prompt:
+
+```sql
+CREATE GLOBAL PROMPT('prompt_name', 'prompt');
+```
+
+- Create a local prompt (default if no type is specified):
+
+```sql
+CREATE LOCAL PROMPT('prompt_name', 'prompt');
+CREATE PROMPT('prompt_name', 'prompt');
+```
+
+### Retrieve Prompts
+
+- Retrieve all available prompts:
 
 ```sql
 GET PROMPTS;
 ```
 
-- Retrieve details of a specific prompt
+- Retrieve details of a specific prompt:
 
 ```sql
 GET PROMPT 'prompt_name';
 ```
 
-- Create a new prompt
+### Update Prompts
 
-```sql
-CREATE PROMPT('prompt_name', 'prompt');
-```
-
-- Modify an existing prompt
+- Update an existing prompt:
 
 ```sql
 UPDATE PROMPT('prompt_name', 'prompt');
+```
+
+- Toggle a prompt's state between global and local:
+
+```sql
+UPDATE PROMPT 'prompt_name' TO GLOBAL;
+UPDATE PROMPT 'prompt_name' TO LOCAL;
 ```
 
 - Remove a prompt

@@ -18,39 +18,65 @@ Models are stored in a table with the following structure:
 | **Provider**        | Source of the model (e.g., `openai`, `azure`, `ollama`)                             |
 | **Model Arguments** | JSON configuration parameters such as `context_window` size and `max_output_tokens` |
 
-## 2. Management Commands
+## 2. Introduction to Global and Local Models
 
-- Retrieve all available models
+FlockMTL supports two types of models:
+
+*   **Global Models**: Created using `CREATE GLOBAL MODEL`. These are shared across different databases.
+*   **Local Models**: Created using `CREATE LOCAL MODEL` or `CREATE MODEL` (default if no type is specified). These are limited to a single database.
+
+## 3. Management Commands
+
+### Create Models
+
+- Create a global model:
+
+```sql
+CREATE GLOBAL MODEL('model_name', 'model_type', 'provider', {'context_window': 128000, 'max_output_tokens': 8000})
+```
+
+- Create a local model (default if no type is specified):
+
+```sql
+CREATE LOCAL MODEL('model_name', 'model_type', 'provider', {'context_window': 128000, 'max_output_tokens': 8000})
+CREATE MODEL('model_name', 'model_type', 'provider', {'context_window': 128000, 'max_output_tokens': 8000})
+```
+
+### Retrieve Models
+
+- Retrieve all available models:
 
 ```sql
 GET MODELS;
 ```
 
-- Retrieve details of a specific model
+- Retrieve details of a specific model:
 
 ```sql
 GET MODEL 'model_name';
 ```
 
-- Create a new user-defined model
+### Update Models
+
+- Update an existing model:
 
 ```sql
-CREATE MODEL('model_name', 'model', 'provider', {'context_window': 128000, 'max_output_tokens': 8000})
+UPDATE MODEL('model_name', 'model_type', 'provider', {'context_window': 128000, 'max_output_tokens': 8000});
 ```
 
-- Modify an existing user-defined model
+- Toggle a model's state between global and local:
 
 ```sql
-UPDATE MODEL('model_name', 'model', 'provider', {'context_window': 128000, 'max_output_tokens': 8000});
+UPDATE MODEL 'model_name' TO GLOBAL;
+UPDATE MODEL 'model_name' TO LOCAL;
 ```
-
 - Remove a user-defined model
 
 ```sql
 DELETE MODEL 'model_name';
 ```
 
-## 3. SQL Query Examples
+## 4. SQL Query Examples
 
 ### Semantic Text Completion
 
