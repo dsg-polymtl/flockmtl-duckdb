@@ -23,6 +23,12 @@ find_package(nlohmann_json CONFIG REQUIRED)
 build_static_extension(${TARGET_NAME} ${EXTENSION_SOURCES})
 build_loadable_extension(${TARGET_NAME} " " ${EXTENSION_SOURCES})
 
+# Link the filesystem library for GCC < 9
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION
+                                            VERSION_LESS 9.0)
+  target_link_libraries(${EXTENSION_NAME} -lstdc++fs)
+endif()
+
 # Check if we're in debug mode and enable AddressSanitizer
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   message(STATUS "Enabling AddressSanitizer for Debug build")
