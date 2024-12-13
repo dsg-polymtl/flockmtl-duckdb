@@ -40,8 +40,8 @@ Token Tokenizer::ParseJson() {
     if (query_[position_] != '{') {
         throw std::runtime_error("JSON should start with a curly brace.");
     }
-    int start = position_++;
-    int brace_count = 1;
+    auto start = position_++;
+    auto brace_count = 1;
     while (position_ < query_.size() && brace_count > 0) {
         if (query_[position_] == '{') {
             ++brace_count;
@@ -53,40 +53,40 @@ Token Tokenizer::ParseJson() {
     if (brace_count > 0) {
         throw std::runtime_error("Unterminated JSON.");
     }
-    std::string value = query_.substr(start, position_ - start);
+    auto value = query_.substr(start, position_ - start);
     return {TokenType::JSON, value};
 }
 
 // Parse a keyword (word made of letters)
 Token Tokenizer::ParseKeyword() {
-    int start = position_;
+    auto start = position_;
     while (position_ < query_.size() && (std::isalpha(query_[position_]) || query_[position_] == '_')) {
         ++position_;
     }
-    std::string value = query_.substr(start, position_ - start);
+    auto value = query_.substr(start, position_ - start);
     return {TokenType::KEYWORD, value};
 }
 
 // Parse a symbol (single character)
 Token Tokenizer::ParseSymbol() {
-    char ch = query_[position_];
+    auto ch = query_[position_];
     ++position_;
     return {TokenType::SYMBOL, std::string(1, ch)};
 }
 
 // Parse a number (sequence of digits)
 Token Tokenizer::ParseNumber() {
-    int start = position_;
+    auto start = position_;
     while (position_ < query_.size() && std::isdigit(query_[position_])) {
         ++position_;
     }
-    std::string value = query_.substr(start, position_ - start);
+    auto value = query_.substr(start, position_ - start);
     return {TokenType::NUMBER, value};
 }
 
 // Parse a parenthesis
 Token Tokenizer::ParseParenthesis() {
-    char ch = query_[position_];
+    auto ch = query_[position_];
     ++position_;
     return {TokenType::PARENTHESIS, std::string(1, ch)};
 }
@@ -98,7 +98,7 @@ Token Tokenizer::GetNextToken() {
         return {TokenType::END_OF_FILE, ""};
     }
 
-    char ch = query_[position_];
+    auto ch = query_[position_];
     if (ch == '\'') {
         return ParseStringLiteral();
     } else if (ch == '{') {

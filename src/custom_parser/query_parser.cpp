@@ -21,7 +21,7 @@ std::string QueryParser::ParseQuery(const std::string& query) {
 }
 
 inline std::string QueryParser::ParsePromptOrModel(Tokenizer tokenizer, const std::string& query) {
-    Token token = tokenizer.NextToken();
+    auto token = tokenizer.NextToken();
     auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type == TokenType::KEYWORD && (value == "MODEL" || value == "MODELS")) {
         ModelParser model_parser;

@@ -9,8 +9,8 @@ namespace flockmtl {
 
 void ModelParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
-    Token token = tokenizer.NextToken();
-    const std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    const auto value = duckdb::StringUtil::Upper(token.value);
 
     if (token.type == TokenType::KEYWORD) {
         if (value == "CREATE") {
@@ -30,8 +30,8 @@ void ModelParser::Parse(const std::string& query, std::unique_ptr<QueryStatement
 }
 
 void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
 
     std::string catalog;
     if (token.type == TokenType::KEYWORD && (value == "GLOBAL" || value == "LOCAL")) {
@@ -55,7 +55,7 @@ void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for model name.");
     }
-    std::string model_name = token.value;
+    auto model_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -66,7 +66,7 @@ void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for model.");
     }
-    std::string model = token.value;
+    auto model = token.value;
 
     token = tokenizer.NextToken();
     if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -118,8 +118,8 @@ void ModelParser::ParseCreateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 }
 
 void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "MODEL") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -128,7 +128,7 @@ void ModelParser::ParseDeleteModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for model name.");
     }
-    std::string model_name = token.value;
+    auto model_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
@@ -193,7 +193,7 @@ void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for model.");
         }
-        std::string new_model = token.value;
+        auto new_model = token.value;
 
         token = tokenizer.NextToken();
         if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -204,7 +204,7 @@ void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for provider_name.");
         }
-        std::string provider_name = token.value;
+        auto provider_name = token.value;
 
         token = tokenizer.NextToken();
         if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -246,8 +246,8 @@ void ModelParser::ParseUpdateModel(Tokenizer& tokenizer, std::unique_ptr<QuerySt
 }
 
 void ModelParser::ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "MODEL" && value != "MODELS")) {
         throw std::runtime_error("Expected 'MODEL' after 'GET'.");
     }
@@ -260,7 +260,7 @@ void ModelParser::ParseGetModel(Tokenizer& tokenizer, std::unique_ptr<QueryState
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for model name.");
         }
-        std::string model_name = token.value;
+        auto model_name = token.value;
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {

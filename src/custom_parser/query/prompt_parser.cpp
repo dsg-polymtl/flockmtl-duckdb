@@ -10,8 +10,8 @@ namespace flockmtl {
 
 void PromptParser::Parse(const std::string& query, std::unique_ptr<QueryStatement>& statement) {
     Tokenizer tokenizer(query);
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
 
     if (token.type == TokenType::KEYWORD) {
         if (value == "CREATE") {
@@ -31,8 +31,8 @@ void PromptParser::Parse(const std::string& query, std::unique_ptr<QueryStatemen
 }
 
 void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
 
     std::string catalog;
     if (token.type == TokenType::KEYWORD && (value == "GLOBAL" || value == "LOCAL")) {
@@ -87,8 +87,8 @@ void PromptParser::ParseCreatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 }
 
 void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -97,7 +97,7 @@ void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
     if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
         throw std::runtime_error("Expected non-empty string literal for prompt name.");
     }
-    std::string prompt_name = token.value;
+    auto prompt_name = token.value;
 
     token = tokenizer.NextToken();
     if (token.type == TokenType::SYMBOL || token.value == ";") {
@@ -110,8 +110,8 @@ void PromptParser::ParseDeletePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 }
 
 void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || value != "PROMPT") {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -151,7 +151,7 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for prompt name.");
         }
-        std::string prompt_name = token.value;
+        auto prompt_name = token.value;
 
         token = tokenizer.NextToken();
         if (token.type != TokenType::SYMBOL || token.value != ",") {
@@ -162,7 +162,7 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for new prompt text.");
         }
-        std::string new_prompt = token.value;
+        auto new_prompt = token.value;
 
         token = tokenizer.NextToken();
         if (token.type != TokenType::PARENTHESIS || token.value != ")") {
@@ -183,8 +183,8 @@ void PromptParser::ParseUpdatePrompt(Tokenizer& tokenizer, std::unique_ptr<Query
 }
 
 void PromptParser::ParseGetPrompt(Tokenizer& tokenizer, std::unique_ptr<QueryStatement>& statement) {
-    Token token = tokenizer.NextToken();
-    std::string value = duckdb::StringUtil::Upper(token.value);
+    auto token = tokenizer.NextToken();
+    auto value = duckdb::StringUtil::Upper(token.value);
     if (token.type != TokenType::KEYWORD || (value != "PROMPT" && value != "PROMPTS")) {
         throw std::runtime_error("Unknown keyword: " + token.value);
     }
@@ -197,7 +197,7 @@ void PromptParser::ParseGetPrompt(Tokenizer& tokenizer, std::unique_ptr<QuerySta
         if (token.type != TokenType::STRING_LITERAL || token.value.empty()) {
             throw std::runtime_error("Expected non-empty string literal for prompt name.");
         }
-        std::string prompt_name = token.value;
+        auto prompt_name = token.value;
 
         token = tokenizer.NextToken();
         if (token.type == TokenType::SYMBOL || token.value == ";") {
