@@ -1,14 +1,6 @@
 #pragma once
 
-//===--------------------------------------------------------------------------===//
-//                 IMPORTANT: Include correct filesystem header
-//===--------------------------------------------------------------------------===//
-// We need to include the filesystem header, but we don't know if we should
-// include the normal version or the experimental version. This header will
-// include the correct version based on the compiler and the available features.
-// This solution is based on the provided solution in the following
-// StackOverflow answer: https://stackoverflow.com/a/53365539
-//===--------------------------------------------------------------------------===//
+// Reference: https://stackoverflow.com/a/53365539
 
 // We haven't checked which filesystem to include yet
 #ifndef INCLUDE_STD_FILESYSTEM_EXPERIMENTAL
