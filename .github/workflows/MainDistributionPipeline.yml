@@ -11,7 +11,7 @@ on:
       - .github/workflows/MainDistributionPipeline.yml
       - duckdb/**
       - extension-ci-tools/**
-      - src/**'
+      - src/**
       - CMakelists.txt
       - extension_config.cmake
 
