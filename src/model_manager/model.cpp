@@ -4,9 +4,6 @@
 namespace flockmtl {
 
 Model::Model(const nlohmann::json& model_json) {
-    if (model_json.empty()) {
-        return;
-    }
     LoadModelDetails(model_json);
     ConstructProvider();
 }
