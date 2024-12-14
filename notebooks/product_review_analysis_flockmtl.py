@@ -73,6 +73,7 @@ print("OpenAI secret created.")
 # %% [markdown]
 # ## Step 6: Add gpt-4o Model as product_review_model
 # Add the gpt-4o model for sentiment analysis of product reviews to the GLOBAL scope.
+# The GLOBAL scope enables model sharing across databases, allowing the model name to be used in any database.
 
 # %%
 con.execute("""
@@ -87,6 +88,7 @@ CREATE GLOBAL MODEL(
 # %% [markdown]
 # ## Step 7: Move the model to the LOCAL scope
 # Move the model to the LOCAL scope for the current database.
+# FlockMTL also supports models with the LOCAL scope, making them accessible only within the current database.
 
 # %%
 con.execute("UPDATE MODEL 'product_review_model' TO LOCAL;")
