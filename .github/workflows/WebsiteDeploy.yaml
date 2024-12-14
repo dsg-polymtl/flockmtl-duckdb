@@ -5,6 +5,7 @@ on:
     branches:
       - main
     paths:
+      - .github/workflows/WebsiteDeploy.yaml
       - docs/**
   workflow_dispatch:
 

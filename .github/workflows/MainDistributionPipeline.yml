@@ -7,11 +7,13 @@ on:
     branches:
       - main
     paths:
-      - 'duckdb/**'
-      - 'extension-ci-tools/**'
-      - 'src/**'
-      - 'CMakelists.txt'
-      - 'extension_config.cmake'
+      - .github/workflows/_extension_deploy.yml
+      - .github/workflows/MainDistributionPipeline.yml
+      - duckdb/**
+      - extension-ci-tools/**
+      - src/**'
+      - CMakelists.txt
+      - extension_config.cmake
 
 
 concurrency:
