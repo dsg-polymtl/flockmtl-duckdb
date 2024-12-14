@@ -71,7 +71,28 @@ con.sql("CREATE SECRET (TYPE OPENAI, API_KEY 'your-openai-api-key');")
 print("OpenAI secret created.")
 
 # %% [markdown]
-# ## Step 6: Load Product Review Data
+# ## Step 6: Add gpt-4o Model as product_review_model
+# Add the gpt-4o model for sentiment analysis of product reviews to the GLOBAL scope.
+
+# %%
+con.execute("""
+CREATE GLOBAL MODEL(
+    'product_review_model',
+    'gpt-4o',
+    'openai',
+    {"context_window": 128000, "max_output_tokens": 16384}
+);
+""")
+
+# %% [markdown]
+# ## Step 7: Move the model to the LOCAL scope
+# Move the model to the LOCAL scope for the current database.
+
+# %%
+con.execute("UPDATE MODEL 'product_review_model' TO LOCAL;")
+
+# %% [markdown]
+# ## Step 8: Load Product Review Data
 # Load product review data from a CSV file into DuckDB.
 
 # %%
@@ -83,7 +104,7 @@ print("Product reviews data loaded successfully.")
 product_reviews_df.head()
 
 # %% [markdown]
-# ## Step 7: Visualize Ratings Distribution
+# ## Step 9: Visualize Ratings Distribution
 # Analyze and visualize the distribution of product ratings.
 
 # %%
@@ -96,7 +117,7 @@ plt.ylabel("Number of Reviews")
 plt.show()
 
 # %% [markdown]
-# ## Step 8: Sentiment Analysis with Custom Prompt
+# ## Step 10: Sentiment Analysis with Custom Prompt
 # Analyze review sentiment using a custom prompt.
 
 # %%
@@ -120,7 +141,7 @@ SELECT
     Text AS review_text,
     Score AS star_rating,
     llm_complete_json(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'sentiment-analysis'},
         {'review': review_text, 'rating': star_rating}
     ) AS sentiment_json
@@ -132,7 +153,7 @@ sentiment_df = con.execute("SELECT * FROM sentiment_analysis").df()
 sentiment_df.head()
 
 # %% [markdown]
-# ## Step 9: Visualize Sentiment Analysis Results
+# ## Step 11: Visualize Sentiment Analysis Results
 # Plot the distribution of sentiment labels.
 
 # %%
@@ -146,10 +167,10 @@ plt.title("Sentiment Analysis Distribution")
 plt.show()
 
 # %% [markdown]
-# ## Step 10: LLM Aggregation Functions Demonstration
+# ## Step 12: LLM Aggregation Functions Demonstration
 
 # %% [markdown]
-# ### 10.1 llm_reduce: Summarize Product Reviews by Category
+# ### 12.1 llm_reduce: Summarize Product Reviews by Category
 
 # %%
 # Create a prompt for llm_reduce
@@ -161,7 +182,7 @@ CREATE PROMPT ('review-summary', 'Summarize these product reviews, highlighting 
 query = """
 SELECT ProductID, 
        llm_reduce(
-           {'model_name': 'gpt-4o'},
+           {'model_name': 'product_review_model'},
            {'prompt_name': 'review-summary'},
            {'review_text': Text, 'rating': Score}
        ) AS category_review_summary
@@ -173,7 +194,7 @@ print("Category Review Summaries:")
 category_summaries.head()
 
 # %% [markdown]
-# ### 10.2 llm_rerank: Rank Reviews by Relevance
+# ### 12.2 llm_rerank: Rank Reviews by Relevance
 
 # %%
 # Create a prompt for llm_rerank
@@ -185,7 +206,7 @@ CREATE PROMPT ('review-ranking', 'Rank these reviews based on their relevance an
 query = """
 SELECT 
     llm_rerank(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'review-ranking'},
         {'review_text': Text, 'rating': Score}
     ) AS ranked_reviews
@@ -196,7 +217,7 @@ print("Ranked Reviews:")
 pd.DataFrame(eval(ranked_reviews.iloc[0]['ranked_reviews']))
 
 # %% [markdown]
-# ### 10.3 llm_first: Extract First Key Insight
+# ### 12.3 llm_first: Extract First Key Insight
 
 # %%
 # Create a prompt for llm_first
@@ -208,7 +229,7 @@ CREATE PROMPT ('first-review-insight', 'What is the most impactful review for a 
 query = """
 SELECT ProductID, 
        llm_first(
-           {'model_name': 'gpt-4o'},
+           {'model_name': 'product_review_model'},
            {'prompt_name': 'first-review-insight'},
            {'review_text': Text, 'rating': Score}
        ) AS first_key_insight
@@ -220,7 +241,7 @@ print("First Key Insights per Product:")
 first_insights.head()
 
 # %% [markdown]
-# ## Step 11: Filter High-Impact Reviews
+# ## Step 13: Filter High-Impact Reviews
 # Identify reviews with significant insights.
 
 # %%
@@ -241,7 +262,7 @@ SELECT
 FROM sentiment_analysis
 WHERE 
     llm_filter(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'is-high-impact-review'},
         {'sentiment': sentiment_json, 'rating': star_rating, 'review_length': LENGTH(review_text)}
     );
@@ -252,7 +273,7 @@ filtered_reviews_df = con.execute("SELECT * FROM filtered_reviews").df()
 filtered_reviews_df.head()
 
 # %% [markdown]
-# ## Step 12: Visualize High-Impact Reviews
+# ## Step 14: Visualize High-Impact Reviews
 # Compare ratings of high-impact reviews with all reviews.
 
 # %%
@@ -268,7 +289,7 @@ plt.legend()
 plt.show()
 
 # %% [markdown]
-# ## Step 13: Extract Key Themes from Reviews
+# ## Step 15: Extract Key Themes from Reviews
 # Identify recurring themes in customer feedback.
 
 # %%
@@ -288,7 +309,7 @@ SELECT
     review_text,
     star_rating,
     llm_complete_json(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'extract-themes'},
         {'sentiment_json': sentiment_json}
     ) AS themes
@@ -310,14 +331,14 @@ plt.tight_layout()
 plt.show()
 
 # %% [markdown]
-# ## Step 14: Analyze the Lowest Reviews
+# ## Step 16: Analyze the Lowest Reviews
 # Focus on reviews with the lowest ratings.
 
 # %%
 lowest_reviews_df = product_reviews_df[product_reviews_df['Score'] <= 2]
 
 # %% [markdown]
-# ## Step 15: Sentiment and Explanation for Low-Rated Reviews
+# ## Step 17: Sentiment and Explanation for Low-Rated Reviews
 # Analyze sentiment and get explanations for low ratings.
 
 # %%
@@ -342,7 +363,7 @@ SELECT
     Text AS review_text,
     Score AS star_rating,
     llm_complete_json(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'low-rating-sentiment-analysis'},
         {'review': review_text, 'rating': star_rating}
     ) AS sentiment_json
@@ -355,7 +376,7 @@ low_rating_sentiment_df = con.execute("SELECT * FROM low_rating_sentiment").df()
 low_rating_sentiment_df.head()
 
 # %% [markdown]
-# ## Step 16: Suggestions for Product Improvement
+# ## Step 18: Suggestions for Product Improvement
 # Generate product improvement suggestions.
 
 # %%
@@ -379,7 +400,7 @@ SELECT
     review_text,
     star_rating,
     llm_complete_json(
-        {'model_name': 'gpt-4o'},
+        {'model_name': 'product_review_model'},
         {'prompt_name': 'product-improvement-suggestions'},
         {'review': review_text, 'rating': star_rating}
     ) AS suggestions
@@ -392,7 +413,7 @@ print("Product Improvement Suggestions:")
 suggestions_df.head()
 
 # %% [markdown]
-# ## Step 17: Visualize Low Ratings and Suggestions
+# ## Step 19: Visualize Low Ratings and Suggestions
 # Visualize low ratings and explore improvement suggestions.
 
 # %%
