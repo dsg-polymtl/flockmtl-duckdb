@@ -16,7 +16,8 @@ void Config::SetupDefaultModelsConfig(duckdb::Connection& con, std::string& sche
                                                "    AND table_name = '{}'; ",
                                                schema_name, table_name));
     if (result->RowCount() == 0) {
-        con.Query(duckdb_fmt::format(" LOAD JSON; "
+        con.Query(duckdb_fmt::format(" INSTALL JSON; "
+                                     " LOAD JSON; "
                                      " CREATE TABLE {}.{} ( "
                                      " model_name VARCHAR NOT NULL PRIMARY KEY, "
                                      " model VARCHAR NOT NULL, "
@@ -49,7 +50,8 @@ void Config::SetupUserDefinedModelsConfig(duckdb::Connection& con, std::string& 
                                                "    AND table_name = '{}'; ",
                                                schema_name, table_name));
     if (result->RowCount() == 0) {
-        con.Query(duckdb_fmt::format("   LOAD JSON; "
+        con.Query(duckdb_fmt::format(" INSTALL JSON; "
+                                     "   LOAD JSON; "
                                      " CREATE TABLE {}.{} ( "
                                      " model_name VARCHAR NOT NULL PRIMARY KEY, "
                                      " model VARCHAR NOT NULL, "

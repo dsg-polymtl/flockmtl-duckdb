@@ -65,6 +65,8 @@ void Config::ConfigureGlobal() {
 void Config::ConfigureLocal(duckdb::DatabaseInstance& db) {
     auto con = Config::GetConnection(&db);
     ConfigureTables(con, ConfigType::LOCAL);
+    con.Query(
+        duckdb_fmt::format("ATTACH DATABASE '{}' AS flockmtl_storage;", Config::get_global_storage_path().string()));
 }
 
 void Config::ConfigureTables(duckdb::Connection& con, const ConfigType type) {
@@ -73,8 +75,6 @@ void Config::ConfigureTables(duckdb::Connection& con, const ConfigType type) {
     ConfigSchema(con, schema);
     ConfigModelTable(con, schema, type);
     ConfigPromptTable(con, schema, type);
-    con.Query(
-        duckdb_fmt::format("ATTACH DATABASE '{}' AS flockmtl_storage;", Config::get_global_storage_path().string()));
     con.Commit();
 }
 
@@ -82,9 +82,9 @@ void Config::Configure(duckdb::DatabaseInstance& db) {
     Registry::Register(db);
     SecretManager::Register(db);
     if (const auto db_path = db.config.options.database_path; db_path != get_global_storage_path().string()) {
-        ConfigureLocal(db);
         SetupGlobalStorageLocation();
         ConfigureGlobal();
+        ConfigureLocal(db);
     }
 }
 
