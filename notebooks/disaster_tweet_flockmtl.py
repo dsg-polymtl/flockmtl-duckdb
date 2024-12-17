@@ -54,7 +54,8 @@ con.sql("LOAD flockmtl")
 
 # %%
 csv_path = 'data/test_data_cleaning.csv'
-con.execute(f"CREATE TABLE disaster_tweets AS SELECT * FROM read_csv_auto('{csv_path}')")
+# We limit the number of rows to 15 for demonstration purposes
+con.execute(f"CREATE TABLE disaster_tweets AS SELECT * FROM read_csv_auto('{csv_path}') LIMIT 15")
 con.execute("SELECT * FROM disaster_tweets LIMIT 5").df()
 
 # %% [markdown]

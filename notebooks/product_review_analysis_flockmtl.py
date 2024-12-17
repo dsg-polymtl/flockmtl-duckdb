@@ -98,8 +98,9 @@ con.execute("UPDATE MODEL 'product_review_model' TO LOCAL;")
 # Load product review data from a CSV file into DuckDB.
 
 # %%
-csv_path = 'data/Reviews.csv'  # Update with your CSV file path
-con.execute(f"CREATE TABLE product_reviews AS SELECT * FROM read_csv_auto('{csv_path}')")
+csv_path = 'data/Reviews.csv'
+# We limit the number of rows to 15 for demonstration purposes
+con.execute(f"CREATE TABLE product_reviews AS SELECT * FROM read_csv_auto('{csv_path}') LIMIT 15")
 product_reviews_df = con.execute("SELECT * FROM product_reviews").df()
 
 print("Product reviews data loaded successfully.")
