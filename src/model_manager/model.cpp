@@ -67,7 +67,7 @@ std::tuple<std::string, std::string, int32_t, int32_t> Model::GetQueriedModel(co
 }
 
 void Model::ConstructProvider() {
-    switch (auto provider = GetProviderType(model_details_.provider_name)) {
+    switch (GetProviderType(model_details_.provider_name)) {
     case FLOCKMTL_OPENAI:
         provider_ = std::make_shared<OpenAIProvider>(model_details_);
         break;

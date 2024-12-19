@@ -43,7 +43,7 @@ nlohmann::json LlmRerank::SlidingWindow(nlohmann::json& tuples) {
         accumulated_rows_tokens += Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
         while (available_tokens - accumulated_rows_tokens > 0 && start_index >= 0) {
             auto num_tokens = Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
-            if (accumulated_rows_tokens + num_tokens > available_tokens) {
+            if (accumulated_rows_tokens + num_tokens > static_cast<unsigned int>(available_tokens)) {
                 break;
             }
             window_tuples.push_back(tuples[start_index]);
@@ -53,7 +53,7 @@ nlohmann::json LlmRerank::SlidingWindow(nlohmann::json& tuples) {
         }
 
         auto indexed_tuples = nlohmann::json::array();
-        for (auto i = 0; i < window_tuples.size(); i++) {
+        for (auto i = 0; i < static_cast<int>(window_tuples.size()); i++) {
             auto indexed_tuple = window_tuples[i];
             indexed_tuple["flockmtl_tuple_id"] = i;
             indexed_tuples.push_back(indexed_tuple);
@@ -81,7 +81,7 @@ void LlmRerank::Finalize(duckdb::Vector& states, duckdb::AggregateInputData& agg
         auto state = function_instance->state_map[state_ptr];
 
         auto tuples_with_ids = nlohmann::json::array();
-        for (auto j = 0; j < state->value.size(); j++) {
+        for (auto j = 0; j < static_cast<int>(state->value.size()); j++) {
             tuples_with_ids.push_back(state->value[j]);
         }
         auto reranked_tuples = function_instance->SlidingWindow(tuples_with_ids);

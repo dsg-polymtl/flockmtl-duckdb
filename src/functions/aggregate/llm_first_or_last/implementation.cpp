@@ -33,9 +33,11 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json& tuples) {
         accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
         accumulated_tuples_tokens +=
             Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
-        while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
-            auto num_tokens = Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
-            if (accumulated_tuples_tokens + num_tokens > available_tokens) {
+        while (accumulated_tuples_tokens < static_cast<unsigned int>(available_tokens) &&
+               start_index < static_cast<int>(tuples.size())) {
+            const auto num_tokens =
+                Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
+            if (accumulated_tuples_tokens + num_tokens > static_cast<unsigned int>(available_tokens)) {
                 break;
             }
             batch_tuples.push_back(tuples[start_index]);
@@ -45,7 +47,7 @@ nlohmann::json LlmFirstOrLast::Evaluate(nlohmann::json& tuples) {
         auto result_idx = GetFirstOrLastTupleId(batch_tuples);
         batch_tuples.clear();
         batch_tuples.push_back(tuples[result_idx]);
-    } while (start_index < tuples.size());
+    } while (start_index < static_cast<int>(tuples.size()));
     batch_tuples[0].erase("flockmtl_tuple_id");
 
     return batch_tuples[0];
@@ -62,7 +64,7 @@ void LlmFirstOrLast::FinalizeResults(duckdb::Vector& states, duckdb::AggregateIn
         auto state_ptr = states_vector[idx];
         auto state = function_instance->state_map[state_ptr];
         auto tuples_with_ids = nlohmann::json::array();
-        for (auto j = 0; j < state->value.size(); j++) {
+        for (auto j = 0; j < static_cast<int>(state->value.size()); j++) {
             auto tuple_with_id = state->value[j];
             tuple_with_id["flockmtl_tuple_id"] = j;
             tuples_with_ids.push_back(tuple_with_id);

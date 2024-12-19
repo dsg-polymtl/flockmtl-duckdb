@@ -11,7 +11,7 @@ Tokenizer::Tokenizer(const std::string& query) : query_(query), position_(0) {}
 
 // Skip whitespace
 void Tokenizer::SkipWhitespace() {
-    while (position_ < query_.size() && std::isspace(query_[position_])) {
+    while (position_ < static_cast<int>(query_.size()) && std::isspace(query_[position_])) {
         ++position_;
     }
 }
@@ -25,10 +25,10 @@ Token Tokenizer::ParseStringLiteral() {
     }
     ++position_;
     int start = position_;
-    while (position_ < query_.size() && query_[position_] != '\'') {
+    while (position_ < static_cast<int>(query_.size()) && query_[position_] != '\'') {
         ++position_;
     }
-    if (position_ == query_.size()) {
+    if (position_ == static_cast<int>(query_.size())) {
         throw std::runtime_error("Unterminated string literal.");
     }
     std::string value = query_.substr(start, position_ - start);
@@ -42,7 +42,7 @@ Token Tokenizer::ParseJson() {
     }
     auto start = position_++;
     auto brace_count = 1;
-    while (position_ < query_.size() && brace_count > 0) {
+    while (position_ < static_cast<int>(query_.size()) && brace_count > 0) {
         if (query_[position_] == '{') {
             ++brace_count;
         } else if (query_[position_] == '}') {
@@ -60,7 +60,8 @@ Token Tokenizer::ParseJson() {
 // Parse a keyword (word made of letters)
 Token Tokenizer::ParseKeyword() {
     auto start = position_;
-    while (position_ < query_.size() && (std::isalpha(query_[position_]) || query_[position_] == '_')) {
+    while (position_ < static_cast<int>(query_.size()) &&
+           (std::isalpha(query_[position_]) || query_[position_] == '_')) {
         ++position_;
     }
     auto value = query_.substr(start, position_ - start);
@@ -77,7 +78,7 @@ Token Tokenizer::ParseSymbol() {
 // Parse a number (sequence of digits)
 Token Tokenizer::ParseNumber() {
     auto start = position_;
-    while (position_ < query_.size() && std::isdigit(query_[position_])) {
+    while (position_ < static_cast<int>(query_.size()) && std::isdigit(query_[position_])) {
         ++position_;
     }
     auto value = query_.substr(start, position_ - start);
@@ -94,7 +95,7 @@ Token Tokenizer::ParseParenthesis() {
 // Get the next token from the input
 Token Tokenizer::GetNextToken() {
     SkipWhitespace();
-    if (position_ >= query_.size()) {
+    if (position_ >= static_cast<int>(query_.size())) {
         return {TokenType::END_OF_FILE, ""};
     }
 

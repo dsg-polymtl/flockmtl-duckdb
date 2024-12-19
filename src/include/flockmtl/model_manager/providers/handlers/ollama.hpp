@@ -12,16 +12,16 @@ namespace flockmtl {
 
 class OllamaModelManager {
 public:
-    OllamaModelManager(const std::string& url, bool throw_exception)
-        : _session("Ollama", throw_exception), _url(url), _throw_exception(throw_exception) {}
+    OllamaModelManager(const std::string& url, const bool throw_exception)
+        : _session("Ollama", throw_exception), _throw_exception(throw_exception), _url(url) {}
     OllamaModelManager(const OllamaModelManager&) = delete;
     OllamaModelManager& operator=(const OllamaModelManager&) = delete;
     OllamaModelManager(OllamaModelManager&&) = delete;
     OllamaModelManager& operator=(OllamaModelManager&&) = delete;
 
-    std::string GetChatUrl() { return _url + "/api/generate"; }
+    std::string GetChatUrl() const { return _url + "/api/generate"; }
 
-    std::string GetEmbedUrl() { return _url + "/api/embeddings"; }
+    std::string GetEmbedUrl() const { return _url + "/api/embeddings"; }
 
     std::string GetAvailableOllamaModelsUrl() {
         static int check_done = -1;
@@ -40,13 +40,13 @@ public:
     }
 
     nlohmann::json CallComplete(const nlohmann::json& json, const std::string& contentType = "application/json") {
-        std::string url = GetChatUrl();
+        const std::string url = GetChatUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
 
     nlohmann::json CallEmbedding(const nlohmann::json& json, const std::string& contentType = "application/json") {
-        std::string url = GetEmbedUrl();
+        const std::string url = GetEmbedUrl();
         _session.setUrl(url);
         return execute_post(json.dump(), contentType);
     }
