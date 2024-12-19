@@ -34,11 +34,11 @@ nlohmann::json ScalarFunctionBase::BatchAndComplete(const std::vector<nlohmann::
         do {
             accumulated_tuples_tokens +=
                 Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
-            while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size() &&
-                   batch_tuples.size() < batch_size) {
-                auto num_tokens =
+            while (accumulated_tuples_tokens < static_cast<unsigned int>(available_tokens) &&
+                   start_index < static_cast<int>(tuples.size()) && batch_tuples.size() < batch_size) {
+                const auto num_tokens =
                     Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
-                if (accumulated_tuples_tokens + num_tokens > available_tokens) {
+                if (accumulated_tuples_tokens + num_tokens > static_cast<unsigned int>(available_tokens)) {
                     break;
                 }
                 batch_tuples.push_back(tuples[start_index]);
@@ -67,7 +67,7 @@ nlohmann::json ScalarFunctionBase::BatchAndComplete(const std::vector<nlohmann::
                 responses.push_back(tuple);
             }
 
-        } while (start_index < tuples.size());
+        } while (start_index < static_cast<int>(tuples.size()));
     }
 
     return responses;

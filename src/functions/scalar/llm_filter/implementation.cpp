@@ -33,7 +33,6 @@ std::vector<std::string> LlmFilter::Operation(duckdb::DataChunk& args) {
 
     auto responses = BatchAndComplete(tuples, prompt_details.prompt, ScalarFunctionType::FILTER, model);
 
-    auto index = 0;
     std::vector<std::string> results;
     results.reserve(responses.size());
     for (const auto& response : responses) {

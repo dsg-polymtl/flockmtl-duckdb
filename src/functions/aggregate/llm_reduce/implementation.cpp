@@ -34,9 +34,11 @@ nlohmann::json LlmReduce::ReduceLoop(const std::vector<nlohmann::json>& tuples) 
         accumulated_tuples_tokens = Tiktoken::GetNumTokens(batch_tuples.dump());
         accumulated_tuples_tokens +=
             Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownHeader(tuples[start_index]));
-        while (accumulated_tuples_tokens < available_tokens && start_index < tuples.size()) {
-            auto num_tokens = Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
-            if (accumulated_tuples_tokens + num_tokens > available_tokens) {
+        while (accumulated_tuples_tokens < static_cast<unsigned int>(available_tokens) &&
+               start_index < static_cast<int>(tuples.size())) {
+            const auto num_tokens =
+                Tiktoken::GetNumTokens(PromptManager::ConstructMarkdownSingleTuple(tuples[start_index]));
+            if (accumulated_tuples_tokens + num_tokens > static_cast<unsigned int>(available_tokens)) {
                 break;
             }
             batch_tuples.push_back(tuples[start_index]);
@@ -47,7 +49,7 @@ nlohmann::json LlmReduce::ReduceLoop(const std::vector<nlohmann::json>& tuples) 
         batch_tuples.clear();
         batch_tuples.push_back(response);
         accumulated_tuples_tokens = 0u;
-    } while (start_index < tuples.size());
+    } while (start_index < static_cast<int>(tuples.size()));
 
     return batch_tuples[0];
 }

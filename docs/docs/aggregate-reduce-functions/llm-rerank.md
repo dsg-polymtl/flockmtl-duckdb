@@ -34,7 +34,7 @@ Rerank documents based on their relevance to a given query:
 ```sql
 SELECT llm_rerank(
     {'model_name': 'gpt-4'},
-    {'prompt': 'Rank these documents based on their relevance to the search query using the document title and content.'},
+    {'prompt': 'Rank documents by title keywords (AI, emerging tech), content relevance (innovative approaches), recency, and credibility.'},
     {'document_title': document_title, 'document_content': document_content}
 ) AS reranked_documents
 FROM documents;
@@ -50,7 +50,7 @@ Rerank documents for each category based on their relevance:
 SELECT category,
        llm_rerank(
            {'model_name': 'gpt-4'},
-           {'prompt': 'Rank these documents based on their relevance to the search query using the document title and content.'},
+           {'prompt': 'Rank documents by title keywords (AI, emerging tech), content relevance (innovative approaches), recency, and credibility.'},
            {'document_title': document_title, 'document_content': document_content}
        ) AS reranked_documents
 FROM documents
@@ -86,7 +86,7 @@ WITH ranked_documents AS (
 )
 SELECT llm_rerank(
            {'model_name': 'gpt-4'},
-           {'prompt': 'Rank these documents based on their relevance to the search query using the document title and content.'},
+           {'prompt': 'Rank documents by title keywords (AI, emerging tech), content relevance (innovative approaches), recency, and credibility.'},
            {'document_title': document_title, 'document_content': document_content}
        ) AS reranked_documents
 FROM ranked_documents;
@@ -125,7 +125,7 @@ Two types of prompts can be used:
    - Directly provides the prompt in the query.
    - **Example**:
      ```sql
-     {'prompt': 'Rank these documents based on their relevance to the search query using the document title and content.'}
+     {'prompt': 'Rank documents by title keywords (AI, emerging tech), content relevance (innovative approaches), recency, and credibility.'}
      ```
 
 2. **Named Prompt**

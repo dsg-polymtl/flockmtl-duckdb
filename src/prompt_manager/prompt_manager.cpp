@@ -44,7 +44,7 @@ std::string PromptManager::ConstructMarkdownHeader(const nlohmann::json& tuple) 
         header_markdown += key.key() + " | ";
     }
     header_markdown += "\n";
-    for (auto i = 0; i < tuple.size(); i++) {
+    for (auto i = 0; i < static_cast<int>(tuple.size()); i++) {
         header_markdown += "|---";
     }
     header_markdown += "|\n";

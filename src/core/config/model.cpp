@@ -29,13 +29,13 @@ void Config::SetupDefaultModelsConfig(duckdb::Connection& con, std::string& sche
         con.Query(duckdb_fmt::format(
             " INSERT INTO {}.{} (model_name, model, provider_name, model_args) "
             " VALUES "
-            " ('default', 'gpt-4o-mini', 'openai', '{{\"context_window\": 128000, \"max_output_tokens\": 16384}}'),"
-            " ('gpt-4o-mini', 'gpt-4o-mini', 'openai', '{{\"context_window\": 128000, \"max_output_tokens\": 16384}}'),"
-            " ('gpt-4o', 'gpt-4o', 'openai', '{{\"context_window\": 128000, \"max_output_tokens\": 16384}}'),"
+            " ('default', 'gpt-4o-mini', 'openai', '{{\"context_window\":128000,\"max_output_tokens\":16384}}'),"
+            " ('gpt-4o-mini', 'gpt-4o-mini', 'openai', '{{\"context_window\":128000,\"max_output_tokens\":16384}}'),"
+            " ('gpt-4o', 'gpt-4o', 'openai', '{{\"context_window\":128000,\"max_output_tokens\":16384}}'),"
             " ('text-embedding-3-large', 'text-embedding-3-large', 'openai', "
-            " '{{\"context_window\": {}, \"max_output_tokens\": {}}}'),"
+            " '{{\"context_window\":{},\"max_output_tokens\":{}}}'),"
             " ('text-embedding-3-small', 'text-embedding-3-small', 'openai', "
-            " '{{\"context_window\": {}, \"max_output_tokens\": {}}}')",
+            " '{{\"context_window\":{},\"max_output_tokens\":{}}}')",
             schema_name, table_name, Config::default_context_window, Config::default_max_output_tokens,
             Config::default_context_window, Config::default_max_output_tokens));
     }

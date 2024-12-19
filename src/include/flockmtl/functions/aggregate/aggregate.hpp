@@ -85,12 +85,12 @@ public:
 
     template <class Derived>
     static void Combine(duckdb::Vector& source, duckdb::Vector& target, duckdb::AggregateInputData& aggr_input_data,
-                        idx_t count) {
-        auto source_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(source);
-        auto target_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(target);
+                        const idx_t count) {
+        const auto source_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(source);
+        const auto target_vector = duckdb::FlatVector::GetData<AggregateFunctionState*>(target);
 
         auto function_instance = GetInstance<Derived>();
-        for (auto i = 0; i < count; i++) {
+        for (auto i = 0; i < static_cast<int>(count); i++) {
             auto source_ptr = source_vector[i];
             auto target_ptr = target_vector[i];
 
