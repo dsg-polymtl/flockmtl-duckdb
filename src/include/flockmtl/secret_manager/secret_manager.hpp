@@ -15,9 +15,9 @@ public:
     std::vector<std::string> required_fields;
 };
 
-extern const SecretDetails openai_secret_details;
-extern const SecretDetails azure_secret_details;
-extern const SecretDetails ollama_secret_details;
+SecretDetails get_openai_secret_details();
+SecretDetails get_azure_secret_details();
+SecretDetails get_ollama_secret_details();
 
 class SecretManager {
 public:
@@ -25,8 +25,8 @@ public:
     static std::unordered_map<std::string, SupportedProviders> providerNames;
 
     static void Register(duckdb::DatabaseInstance& instance);
-    static std::unordered_map<std::string, std::string> GetSecret(std::string provider);
-    static SupportedProviders GetProviderType(std::string provider);
+    static std::unordered_map<std::string, std::string> GetSecret(const std::string& secret_name);
+    static SupportedProviders GetProviderType(const std::string& provider);
 
 private:
     static void RegisterSecretType(duckdb::DatabaseInstance& instance);

@@ -6,22 +6,28 @@
 
 namespace flockmtl {
 
-const SecretDetails openai_secret_details = {"openai",    "flockmtl", "openai://", {"base_url", "api_key"},
-                                             {"api_key"}, {"api_key"}};
+SecretDetails get_openai_secret_details() {
+    return {"openai", "flockmtl", "openai://", {"base_url", "api_key"}, {"api_key"}, {"api_key"}};
+}
 
-const SecretDetails azure_secret_details = {"azure_llm",    "flockmtl",
-                                            "azure_llm://", {"api_key", "resource_name", "api_version"},
-                                            {"api_key"},    {"api_key", "resource_name", "api_version"}};
+SecretDetails get_azure_secret_details() {
+    return {"azure_llm",    "flockmtl",
+            "azure_llm://", {"api_key", "resource_name", "api_version"},
+            {"api_key"},    {"api_key", "resource_name", "api_version"}};
+}
 
-const SecretDetails ollama_secret_details = {"ollama", "flockmtl", "ollama://", {"api_url"}, {"api_url"}, {"api_url"}};
+SecretDetails get_ollama_secret_details() {
+    return {"ollama", "flockmtl", "ollama://", {"api_url"}, {"api_url"}, {"api_url"}};
+}
 
-const std::vector<const SecretDetails*> secret_details_list = {&openai_secret_details, &azure_secret_details,
-                                                               &ollama_secret_details};
+std::vector<SecretDetails> get_secret_details_list() {
+    return {get_openai_secret_details(), get_azure_secret_details(), get_ollama_secret_details()};
+}
 
 std::unordered_map<std::string, SecretManager::SupportedProviders> SecretManager::providerNames = {
     {"openai", OPENAI}, {"azure", AZURE}, {"ollama", OLLAMA}};
 
-SecretManager::SupportedProviders SecretManager::GetProviderType(std::string provider) {
+SecretManager::SupportedProviders SecretManager::GetProviderType(const std::string& provider) {
     return providerNames[provider];
 }
 
@@ -31,21 +37,21 @@ void SecretManager::Register(duckdb::DatabaseInstance& instance) {
 }
 
 void SecretManager::RegisterSecretType(duckdb::DatabaseInstance& instance) {
-    for (const auto& secret_details : secret_details_list) {
+    for (const auto& secret_detail : get_secret_details_list()) {
         duckdb::SecretType secret_type;
-        secret_type.name = secret_details->type;
+        secret_type.name = secret_detail.type;
         secret_type.deserializer = duckdb::KeyValueSecret::Deserialize<duckdb::KeyValueSecret>;
-        secret_type.default_provider = secret_details->provider;
+        secret_type.default_provider = secret_detail.provider;
 
         duckdb::ExtensionUtil::RegisterSecretType(instance, secret_type);
     }
 }
 
 void SecretManager::RegisterSecretFunction(duckdb::DatabaseInstance& instance) {
-    for (const auto& secret_details : secret_details_list) {
-        duckdb::CreateSecretFunction secret_function = {secret_details->type, secret_details->provider, CreateSecret};
+    for (const auto& secret_details : get_secret_details_list()) {
+        duckdb::CreateSecretFunction secret_function = {secret_details.type, secret_details.provider, CreateSecret};
 
-        for (const auto& field : secret_details->fields) {
+        for (const auto& field : secret_details.fields) {
             secret_function.named_parameters[field] = duckdb::LogicalType::VARCHAR;
         }
 
@@ -55,30 +61,29 @@ void SecretManager::RegisterSecretFunction(duckdb::DatabaseInstance& instance) {
 
 duckdb::unique_ptr<duckdb::BaseSecret> SecretManager::CreateSecret(duckdb::ClientContext& context,
                                                                    duckdb::CreateSecretInput& input) {
-    const SecretDetails* selected_details = nullptr;
+    SecretDetails selected_details;
 
-    if (input.type == openai_secret_details.type) {
-        selected_details = &openai_secret_details;
-    } else if (input.type == azure_secret_details.type) {
-        selected_details = &azure_secret_details;
-    } else if (input.type == ollama_secret_details.type) {
-        selected_details = &ollama_secret_details;
+    if (GetProviderType(input.type) == SupportedProviders::OPENAI) {
+        selected_details = get_openai_secret_details();
+    } else if (GetProviderType(input.type) == SupportedProviders::AZURE) {
+        selected_details = get_azure_secret_details();
+    } else if (GetProviderType(input.type) == SupportedProviders::OLLAMA) {
+        selected_details = get_ollama_secret_details();
     } else {
         throw duckdb::InvalidInputException("Unsupported secret type: %s", input.type.c_str());
     }
 
-    ValidateRequiredFields(input, selected_details->required_fields);
+    ValidateRequiredFields(input, selected_details.required_fields);
 
     auto prefix_paths = input.scope;
     if (prefix_paths.empty()) {
-        prefix_paths.push_back(selected_details->scope);
+        prefix_paths.push_back(selected_details.scope);
     }
 
-    auto secret = ConstructBaseSecret(prefix_paths, *selected_details, input.type, input.provider, input.name);
+    auto secret = ConstructBaseSecret(prefix_paths, selected_details, input.type, input.provider, input.name);
 
-    for (const auto& field : selected_details->fields) {
-        auto lookup = input.options.find(field);
-        if (lookup != input.options.end()) {
+    for (const auto& field : selected_details.fields) {
+        if (auto lookup = input.options.find(field); lookup != input.options.end()) {
             secret->secret_map[field] = lookup->second;
         }
     }
@@ -95,7 +100,7 @@ SecretManager::ConstructBaseSecret(duckdb::vector<std::string>& prefix_paths_p, 
     return secret;
 }
 
-std::unordered_map<std::string, std::string> SecretManager::GetSecret(std::string secret_name) {
+std::unordered_map<std::string, std::string> SecretManager::GetSecret(const std::string& secret_name) {
     std::unordered_map<std::string, std::string> secret_map;
     auto& instance = Config::db;
     auto& secret_manager = instance->GetSecretManager();
@@ -111,21 +116,20 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(std::strin
     SecretDetails secret_details;
     switch (providerType) {
     case SupportedProviders::OPENAI:
-        secret_details = openai_secret_details;
+        secret_details = get_openai_secret_details();
         break;
     case SupportedProviders::AZURE:
-        secret_details = azure_secret_details;
+        secret_details = get_azure_secret_details();
         break;
     case SupportedProviders::OLLAMA:
-        secret_details = ollama_secret_details;
+        secret_details = get_ollama_secret_details();
         break;
     default:
         throw duckdb::InvalidInputException("Unsupported secret type: %s", provider.c_str());
     }
 
-    for (auto field : secret_details.fields) {
-        auto value = kv_secret.TryGetValue(field);
-        if (!value.IsNull()) {
+    for (const auto& field : secret_details.fields) {
+        if (auto value = kv_secret.TryGetValue(field); !value.IsNull()) {
             secret_map[field] = value.ToString();
         }
     }
@@ -136,8 +140,8 @@ std::unordered_map<std::string, std::string> SecretManager::GetSecret(std::strin
 void SecretManager::ValidateRequiredFields(const duckdb::CreateSecretInput& input,
                                            const std::vector<std::string>& required_fields) {
     for (const auto& field : required_fields) {
-        auto lookup = input.options.find(field);
-        if (lookup == input.options.end() || lookup->second.ToString().empty()) {
+        if (auto lookup = input.options.find(field);
+            lookup == input.options.end() || lookup->second.ToString().empty()) {
             throw duckdb::InvalidInputException("Missing required field: '%s'", field.c_str());
         }
     }
